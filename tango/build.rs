@@ -24,11 +24,11 @@ BLOCK "StringFileInfo"
 BEGIN
     BLOCK "040904b0"
     BEGIN
-        VALUE "FileDescription", "Tango\0"
+        VALUE "FileDescription", "Trill\0"
         VALUE "ProductVersion", "{major}.{minor}.{patch}.0\0"
         VALUE "FileVersion", "{major}.{minor}.{patch}.0\0"
-        VALUE "OriginalFilename", "tango.exe\0"
-        VALUE "Info", "https://tango.n1gp.net\0"
+        VALUE "OriginalFilename", "trill.exe\0"
+        VALUE "Info", "https://trill.hikaricalyx.com\0"
     END
 END
 BLOCK "VarFileInfo"

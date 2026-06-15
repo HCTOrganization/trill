@@ -42,8 +42,9 @@ pub(crate) enum Setup {
     /// the signaling exchange (`set_remote_description`) drive ICE/DTLS.
     Signaled,
     /// Direct link-code path: no signaling server. Configure str0m's ICE/DTLS/
-    /// SCTP and channels directly (str0m `direct_api`) from fixed shared
-    /// constants + the host's `addr:port`. See [`direct_setup`].
+    /// SCTP directly (str0m `direct_api`) from fixed shared constants + the
+    /// host's `addr:port`, then open the data channels in-band (DCEP). See
+    /// [`direct_setup`].
     Direct(crate::DirectRole),
 }
 
@@ -79,12 +80,12 @@ struct ChannelLoop {
 }
 
 impl ChannelLoop {
-    fn new(io: ChannelIo) -> Self {
+    fn new(io: ChannelIo, lossy: bool) -> Self {
         ChannelLoop {
             status_tx: io.status_tx,
             message_tx: io.message_tx,
             outgoing_rx: io.outgoing_rx,
-            outbox: Outbox::default(),
+            outbox: Outbox { lossy, ..Default::default() },
             outgoing_done: false,
         }
     }
@@ -201,8 +202,23 @@ pub(crate) async fn run(mut driver: Driver) {
     let routes = Arc::new(routes);
     driver.shared.inner.lock().unwrap().routes = Some(routes.clone());
 
-    // Take the channel I/O ends out of the driver for the loop's lifetime.
-    let mut channels: Vec<ChannelLoop> = driver.channels.drain(..).map(ChannelLoop::new).collect();
+    // Take the channel I/O ends out of the driver for the loop's lifetime,
+    // pairing each with whether its channel tolerates loss (same order as
+    // `Inner::channels`).
+    let lossy: Vec<bool> = {
+        let inner = driver.shared.inner.lock().unwrap();
+        inner
+            .channels
+            .iter()
+            .map(|c| crate::is_lossy(c.config.reliability))
+            .collect()
+    };
+    let mut channels: Vec<ChannelLoop> = driver
+        .channels
+        .drain(..)
+        .zip(lossy)
+        .map(|(io, lossy)| ChannelLoop::new(io, lossy))
+        .collect();
 
     let exit = main_loop(&mut driver, &routes, &mut net_rx, &mut channels).await;
 
@@ -245,12 +261,13 @@ pub(crate) async fn run(mut driver: Driver) {
 }
 
 /// Direct (link-code) connection setup: no signaling. Both peers configure
-/// str0m's ICE/DTLS/SCTP and the negotiated channels directly from fixed shared
-/// constants plus the host's `addr:port`. The dialer is ICE controlling + DTLS/
-/// SCTP active; the host is the ICE-lite controlled responder + passive and
-/// learns the dialer peer-reflexively from its first check. Mirrors str0m's own
-/// `tests/data-channel-direct.rs`. Returns the bound sockets for the shared
-/// loop (no STUN/TURN relays on this path).
+/// str0m's ICE/DTLS/SCTP directly from fixed shared constants plus the host's
+/// `addr:port`. The dialer is ICE controlling + DTLS/SCTP active; the host is the
+/// ICE-lite controlled responder + passive and learns the dialer peer-reflexively
+/// from its first check. Channels are negotiated in-band (DCEP), the same as the
+/// signaling path: the dialer (the SCTP client) opens each one and the host
+/// learns it in-band and binds it by label. Returns the bound sockets for the
+/// shared loop (no STUN/TURN relays on this path).
 async fn direct_setup(driver: &Driver, role: crate::DirectRole) -> std::io::Result<gather::Gathered> {
     let io_other = |e: str0m::RtcError| std::io::Error::other(e.to_string());
 
@@ -300,18 +317,16 @@ async fn direct_setup(driver: &Driver, role: crate::DirectRole) -> std::io::Resu
 
     let mut inner = driver.shared.inner.lock().unwrap();
 
-    // Negotiated channels: both ends agree the stream ids (0, 1, …) up front, so
-    // they open with no DCEP/SDP exchange. Collect before borrowing the api.
-    let configs: Vec<str0m::channel::ChannelConfig> = inner
-        .channels
-        .iter()
-        .enumerate()
-        .map(|(i, c)| {
-            let mut config = c.config.clone();
-            config.negotiated = Some(i as u16);
-            config
-        })
-        .collect();
+    // In-band (DCEP) channels, same as the signaling path: the dialer opens each
+    // one and the host learns it in-band and binds it by label. Only the dialer
+    // (the SCTP client) opens them — the host creates nothing and waits for the
+    // DcepOpen — so on the host `configs` is empty. Collect before borrowing the
+    // api.
+    let configs: Vec<str0m::channel::ChannelConfig> = if controlling {
+        inner.channels.iter().map(|c| c.config.clone()).collect()
+    } else {
+        vec![]
+    };
 
     {
         let mut direct = inner.rtc.direct_api();
@@ -335,6 +350,7 @@ async fn direct_setup(driver: &Driver, role: crate::DirectRole) -> std::io::Resu
         }
         direct.start_dtls(controlling).map_err(io_other)?;
         direct.start_sctp(controlling);
+        // The dialer opens the channels over DCEP; on the host `configs` is empty.
         for config in configs {
             direct.create_data_channel(config);
         }
@@ -576,9 +592,9 @@ fn drain_rtc(inner: &mut Inner, liveness: &mut Liveness) -> Result<(Drained, Ins
                     _ => {}
                 }
             }
-            // Bind the open channel to its spec by label — works both for our
-            // own in-band channel on the offering side and the remote-declared
-            // one after we answered.
+            // Bind the open channel to its spec by label — works for a channel we
+            // opened (signaling offerer / direct dialer) and for one the remote
+            // opened (signaling answerer / direct host).
             str0m::Event::ChannelOpen(id, label) => {
                 if let Some(idx) = inner.channels.iter().position(|c| c.config.label == label) {
                     inner.channels[idx].id = Some(id);
@@ -624,6 +640,12 @@ fn drain_rtc(inner: &mut Inner, liveness: &mut Liveness) -> Result<(Drained, Ins
 #[derive(Default)]
 struct Outbox {
     parked: Option<Vec<u8>>,
+    /// Whether this channel tolerates loss. A lossy outbox never backpressures
+    /// the sender: it always accepts the next message and coalesces it onto
+    /// `parked` (newest wins), dropping the older frame — whose inputs the newer
+    /// frame's redundancy window already carries — so the freshest frame is
+    /// what waits for SCTP instead of a stale backlog.
+    lossy: bool,
 }
 
 impl Outbox {
@@ -639,49 +661,34 @@ impl Outbox {
             self.parked = Some(message);
             return;
         };
-        let lossy = crate::is_lossy(inner.channels[idx].config.reliability);
         let Some(mut channel) = inner.rtc.channel(id) else {
             // Channel is gone; the message has nowhere to go.
             return;
         };
-        // Keep a lossy channel's SCTP send queue shallow: once more than a
-        // couple of frames are already waiting (cwnd-blocked), drop this one
-        // rather than deepening the queue. Left unchecked the buffer can grow to
-        // str0m's 128 KB cap — seconds of stale inputs that flush out in a
-        // post-congestion burst and poison the rollback time-sync. The in-match
-        // redundancy window + retransmit heartbeat recover the dropped frame;
-        // `message.len()` tracks the current frame size, so a fat recovery frame
-        // still gets a slot while a tiny steady-state frame sheds the instant the
-        // link backs up. This is the shed-don't-stall behaviour the QUIC datagram
-        // path has for free.
-        //
-        // Floored at LOSSY_SHED_FLOOR_BYTES so the smallest messages aren't
-        // starved: a 3-byte ping/pong probe (which has no redundancy to recover
-        // it) would otherwise gate at `2 * 3 = 6` bytes and shed the instant any
-        // input frame sat in the buffer — so ping measurement never lands a
-        // sample. The floor is a handful of frames' worth and still negligible
-        // against the 128 KB cap, so the "don't bank seconds of stale inputs"
-        // intent holds; fat recovery frames still get the larger `2 * len`.
-        const LOSSY_SHED_FLOOR_BYTES: usize = 256;
-        if lossy && channel.buffered_amount() > (2 * message.len()).max(LOSSY_SHED_FLOOR_BYTES) {
-            return;
-        }
         match channel.write(true, &message) {
             Ok(true) => {}
-            // SCTP send buffer is full. A reliable channel parks and retries
-            // (backpressure); a lossy one drops, same as the shallow-queue gate.
-            Ok(false) if !lossy => self.parked = Some(message),
-            Ok(false) => {}
+            // SCTP's send buffer is full. Keep the frame parked and retry next
+            // pass (the freeing SACK is the wakeup): a reliable channel
+            // backpressures behind it; a lossy one coalesces newer frames onto it
+            // (newest wins), so nothing stale banks either way.
+            Ok(false) => self.parked = Some(message),
             Err(e) => log::warn!("channel write failed: {}", e),
         }
     }
 
     fn has_room(&self) -> bool {
-        self.parked.is_none()
+        // A lossy channel always accepts the next message (it coalesces onto the
+        // parked slot); only a reliable channel backpressures on a full slot.
+        self.lossy || self.parked.is_none()
     }
 
     fn park(&mut self, message: Vec<u8>) {
-        debug_assert!(self.parked.is_none(), "outbox already occupied");
+        // Lossy: newest wins — a frame already waiting (SCTP hasn't taken it yet)
+        // is dropped in favour of this newer one. Dropping older-and-keeping-
+        // newest is lossless (the newer frame's redundancy window re-carries the
+        // older inputs) and keeps the freshest frame flowing instead of banking a
+        // stale backlog that would later flush as a burst.
+        debug_assert!(self.lossy || self.parked.is_none(), "reliable outbox already occupied");
         self.parked = Some(message);
     }
 }

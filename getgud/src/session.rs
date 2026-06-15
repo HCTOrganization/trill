@@ -268,13 +268,17 @@ impl<W: World> Session<W> {
         self.input_queue.remote_queue_length()
     }
 
-    /// How far local input leads remote input, in ticks (clamped to [`i16`]).
+    /// How far local input leads remote input, in ticks (clamped to [`i16`]):
+    /// the input queue's signed [`lead`](crate::Queue::lead).
     ///
-    /// This is the input queue's signed [`lead`](crate::Queue::lead), surfaced
-    /// for clock sync. It is each peer's half of the clock-sync handshake: you
-    /// send it to the remote with every input, and the remote's value comes back
-    /// via [`add_remote_input`](Session::add_remote_input). The difference of the
-    /// two is the [`skew`](Session::skew) used to keep the simulations aligned.
+    /// This is each peer's half of the clock-sync handshake: you send it to the
+    /// remote with every input, and the remote's value comes back via
+    /// [`add_remote_input`](Session::add_remote_input). The difference of the two
+    /// is the [`skew`](Session::skew) that keeps the simulations aligned. The raw
+    /// lead is used deliberately: during a delivery stall the confirmed remote
+    /// frontier sits still while the local one runs on, so the lead — and so the
+    /// skew — ramps, which lets the time-sync throttler slow the local clock while
+    /// the remote is unheard instead of racing ahead into an overflow bail.
     pub fn local_tick_advantage(&self) -> i16 {
         self.input_queue.lead().clamp(i16::MIN as i32, i16::MAX as i32) as i16
     }

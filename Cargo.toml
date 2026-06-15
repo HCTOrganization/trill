@@ -14,6 +14,16 @@ members = [
     "tango-signaling",
     "tango-signaling-server-rs",
 ]
+# Vendored, patched fork of sctp-proto (str0m's SCTP). Not a workspace member —
+# it's pulled in only via the `[patch.crates.io]` below. See its TANGO PATCH
+# comments (cwnd floor + RTO/SACK tuning for real-time loss tolerance).
+exclude = ["vendor/sctp-proto"]
+
+# Override str0m's `sctp-proto` dependency with the vendored, patched copy. str0m
+# hardcodes its SCTP transport config, so the loss-tolerance tuning has to live
+# in sctp-proto itself.
+[patch.crates-io]
+sctp-proto = { path = "vendor/sctp-proto" }
 
 # `release` keeps Cargo's defaults (lto = false, codegen-units = 16) so
 # iterative release builds and `cargo run --release` stay cheap. Shipped

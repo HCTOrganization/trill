@@ -660,6 +660,7 @@ impl PvpSession {
         let metrics = self.match_handle.round_metrics()?;
         Some(RoundStats {
             skew: metrics.local_frame_advantage as i32 - metrics.remote_frame_advantage as i32,
+            lead: metrics.local_frame_advantage as i32,
             depth: metrics.misprediction_depth,
         })
     }
@@ -676,6 +677,11 @@ pub struct RoundStats {
     /// sync, positive when we're leading (and being slowed), and negative
     /// when the peer is leading.
     pub skew: i32,
+    /// Local tick lead: how far the local frontier runs ahead of the confirmed
+    /// remote input (the raw `local_tick_advantage`, one side of the skew pair).
+    /// Steady around `present_delay` at clock sync; ramps up when the remote falls
+    /// behind or a delivery stall holds its confirmed frontier still.
+    pub lead: i32,
     /// Misprediction depth: how many speculative frames this frame discarded and
     /// re-simulated because a confirmed remote input contradicted the prediction.
     /// 0 on a clean frame; spikes mark the size of each rollback.
@@ -723,7 +729,7 @@ async fn drain_receiver(
 
 /// Open the replay file + write its metadata frame. Filename
 /// format mirrors the legacy app:
-/// `YYYYMMDDhhmmss-<link_code>-<compat>-vs-<opponent>-p<idx>.t5replay`.
+/// `YYYYMMDDhhmmss-<link_code>-<compat>-vs-<opponent>-p<idx>.tangoreplay`.
 #[allow(clippy::too_many_arguments)]
 fn build_replay_writer(
     replays_path: &Path,
@@ -762,7 +768,7 @@ fn build_replay_writer(
         local_player_index + 1
     );
     let safe_name: String = raw_name.chars().filter(|c| !"/\\?%*:|\"<>. ".contains(*c)).collect();
-    let replay_filename = replays_path.join(format!("{safe_name}.t5replay"));
+    let replay_filename = replays_path.join(format!("{safe_name}.tangoreplay"));
     log::info!("pvp: opening replay file {}", replay_filename.display());
 
     let file = std::fs::OpenOptions::new()
