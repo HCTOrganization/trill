@@ -133,6 +133,34 @@ impl audio::Stream for VoiceClip {
     }
 }
 
+/// Wrapper around the LateBinder to auto-clear when voice finishes.
+/// This ensures the audio stream is released once playback completes.
+pub struct VoicePlayer {
+    clip: VoiceClip,
+    binder: audio::LateBinder,
+}
+
+impl VoicePlayer {
+    pub fn new(clip: VoiceClip, binder: audio::LateBinder) -> Self {
+        Self { clip, binder }
+    }
+}
+
+impl audio::Stream for VoicePlayer {
+    fn fill(&mut self, buf: &mut [[i16; audio::NUM_CHANNELS]]) -> usize {
+        let n = self.clip.fill(buf);
+        
+        // If clip is finished and we filled nothing, clear the binding
+        // to release the audio stream
+        if self.clip.is_finished() && n == 0 {
+            // Drop the binding by resetting the stream to None
+            let _ = self.binder.bind(None);
+        }
+        
+        n
+    }
+}
+
 /// Get the voice file path for the given language.
 pub fn get_voice_file_path(lang: &LanguageIdentifier) -> &'static str {
     // Map languages to voice files
@@ -147,7 +175,7 @@ pub fn get_voice_file_path(lang: &LanguageIdentifier) -> &'static str {
 }
 
 /// Load a voice file from the embedded resources
-pub fn load_voice_file(filename: &str) -> anyhow::Result<VoiceClip> {
+pub fn load_voice_file(filename: &str, binder: audio::LateBinder) -> anyhow::Result<VoicePlayer> {
     let data = match filename {
         "ja.wav" => include_bytes!("../voice/ja.wav"),
         "en.wav" => include_bytes!("../voice/en.wav"),
@@ -155,7 +183,8 @@ pub fn load_voice_file(filename: &str) -> anyhow::Result<VoiceClip> {
     };
 
     let wav = WavFile::from_bytes(data)?;
-    Ok(VoiceClip::new(wav.samples))
+    let clip = VoiceClip::new(wav.samples);
+    Ok(VoicePlayer::new(clip, binder))
 }
 
 #[cfg(test)]

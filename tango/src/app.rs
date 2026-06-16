@@ -558,12 +558,13 @@ impl App {
     fn try_play_match_ready_voice(&mut self) -> iced::Task<Message> {
         let filename = audio::voice::get_voice_file_path(&self.config.language);
         
-        match audio::voice::load_voice_file(filename) {
-            Ok(clip) => {
-                // Try to bind the clip to the audio backend
-                match self.audio_binder.bind(Some(Box::new(clip))) {
+        match audio::voice::load_voice_file(filename, self.audio_binder.clone()) {
+            Ok(player) => {
+                // Try to bind the player to the audio backend
+                match self.audio_binder.bind(Some(Box::new(player))) {
                     Ok(binding) => {
                         // Store the binding so it stays alive while playing
+                        // The VoicePlayer will automatically clear this when done
                         self._voice_clip_binding = Some(binding);
                         log::info!("playing match-ready voice: {}", filename);
                         iced::Task::none()
