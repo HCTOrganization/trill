@@ -1,46 +1,52 @@
 # Build Troubleshooting Guide
 
-## Error: "pbjs: not found" or "pbts: not found"
+## Error: "Usage: pbjs [options]" - Invalid Command Syntax
 
 ### Cause
-The build script was trying to use `pbjs` and `pbts` commands that weren't installed globally on your system.
+The proto script was using old/unsupported `pbjs` command syntax that doesn't work with current versions.
+
+**Old syntax (broken)**:
+```bash
+pbjs -t static-module -w es6 -o output.js input.proto
+```
+
+**New syntax (correct)**:
+```bash
+pbjs --es6 input.proto > output.js
+```
 
 ### Solution (FIXED)
-The `package.json` has been updated to use `npx` which runs the local node_modules version:
+Updated `package.json` to use the correct command-line flags:
 
 ```json
-"proto": "mkdir -p src/proto && npx pbjs -t static-module -w es6 -o src/proto/signaling.js ../tango-signaling/src/proto/signaling.proto && npx pbts -o src/proto/signaling.d.ts src/proto/signaling.js"
+"proto": "mkdir -p src/proto && npx pbjs --es6 ../tango-signaling/src/proto/signaling.proto > src/proto/signaling.js && npx pbts src/proto/signaling.js > src/proto/signaling.d.ts"
 ```
 
-The `npx` prefix tells npm to use locally installed tools from `node_modules/`.
+Key changes:
+- `-t static-module -w es6 -o` → `--es6 > output.js`
+- Uses shell redirection (`>`) instead of `-o` flag
+- Works with current protobufjs-cli version (1.1.x)
 
-### What to Do Now
+### What to Do
 
-**Step 1: Clean old node_modules**
+**Step 1: Clean old artifacts**
 ```bash
-rm -rf node_modules
+rm -rf src/proto dist
 ```
 
-**Step 2: Reinstall dependencies**
+**Step 2: Rebuild**
 ```bash
 npm install
-```
-
-**Step 3: Try building again**
-```bash
 npm run build
 ```
 
-You should see output like:
+**Step 3: Verify success**
+Check these files exist:
+```bash
+ls -la src/proto/signaling.js src/proto/signaling.d.ts dist/scf-handler.js
 ```
-> tango-signaling-server-tencent-scf@0.1.0 proto
-> mkdir -p src/proto && npx pbjs -t static-module -w es6 -o src/proto/signaling.js ../tango-signaling/src/proto/signaling.proto && npx pbts -o src/proto/signaling.d.ts src/proto/signaling.js
 
-> tango-signaling-server-tencent-scf@0.1.0 build
-> npm run proto && tsc
-
-✓ Build successful
-```
+See `PBJS_SYNTAX_FIX.md` for detailed explanation and troubleshooting.
 
 ---
 
