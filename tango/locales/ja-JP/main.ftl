@@ -2,17 +2,17 @@
 # Endonym for this locale; shown in the language picker.
 LANGUAGE = 日本語
 
-window-title = Tango
+window-title = トリル
 # Tooltip on the top bar's close button (fullscreen only).
-window-quit = Tango を終了
+window-quit = トリル を終了
 
 # Crash handler dialogs (parent process)
-crash = Tango がエラーで終了しました。
+crash = トリル がエラーで終了しました。
 
     報告の際は次のログファイルを添付してください：
 
     { $path }
-crash-no-log = Tango がエラーで終了しました。
+crash-no-log = トリル がエラーで終了しました。
 
     { $error }
 
@@ -70,8 +70,8 @@ play-status-negotiating = ネゴシエーション中…
 play-status-failed = 接続失敗: { $error }
 play-status-peer-disconnected = 相手が退出しました。
 play-status-negotiate-expected-hello = 相手から想定したハンドシェイクが届きませんでした。
-play-status-negotiate-version-too-old = 相手は古いバージョンのTangoを使用しています。
-play-status-negotiate-version-too-new = 相手は新しいバージョンのTangoを使用しています。
+play-status-negotiate-version-too-old = 相手は古いバージョンのトリルを使用しています。
+play-status-negotiate-version-too-new = 相手は新しいバージョンのトリルを使用しています。
 play-status-negotiate-failed = ネゴシエーション中にエラーが発生しました: { $error }
 lobby-waiting = 待機中…
 lobby-no-game = （ゲーム未選択）
@@ -333,7 +333,7 @@ updater-ready-to-update = 更新の準備が完了しました。
 updater-update-now = 今すぐ更新
 
 # Welcome screen
-welcome-title = Tango へようこそ！
+welcome-title = トリル へようこそ！
 welcome-subtitle = 対戦できる前にいくつかの初期設定をしてください。
 welcome-continue = 続ける
 welcome-step-roms = ROM を追加

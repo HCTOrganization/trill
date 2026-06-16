@@ -2,19 +2,19 @@
 LANGUAGE = Русский
 
 crash =
-    Ой, Танго столкнулся с ошибкой и Сломался!
+    Ой, Трель столкнулся с ошибкой и Сломался!
 
     При сообщении о Поломке, пожалуйста, укажите следующий файл журнала:
 
     { $path }
 crash-no-log =
-    Упс, Танго столкнулся с ошибкой и Сломался!
+    Упс, Трель столкнулся с ошибкой и Сломался!
 
     { $error }
-window-title = Танго
-    .running = Танго(запушен)
+window-title = Трель
+    .running = Трель(запушен)
 # Tooltip on the top bar's close button (fullscreen only).
-window-quit = Выйти из Танго
+window-quit = Выйти из Трель
 play-play = Воспроизвести
 play-fight = В бой!
 play-link-code = Код ссылки (оставьте пустым для случайного)
@@ -129,8 +129,8 @@ play-status-negotiating = Согласование…
 play-status-failed = Сбой подключения: { $error }
 play-status-peer-disconnected = Другой игрок покинул игру.
 play-status-negotiate-expected-hello = Другой игрок не отправил ожидаемое рукопожатие.
-play-status-negotiate-version-too-old = Другой игрок использует более старую версию Tango.
-play-status-negotiate-version-too-new = Другой игрок использует более новую версию Tango.
+play-status-negotiate-version-too-old = Другой игрок использует более старую версию Трель.
+play-status-negotiate-version-too-new = Другой игрок использует более новую версию Трель.
 play-status-negotiate-failed = Произошла ошибка во время согласования: { $error }
 lobby-waiting = Ожидание…
 lobby-no-game = (игра не выбрана)
@@ -333,7 +333,7 @@ updater-up-to-date = v{ $version } (актуальная)
 updater-downloading = Загрузка: { $pct }%
 updater-ready-to-update = Обновление загружено и готово к установке.
 updater-update-now = Обновить сейчас
-welcome-title = Добро пожаловать в Tango!
+welcome-title = Добро пожаловать в Трель!
 welcome-subtitle = Осталось пару шагов до начала игры.
 welcome-step-roms = Добавьте свои ROM
 welcome-step-roms-description = Поместите ваши файлы .gba от Battle Network / Rockman EXE в:

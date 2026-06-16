@@ -2,19 +2,19 @@
 LANGUAGE = Deutsch
 
 crash =
-    Oops, Tango ist auf einen Fehler gestoßen und ist abgestürzt!
+    Oops, Trill ist auf einen Fehler gestoßen und ist abgestürzt!
 
     Wenn Sie diesen Absturz melden, fügen Sie bitte die folgende Protokolldatei bei:
 
     { $path }
 crash-no-log =
-    Oops, Tango ist auf einen Fehler gestoßen und abgestürzt!
+    Oops, Trill ist auf einen Fehler gestoßen und abgestürzt!
 
     { $error }
-window-title = Tango
-    .running = Tango (läuft)
+window-title = Trill
+    .running = Trill (läuft)
 # Tooltip on the top bar's close button (fullscreen only).
-window-quit = Tango beenden
+window-quit = Trill beenden
 play-play = Spielen
 play-fight = Kämpfen!
 play-link-code = Link-Code (leer lassen für einen zufälligen)
@@ -128,8 +128,8 @@ play-status-negotiating = Verhandle…
 play-status-failed = Verbindung fehlgeschlagen: { $error }
 play-status-peer-disconnected = Der andere Spieler hat das Spiel verlassen.
 play-status-negotiate-expected-hello = Der andere Spieler hat den erwarteten Handshake nicht gesendet.
-play-status-negotiate-version-too-old = Der andere Spieler verwendet eine ältere Version von Tango.
-play-status-negotiate-version-too-new = Der andere Spieler verwendet eine neuere Version von Tango.
+play-status-negotiate-version-too-old = Der andere Spieler verwendet eine ältere Version von Trill.
+play-status-negotiate-version-too-new = Der andere Spieler verwendet eine neuere Version von Trill.
 play-status-negotiate-failed = Bei der Verhandlung ist ein Fehler aufgetreten: { $error }
 lobby-waiting = Warten…
 lobby-no-game = (kein Spiel gewählt)
@@ -329,7 +329,7 @@ updater-up-to-date = v{ $version } (aktuell)
 updater-downloading = Wird heruntergeladen: { $pct }%
 updater-ready-to-update = Update heruntergeladen und bereit zur Installation.
 updater-update-now = Jetzt aktualisieren
-welcome-title = Willkommen bei Tango!
+welcome-title = Willkommen bei Trill!
 welcome-subtitle = Es gibt nur ein paar Schritte zu erledigen, bevor du spielen kannst.
 welcome-step-roms = ROMs hinzufügen
 welcome-step-roms-description = Lege deine Battle Network / Rockman EXE .gba-Dateien hier ab:

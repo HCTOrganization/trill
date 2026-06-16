@@ -2,17 +2,17 @@
 # Endonym for this locale; shown in the language picker.
 LANGUAGE = 한국어
 
-window-title = Tango
+window-title = 트릴
 # Tooltip on the top bar's close button (fullscreen only).
-window-quit = Tango 종료
+window-quit = 트릴 종료
 
 # Crash handler dialogs (parent process)
-crash = Tango가 오류로 종료되었습니다.
+crash = 트릴가 오류로 종료되었습니다.
 
     버그 보고 시 다음 로그 파일을 첨부해주세요:
 
     { $path }
-crash-no-log = Tango가 오류로 종료되었습니다.
+crash-no-log = 트릴가 오류로 종료되었습니다.
 
     { $error }
 
@@ -70,8 +70,8 @@ play-status-negotiating = 협상 중…
 play-status-failed = 연결 실패: { $error }
 play-status-peer-disconnected = 상대가 나갔습니다.
 play-status-negotiate-expected-hello = 상대에서 예상된 핸드셰이크를 받지 못했습니다.
-play-status-negotiate-version-too-old = 상대가 이전 버전의 Tango를 사용하고 있습니다.
-play-status-negotiate-version-too-new = 상대가 새로운 버전의 Tango를 사용하고 있습니다.
+play-status-negotiate-version-too-old = 상대가 이전 버전의 트릴를 사용하고 있습니다.
+play-status-negotiate-version-too-new = 상대가 새로운 버전의 트릴를 사용하고 있습니다.
 play-status-negotiate-failed = 협상 중 오류가 발생했습니다: { $error }
 lobby-waiting = 대기 중…
 lobby-no-game = (게임 미선택)
@@ -334,7 +334,7 @@ updater-ready-to-update = 업데이트 준비가 완료되었습니다.
 updater-update-now = 지금 업데이트
 
 # Welcome screen
-welcome-title = Tango에 오신 것을 환영합니다!
+welcome-title = 트릴에 오신 것을 환영합니다!
 welcome-subtitle = 대전하기 전에 몇 가지 초기 설정을 완료해주세요.
 welcome-continue = 계속
 welcome-step-roms = ROM 추가
