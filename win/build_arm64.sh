@@ -44,7 +44,7 @@ cp "$(dirname "${BASH_SOURCE[0]}")/trill.ico" tango/icon.ico
 cargo build --bin tango --profile release-dist --target aarch64-pc-windows-msvc
 
 # Download and install Nsis7z plugin before building installer
-nsis7z_url="https://nsis.sourceforge.io/mediawiki/images/6/69/Nsis7z_19.00.7zPlugins/x86-unicode/nsis7z.dll"
+nsis7z_archive_url="https://nsis.sourceforge.io/mediawiki/images/6/69/Nsis7z_19.00.7z"
 nsis_plugins_dir=""
 
 # Try to find NSIS installation
@@ -57,13 +57,17 @@ elif [ -d "/c/Program Files (x86)/NSIS/Plugins/x86-unicode" ]; then
 fi
 
 if [ -z "$nsis_plugins_dir" ]; then
-    echo "Warning: NSIS plugins directory not found. Attempting to create default location."
+    echo "Warning: NSIS plugins directory not found. Creating default location."
     nsis_plugins_dir="/c/Program Files (x86)/NSIS/Plugins/x86-unicode"
+    mkdir -p "$nsis_plugins_dir"
 fi
 
-mkdir -p "$nsis_plugins_dir"
-curl -L -o nsis7z.dll "${nsis7z_url}"
-cp nsis7z.dll "$nsis_plugins_dir/"
+# Download and extract Nsis7z plugin
+mkdir -p nsis7z_temp
+curl -L -o nsis7z_temp/nsis7z.7z "${nsis7z_archive_url}"
+7z x -onsis7z_temp nsis7z_temp/nsis7z.7z "Plugins/x86-unicode/nsis7z.dll"
+cp nsis7z_temp/Plugins/x86-unicode/nsis7z.dll "$nsis_plugins_dir/"
+rm -rf nsis7z_temp
 
 # Build installer.
 mkdir trill_win_workdir
