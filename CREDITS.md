@@ -1,4 +1,4 @@
-[Tango](https://tango.n1gp.net) would not be a reality without the work of the many people who have helped make this possible.
+[Trill](https://trill.hikaricalyx.com), as well as it's parent project [Tango](https://tango.n1gp.net) would not be a reality without the work of the many people who have helped make this possible.
 
 ## Development
 
@@ -15,6 +15,7 @@
 - Japanese: [weenie](https://github.com/bigfarts), [Nonstopmop](https://twitter.com/seventhfonist42), [dhenva](https://twitch.tv/dhenva)
 - Mandarin (mainland China): [weenie](https://github.com/bigfarts), [Hikari Calyx](https://twitter.com/Hikari_Calyx)
 - Mandarin (Taiwan): [weenie](https://github.com/bigfarts), [Hikari Calyx](https://twitter.com/Hikari_Calyx)
+- Korean: [Hikari Calyx](https://twitter.com/Hikari_Calyx)
 - Spanish (Latin America): [Karate_Bugman](https://twitter.com/Karate_Bugman)
 - Portuguese (Brazil): [Darkgaia](https://ayo.so/darkgaiagames), [mushiguchi](https://twitter.com/mushiguchi)
 - French (France): [Sheriel Phoenix](https://twitter.com/Sheriel_Phoenix), [Justplay](https://twitter.com/justplayfly)
@@ -34,4 +35,4 @@
 
 And, of course, a huge thank you to [CAPCOM](https://www.capcom.com) for making Mega Man Battle Network!
 
-Tango is licensed under the terms of the [GNU Affero General Public License v3](https://tldrlegal.com/license/gnu-affero-general-public-license-v3-%28agpl-3.0%29). That means you're free to modify the [source code](https://github.com/tangobattle), as long as you contribute your changes back!
+Trill is licensed under the terms of the [GNU Affero General Public License v3](https://tldrlegal.com/license/gnu-affero-general-public-license-v3-%28agpl-3.0%29). That means you're free to modify the [source code](https://github.com/tangobattle), as long as you contribute your changes back!
