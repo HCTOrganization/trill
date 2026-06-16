@@ -99,6 +99,14 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
+    // Geolocation check - restrict to China mainland only
+    const country = request.headers.get("cf-ipcountry");
+    if (country !== "CN") {
+      return new Response("Access denied: Service available in China mainland only", {
+        status: 403,
+      });
+    }
+
     if (url.pathname === "/ok") {
       return new Response("ok");
     }

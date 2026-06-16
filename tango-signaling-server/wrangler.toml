@@ -10,6 +10,4 @@ class_name = "MatchmakingHub"
 tag = "v1"
 new_sqlite_classes = ["MatchmakingHub"]
 
-[route]
-pattern = "matchmaking.tango.n1gp.net"
-zone_name = "n1gp.net"
+route = "matchmakingcn.trill.workers.dev"
