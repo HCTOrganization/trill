@@ -30,11 +30,11 @@ cleanup
 # tango's build.rs, which only embeds the resource when icon.ico exists,
 # so the icon must be in place before `cargo build` below.
 mkdir Tango.iconset
-magick tango/src/icon.png -resize 16x16 -depth 32 Tango.iconset/icon_16x16.png
-magick tango/src/icon.png -resize 32x32 -depth 32 Tango.iconset/icon_32x32.png
-magick tango/src/icon.png -resize 128x128 -depth 32 Tango.iconset/icon_128x128.png
-magick tango/src/icon.png -resize 256x256 -depth 32 Tango.iconset/icon_256x256.png
-magick Tango.iconset/*.png tango/icon.ico
+"${MAGICK_EXE:-magick}" tango/src/icon_16.png -resize 16x16 -depth 32 Tango.iconset/icon_16x16.png
+"${MAGICK_EXE:-magick}" tango/src/icon.png -resize 32x32 -depth 32 Tango.iconset/icon_32x32.png
+"${MAGICK_EXE:-magick}" tango/src/icon.png -resize 128x128 -depth 32 Tango.iconset/icon_128x128.png
+"${MAGICK_EXE:-magick}" tango/src/icon.png -resize 256x256 -depth 32 Tango.iconset/icon_256x256.png
+"${MAGICK_EXE:-magick}" Tango.iconset/*.png tango/icon.ico
 rm -rf Tango.iconset
 
 # Build Windows binaries. MSVC target — statically links the MSVC

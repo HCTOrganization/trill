@@ -30,7 +30,7 @@ cleanup
 # tango's build.rs, which only embeds the resource when icon.ico exists,
 # so the icon must be in place before `cargo build` below.
 mkdir Tango.iconset
-magick tango/src/icon.png -resize 16x16 -depth 32 Tango.iconset/icon_16x16.png
+magick tango/src/icon_16.png -resize 16x16 -depth 32 Tango.iconset/icon_16x16.png
 magick tango/src/icon.png -resize 32x32 -depth 32 Tango.iconset/icon_32x32.png
 magick tango/src/icon.png -resize 128x128 -depth 32 Tango.iconset/icon_128x128.png
 magick tango/src/icon.png -resize 256x256 -depth 32 Tango.iconset/icon_256x256.png

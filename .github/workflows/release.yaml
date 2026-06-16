@@ -324,11 +324,15 @@ jobs:
           $ExtractPath = "C:\ImageMagick"
           Invoke-WebRequest -Uri $ImageMagickUrl -OutFile $ArchivePath
           7z x $ArchivePath -o$ExtractPath
-          Add-Content $env:GITHUB_PATH $ExtractPath
 
       - name: Build
         shell: bash
-        run: ./win/build_arm64.sh
+        env:
+          MAGICK_EXE: "C:\\ImageMagick\\magick.exe"
+          MAGICK_CONFIGURE_PATH: "C:\\ImageMagick"
+        run: |
+          export PATH="C:\\ImageMagick:$PATH"
+          ./win/build_arm64.sh
 
       - uses: softprops/action-gh-release@v2
         with:
