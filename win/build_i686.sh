@@ -39,7 +39,7 @@ rm -rf Tango.iconset
 
 # Build Windows binaries. MSVC target — statically links the MSVC
 # runtime so no mingw DLL bundling is needed.
-cargo build --bin tango --profile release-dist --target x86_64-pc-windows-msvc
+cargo build --bin tango --profile release-dist --target i686-pc-windows-msvc
 
 # Build installer.
 mkdir tango_win_workdir
@@ -48,19 +48,21 @@ tools/mako_generate.py "$(dirname "${BASH_SOURCE[0]}")/installer.nsi.mako" >tang
 pushd tango_win_workdir
 
 cp ../tango/icon.ico .
-cp ../target/x86_64-pc-windows-msvc/release-dist/tango.exe .
+cp ../target/i686-pc-windows-msvc/release-dist/tango.exe .
 
-angle_zip_url="https://github.com/google/gfbuild-angle/releases/download/github%2Fgoogle%2Fgfbuild-angle%2Ff810e998993290f049bbdad4fae975e4867100ad/gfbuild-angle-f810e998993290f049bbdad4fae975e4867100ad-Windows_x64_Release.zip"
-curl -L -o angle.zip "${angle_zip_url}"
-unzip -o -j angle.zip "lib/libEGL.dll" "lib/libGLESv2.dll" -d .
-rm angle.zip
+chrome_109_url="https://dl.google.com/release2/chrome/acihtkcueyye3ymoj2afvv7ulzxa_109.0.5414.120/109.0.5414.120_chrome_installer.exe"
+wget "${chrome_109_url}"
+7z x 109.0.5414.120_chrome_installer.exe
+7z e -aoa chrome.7z {Chrome-bin/109.0.5414.120/libEGL.dll,Chrome-bin/109.0.5414.120/libGLESv2.dll}
+rm 109.0.5414.120_chrome_installer.exe
+rm chrome.7z
 
 ffmpeg_version="8.1.1"
-curl -L -o ffmpeg.exe "https://github.com/HCTOrganization/ffmpeg-build/releases/download/ffmpeg-${ffmpeg_version}/ffmpeg-windows-x86_64.exe"
+curl -L -o ffmpeg.exe "https://github.com/HCTOrganization/ffmpeg-build/releases/download/ffmpeg-${ffmpeg_version}/ffmpeg-windows-x86.exe"
 
 makensis installer.nsi
 popd
 
 mkdir -p dist
-mv tango_win_workdir/installer.exe "dist/tango-x86_64-windows.exe"
+mv tango_win_workdir/installer.exe "dist/tango-i686-windows.exe"
 rm -rf tango_win_workdir

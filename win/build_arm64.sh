@@ -39,7 +39,7 @@ rm -rf Tango.iconset
 
 # Build Windows binaries. MSVC target — statically links the MSVC
 # runtime so no mingw DLL bundling is needed.
-cargo build --bin tango --profile release-dist --target x86_64-pc-windows-msvc
+cargo build --bin tango --profile release-dist --target aarch64-pc-windows-msvc
 
 # Build installer.
 mkdir tango_win_workdir
@@ -48,19 +48,27 @@ tools/mako_generate.py "$(dirname "${BASH_SOURCE[0]}")/installer.nsi.mako" >tang
 pushd tango_win_workdir
 
 cp ../tango/icon.ico .
-cp ../target/x86_64-pc-windows-msvc/release-dist/tango.exe .
+cp ../target/aarch64-pc-windows-msvc/release-dist/tango.exe .
 
-angle_zip_url="https://github.com/google/gfbuild-angle/releases/download/github%2Fgoogle%2Fgfbuild-angle%2Ff810e998993290f049bbdad4fae975e4867100ad/gfbuild-angle-f810e998993290f049bbdad4fae975e4867100ad-Windows_x64_Release.zip"
-curl -L -o angle.zip "${angle_zip_url}"
-unzip -o -j angle.zip "lib/libEGL.dll" "lib/libGLESv2.dll" -d .
-rm angle.zip
+chrome_149_url="https://dl.google.com/tag/s/appguid%3D%7B8A69D345-D564-463C-AFF1-A69D9E530F96%7D%26iid%3D%7B9B029E50-463F-4D00-B622-FE96D0D82E97%7D%26browser%3D4%26usagestats%3D0%26appname%3DGoogle%2520Chrome%26needsadmin%3Dtrue%26ap%3Darm64-stable-statsdef_0%26brand%3DGCEA/dl/chrome/install/GoogleChromeStandaloneEnterprise_Arm64.msi"
+wget "${chrome_149_url}"
+7z e -aoa GoogleChromeStandaloneEnterprise_Arm64.msi Binary.GoogleChromeInstaller
+7z x -aoa Binary.GoogleChromeInstaller
+7z e -aoa updater.7z bin/Offline/{a582ca8d-c961-4de4-8491-0d7d2977d020}/{8A69D345-D564-463c-AFF1-A69D9E530F96}/149.0.7827.115_chrome_installer.exe
+7z x 149.0.7827.115_chrome_installer.exe
+7z e -aoa chrome.7z {Chrome-bin/149.0.7827.115/libEGL.dll,Chrome-bin/149.0.7827.115/libGLESv2.dll}
+rm 149.0.7827.115_chrome_installer.exe
+rm chrome.7z
+rm updater.7z
+rm Binary.GoogleChromeInstaller
+rm GoogleChromeStandaloneEnterprise_Arm64.msi
 
 ffmpeg_version="8.1.1"
-curl -L -o ffmpeg.exe "https://github.com/HCTOrganization/ffmpeg-build/releases/download/ffmpeg-${ffmpeg_version}/ffmpeg-windows-x86_64.exe"
+curl -L -o ffmpeg.exe "https://github.com/HCTOrganization/ffmpeg-build/releases/download/ffmpeg-${ffmpeg_version}/ffmpeg-windows-arm64.exe"
 
 makensis installer.nsi
 popd
 
 mkdir -p dist
-mv tango_win_workdir/installer.exe "dist/tango-x86_64-windows.exe"
+mv tango_win_workdir/installer.exe "dist/tango-aarch64-windows.exe"
 rm -rf tango_win_workdir
