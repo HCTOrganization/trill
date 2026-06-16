@@ -178,6 +178,12 @@ pub struct App {
     /// banner being dismissed) holds steady through the dissolve
     /// instead of flashing to the idle handshake line.
     lobby_exit_snapshot: Option<(netplay::Phase, netplay::LobbyState)>,
+    /// Track whether match_ready state has been seen in the current
+    /// netplay attempt, to detect when it transitions from false to true.
+    prev_match_ready: bool,
+    /// Holds the active voice clip being played. When it finishes,
+    /// this becomes None and the underlying audio stream is released.
+    _voice_clip_binding: Option<audio::Binding>,
 }
 
 /// See [`App::screen_enter_scope`].
@@ -354,6 +360,8 @@ impl App {
             screen_enter_scope: EnterScope::Root { dy: ROOT_SLIDE },
             lobby_swap: anim::Transition::swap(false),
             lobby_exit_snapshot: None,
+            prev_match_ready: false,
+            _voice_clip_binding: None,
         };
         app.refresh_loaded();
         let stats_task = app.kick_replay_stats_loader().map(Message::Replays);
@@ -542,6 +550,37 @@ impl App {
             return iced::Task::none();
         }
         iced::Task::done(Message::Netplay(netplay::Message::Uncommit))
+    }
+
+    /// Play the match-ready voice cue when both players are ready.
+    /// Loads the appropriate voice file based on the UI language and
+    /// attempts to play it through the audio backend.
+    fn try_play_match_ready_voice(&mut self) -> iced::Task<Message> {
+        let filename = audio::voice::get_voice_file_path(&self.config.language);
+        
+        match audio::voice::load_voice_file(filename) {
+            Ok(clip) => {
+                // Try to bind the clip to the audio backend
+                match self.audio_binder.bind(Some(Box::new(clip))) {
+                    Ok(binding) => {
+                        // Store the binding so it stays alive while playing
+                        self._voice_clip_binding = Some(binding);
+                        log::info!("playing match-ready voice: {}", filename);
+                        iced::Task::none()
+                    }
+                    Err(audio::BindingError::AlreadyBound) => {
+                        // Audio already playing (perhaps another voice),
+                        // skip this one gracefully
+                        log::debug!("audio already bound, skipping match-ready voice");
+                        iced::Task::none()
+                    }
+                }
+            }
+            Err(e) => {
+                log::warn!("failed to load voice file {}: {}", filename, e);
+                iced::Task::none()
+            }
+        }
     }
 
     /// Build a `protocol::Settings` packet from the App's current
@@ -981,8 +1020,18 @@ impl App {
                 // netplay::State::update::SendLocalSettings makes
                 // unchanged dispatches a no-op.
                 let was_lobby = matches!(self.netplay.phase, netplay::Phase::Lobby { .. });
+                let match_ready_before = self.netplay.lobby.match_ready;
                 let task = self.netplay.update(m).map(Message::Netplay);
                 let became_lobby = !was_lobby && matches!(self.netplay.phase, netplay::Phase::Lobby { .. });
+                let match_ready_after = self.netplay.lobby.match_ready;
+                
+                // Detect transition from not-ready to ready and play voice
+                let play_voice = if !match_ready_before && match_ready_after {
+                    self.try_play_match_ready_voice()
+                } else {
+                    iced::Task::none()
+                };
+                
                 // Opponent just completed the handshake — flash the
                 // taskbar / bounce the dock so the lobby host
                 // notices even if Tango isn't focused. No-op if the
@@ -996,7 +1045,7 @@ impl App {
                 };
                 let resend = self.resend_settings_if_lobby();
                 let uncommit = self.uncommit_if_incompat();
-                iced::Task::batch([task, resend, uncommit, attention])
+                iced::Task::batch([task, resend, uncommit, attention, play_voice])
             }
             Message::PvpSessionBuilt(slot) => {
                 let Some(result) = slot.lock().unwrap().take() else {
