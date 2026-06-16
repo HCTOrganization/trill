@@ -40,6 +40,12 @@ class SessionAttachment:
     offer_sdp: Optional[str] = None
     connection_id: Optional[str] = None
 
+    def __hash__(self):
+        return id(self)
+
+    def __eq__(self, other):
+        return self is other
+
 
 class MatchmakingHub:
     """Manages WebSocket connections and pairs offerers with answerers."""
@@ -196,16 +202,11 @@ async def health():
 
 
 @app.websocket("/ws")
+@app.websocket("/")
 async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(...)):
     """WebSocket endpoint for signaling."""
     if not session_id:
         await websocket.close(code=1008, reason="Missing session_id")
-        return
-    
-    # Geolocation check - restrict to China mainland only (optional, only if header present)
-    country = websocket.headers.get("cf-ipcountry", "")
-    if country and country != "CN":
-        await websocket.close(code=1008, reason="Access denied: Service available in China mainland only")
         return
     
     await websocket.accept()
