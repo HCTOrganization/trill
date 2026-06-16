@@ -278,3 +278,51 @@ jobs:
           tag_name: ${{ github.ref_name }}
           files: |
             ./dist/tango-i686-windows.exe
+
+  release-win32-arm64:
+    runs-on: windows-11-arm
+    needs: create-release
+    env:
+      CMAKE_POLICY_VERSION_MINIMUM: 3.5
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - run: git fetch --tags --force
+
+      - uses: pat-s/always-upload-cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: win32-arm64-msvc-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: arm64
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: aarch64-pc-windows-msvc
+
+      - name: Install Python build deps
+        run: pip install semver==3.0.0-dev3 toml mako
+
+      - name: Build
+        shell: bash
+        run: ./win/build_arm64.sh
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            ./dist/tango-aarch64-windows.exe
