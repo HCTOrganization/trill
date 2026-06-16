@@ -659,7 +659,7 @@ fn settings_netplay<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config
         Choice::new("cnserver".to_string(), t!(lang, "settings-netplay-endpoint-cnserver")),
         Choice::new("tango".to_string(), t!(lang, "settings-netplay-endpoint-tango")),
     ];
-    let selected_preset = None; // No preset selected by default, showing placeholder
+    let selected_preset: Option<Choice<String>> = None; // No preset selected by default, showing placeholder
     
     column![
         labeled::<Message>(
