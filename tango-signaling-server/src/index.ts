@@ -34,6 +34,18 @@ function encodeConnectionId(
 async function getICEServers(
   env: Env,
 ): Promise<tango.signaling.Packet.Hello.IICEServer[]> {
+  // Check for self-hosted TURN server from environment variables
+  // These have priority over Cloudflare TURN service
+  if (env.TURN_ADDR && env.TURN_USER && env.TURN_CREDENTIAL) {
+    return [
+      {
+        urls: [`turn:${env.TURN_ADDR}`],
+        username: env.TURN_USER,
+        credential: env.TURN_CREDENTIAL,
+      },
+    ];
+  }
+
   if (
     !env.CLOUDFLARE_TURN_SERVICE_ID ||
     !env.CLOUDFLARE_TURN_SERVICE_API_TOKEN
