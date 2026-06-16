@@ -1,10 +1,10 @@
 //! Regression suite for the committed golden replays in `tests/golden/`.
 //!
-//! For each `*.tangoreplay`, decode it, look up its local + remote ROMs by
+//! For each `*.t5replay`, decode it, look up its local + remote ROMs by
 //! family/variant against a directory of `*.gba` files, and drive the
 //! replay end-to-end through a stepper + shadow pair. Compute a
 //! determinism fingerprint along the way and compare against the
-//! sidecar `*.tangoreplay.expected` checked in next to each replay.
+//! sidecar `*.t5replay.expected` checked in next to each replay.
 //!
 //! The fingerprint captures:
 //!   - shadow_packets_sha256 -- SHA256 of every shadow-generated remote
@@ -393,7 +393,7 @@ fn run_one(path: &Path, roms: &HashMap<(&'static str, u8), Vec<u8>>, bless: bool
         }
     };
 
-    let expected_path = path.with_extension("tangoreplay.expected");
+    let expected_path = path.with_extension("t5replay.expected");
 
     if bless {
         if let Err(e) = std::fs::write(&expected_path, computed.to_text()) {
@@ -462,7 +462,7 @@ fn golden_replays() {
         .unwrap_or_else(|e| panic!("failed to read {}: {}", golden.display(), e))
         .flatten()
         .map(|e| e.path())
-        .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("tangoreplay"))
+        .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("t5replay"))
         .collect();
     replays.sort();
 

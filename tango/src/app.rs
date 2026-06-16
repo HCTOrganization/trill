@@ -922,7 +922,7 @@ impl App {
                 } else {
                     iced::Task::none()
                 };
-                // PvP sessions write a `.tangoreplay` next to
+                // PvP sessions write a `.t5replay` next to
                 // the saves dir on match end; once the session
                 // clears we want the new file to show up in the
                 // Replays tab without a manual rescan. The

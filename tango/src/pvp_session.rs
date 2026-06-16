@@ -723,7 +723,7 @@ async fn drain_receiver(
 
 /// Open the replay file + write its metadata frame. Filename
 /// format mirrors the legacy app:
-/// `YYYYMMDDhhmmss-<link_code>-<compat>-vs-<opponent>-p<idx>.tangoreplay`.
+/// `YYYYMMDDhhmmss-<link_code>-<compat>-vs-<opponent>-p<idx>.t5replay`.
 #[allow(clippy::too_many_arguments)]
 fn build_replay_writer(
     replays_path: &Path,
@@ -762,7 +762,7 @@ fn build_replay_writer(
         local_player_index + 1
     );
     let safe_name: String = raw_name.chars().filter(|c| !"/\\?%*:|\"<>. ".contains(*c)).collect();
-    let replay_filename = replays_path.join(format!("{safe_name}.tangoreplay"));
+    let replay_filename = replays_path.join(format!("{safe_name}.t5replay"));
     log::info!("pvp: opening replay file {}", replay_filename.display());
 
     let file = std::fs::OpenOptions::new()
