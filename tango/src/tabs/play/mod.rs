@@ -56,9 +56,6 @@ pub enum Message {
     /// Lobby UI: user pressed Unready (Ready button while
     /// already committed). Sends an Uncommit packet.
     Unready,
-    /// Play match-ready voice cue. Triggered when both players are ready
-    /// and the match is about to start.
-    PlayMatchReadyVoice,
     /// Soft-disable sentinel for widgets that don't accept a
     /// `None` handler in iced 0.14 (pick_list, slider). The
     /// lobby reroutes match-type / frame-delay changes here in
@@ -471,11 +468,6 @@ impl State {
             Message::SetBlindSetup(v) => Some(Effect::Netplay(crate::netplay::Message::SetBlindSetup(v))),
             Message::Ready => Some(Effect::ReadyWithSave),
             Message::Unready => Some(Effect::Netplay(crate::netplay::Message::Uncommit)),
-            Message::PlayMatchReadyVoice => {
-                // Voice playback is handled at the App level where we have
-                // access to the audio backend. This message is just a marker.
-                None
-            }
             Message::SaveViewAction(action) => {
                 use save_view::Action as A;
                 let sv_task = self.save_view.apply(&action);

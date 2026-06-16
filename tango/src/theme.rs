@@ -1,4 +1,4 @@
-//! Tango's iced `Theme` builder. The dark/light palettes are
+//! Trill's iced `Theme` builder. The dark/light palettes are
 //! custom — not iced's stock Light/Dark — so they live here
 //! rather than picking from `iced::Theme::DARK` etc. Used by
 //! `App::theme` (live theme for the window chrome) and by any
@@ -30,7 +30,7 @@ pub const SELECT_YELLOW: iced::Color =
     iced::Color::from_rgb(0xff as f32 / 255.0, 0xd2 as f32 / 255.0, 0x3d as f32 / 255.0);
 
 pub fn theme_for(config: &config::Config) -> Theme {
-    // Tango palettes — these aren't tweaks of iced's stock Light /
+    // Trill palettes — these aren't tweaks of iced's stock Light /
     // Dark anymore. The dark variant keeps the Battle Network
     // Legacy Collection structure (glowing panel frames, gold
     // selection, the drawn cyberworld backdrop) but runs it in
@@ -44,7 +44,7 @@ pub fn theme_for(config: &config::Config) -> Theme {
             iced::theme::Palette {
                 background: iced::Color::from_rgb(0xf3 as f32 / 255.0, 0xee as f32 / 255.0, 0xdc as f32 / 255.0),
                 text: iced::Color::from_rgb(0x14 as f32 / 255.0, 0x22 as f32 / 255.0, 0x34 as f32 / 255.0),
-                primary: TRILL_YELLOW_DARK,
+                primary: TRILL_YELLOW_LIGHT,
                 success: TRILL_YELLOW_LIGHT,
                 warning: iced::Color::from_rgb(0xb7 as f32 / 255.0, 0x7e as f32 / 255.0, 0x33 as f32 / 255.0),
                 danger: iced::Color::from_rgb(0xd1 as f32 / 255.0, 0x3a as f32 / 255.0, 0x3a as f32 / 255.0),

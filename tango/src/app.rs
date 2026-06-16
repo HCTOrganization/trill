@@ -178,15 +178,6 @@ pub struct App {
     /// banner being dismissed) holds steady through the dissolve
     /// instead of flashing to the idle handshake line.
     lobby_exit_snapshot: Option<(netplay::Phase, netplay::LobbyState)>,
-    /// Track whether match_ready state has been seen in the current
-    /// netplay attempt, to detect when it transitions from false to true.
-    prev_match_ready: bool,
-    /// Holds the active voice clip being played. When it finishes,
-    /// this becomes None and the underlying audio stream is released.
-    _voice_clip_binding: Option<audio::Binding>,
-    /// Time when voice playback started, used to auto-release the binding
-    /// after a reasonable maximum duration (e.g., 5 seconds)
-    voice_started_at: Option<std::time::Instant>,
 }
 
 /// See [`App::screen_enter_scope`].
@@ -363,9 +354,6 @@ impl App {
             screen_enter_scope: EnterScope::Root { dy: ROOT_SLIDE },
             lobby_swap: anim::Transition::swap(false),
             lobby_exit_snapshot: None,
-            prev_match_ready: false,
-            _voice_clip_binding: None,
-            voice_started_at: None,
         };
         app.refresh_loaded();
         let stats_task = app.kick_replay_stats_loader().map(Message::Replays);
@@ -554,55 +542,6 @@ impl App {
             return iced::Task::none();
         }
         iced::Task::done(Message::Netplay(netplay::Message::Uncommit))
-    }
-
-    /// Play the match-ready voice cue when both players are ready.
-    /// Loads the appropriate voice file based on the UI language and
-    /// attempts to play it through the audio backend.
-    fn try_play_match_ready_voice(&mut self) -> iced::Task<Message> {
-        let filename = audio::voice::get_voice_file_path(&self.config.language);
-        
-        match audio::voice::load_voice_file(filename) {
-            Ok(player) => {
-                // Try to bind the player to the audio backend
-                match self.audio_binder.bind(Some(Box::new(player))) {
-                    Ok(binding) => {
-                        // Store the binding so it stays alive while playing
-                        self._voice_clip_binding = Some(binding);
-                        self.voice_started_at = Some(std::time::Instant::now());
-                        log::info!("playing match-ready voice: {}", filename);
-                        iced::Task::none()
-                    }
-                    Err(audio::BindingError::AlreadyBound) => {
-                        // Audio already playing (perhaps game audio),
-                        // skip this one gracefully
-                        log::debug!("audio already bound, skipping match-ready voice");
-                        iced::Task::none()
-                    }
-                }
-            }
-            Err(e) => {
-                log::warn!("failed to load voice file {}: {}", filename, e);
-                iced::Task::none()
-            }
-        }
-    }
-
-    /// Release the voice binding if it's still active and has expired.
-    /// Voice clips are typically very short (< 2 seconds), so we release
-    /// after a maximum of 3 seconds to ensure game audio can bind.
-    fn release_voice_binding_if_expired(&mut self) {
-        if let Some(started) = self.voice_started_at {
-            let elapsed = started.elapsed();
-            // Release after 3 seconds max, or keep if very recent
-            if elapsed > std::time::Duration::from_secs(3) {
-                if self._voice_clip_binding.is_some() {
-                    self._voice_clip_binding = None;
-                    self.voice_started_at = None;
-                    log::debug!("released voice binding after {:.2}s", elapsed.as_secs_f64());
-                }
-            }
-        }
     }
 
     /// Build a `protocol::Settings` packet from the App's current
@@ -881,10 +820,6 @@ impl App {
     }
 
     fn update_inner(&mut self, message: Message) -> iced::Task<Message> {
-        // Try to release voice binding if it's expired
-        // This allows game audio to bind after voice finishes
-        self.release_voice_binding_if_expired();
-        
         match message {
             Message::NoOp => iced::Task::none(),
             Message::AnimTick => iced::Task::none(),
@@ -1046,18 +981,8 @@ impl App {
                 // netplay::State::update::SendLocalSettings makes
                 // unchanged dispatches a no-op.
                 let was_lobby = matches!(self.netplay.phase, netplay::Phase::Lobby { .. });
-                let match_ready_before = self.netplay.lobby.match_ready;
                 let task = self.netplay.update(m).map(Message::Netplay);
                 let became_lobby = !was_lobby && matches!(self.netplay.phase, netplay::Phase::Lobby { .. });
-                let match_ready_after = self.netplay.lobby.match_ready;
-                
-                // Detect transition from not-ready to ready and play voice
-                let play_voice = if !match_ready_before && match_ready_after {
-                    self.try_play_match_ready_voice()
-                } else {
-                    iced::Task::none()
-                };
-                
                 // Opponent just completed the handshake — flash the
                 // taskbar / bounce the dock so the lobby host
                 // notices even if Tango isn't focused. No-op if the
@@ -1071,7 +996,7 @@ impl App {
                 };
                 let resend = self.resend_settings_if_lobby();
                 let uncommit = self.uncommit_if_incompat();
-                iced::Task::batch([task, resend, uncommit, attention, play_voice])
+                iced::Task::batch([task, resend, uncommit, attention])
             }
             Message::PvpSessionBuilt(slot) => {
                 let Some(result) = slot.lock().unwrap().take() else {

@@ -4,7 +4,6 @@
 //! to the host rate.
 
 pub mod sdl;
-pub mod voice;
 
 pub const NUM_CHANNELS: usize = 2;
 pub const SAMPLES: usize = 512;
