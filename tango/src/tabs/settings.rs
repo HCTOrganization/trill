@@ -35,6 +35,46 @@ fn relay_mode_choice(lang: &LanguageIdentifier, mode: config::RelayMode) -> Choi
     )
 }
 
+/// Endpoint presets for the netplay settings combobox.
+fn endpoint_preset_choice(preset: &str) -> Choice<String> {
+    Choice::new(preset.to_string(), preset.to_string())
+}
+
+/// Endpoint preset definitions with their corresponding URLs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EndpointPreset {
+    Default,
+    CnServer,
+    Tango,
+}
+
+impl EndpointPreset {
+    pub fn url(&self) -> &'static str {
+        match self {
+            EndpointPreset::Default => "wss://matchmaking.trill.hikaricalyx.com",
+            EndpointPreset::CnServer => "wss://matchmakingcn.trill.hikaricalyx.cn",
+            EndpointPreset::Tango => "wss://matchmaking.tango.n1gp.net",
+        }
+    }
+
+    pub fn id(&self) -> &'static str {
+        match self {
+            EndpointPreset::Default => "default",
+            EndpointPreset::CnServer => "cnserver",
+            EndpointPreset::Tango => "tango",
+        }
+    }
+
+    pub fn from_id(id: &str) -> Option<Self> {
+        match id {
+            "default" => Some(EndpointPreset::Default),
+            "cnserver" => Some(EndpointPreset::CnServer),
+            "tango" => Some(EndpointPreset::Tango),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SettingsTab {
     #[default]
@@ -83,6 +123,8 @@ pub enum Message {
     NicknameChanged(String),
     ToggleStreamerMode(bool),
     MatchmakingEndpointChanged(String),
+    /// Netplay endpoint preset picked from combobox.
+    EndpointPresetChanged(String),
     /// Netplay frame-delay slider moved. Persisted to `config.frame_delay`;
     /// it's this side's local presentation lag, applied at the next match start
     /// (or live via the in-match footer slider).
@@ -198,6 +240,14 @@ impl State {
             Message::NicknameChanged(s) => Some(ConfigChange::Nickname(s)),
             Message::ToggleStreamerMode(b) => Some(ConfigChange::StreamerMode(b)),
             Message::MatchmakingEndpointChanged(s) => Some(ConfigChange::MatchmakingEndpoint(s)),
+            Message::EndpointPresetChanged(s) => {
+                // When a preset is selected, update the matchmaking endpoint
+                if let Some(preset) = EndpointPreset::from_id(&s) {
+                    Some(ConfigChange::MatchmakingEndpoint(preset.url().to_string()))
+                } else {
+                    None
+                }
+            }
             Message::FrameDelayChanged(v) => Some(ConfigChange::FrameDelay(v)),
             Message::RelayModeChanged(m) => Some(ConfigChange::RelayMode(m)),
             Message::PatchRepoChanged(s) => Some(ConfigChange::PatchRepo(s)),
@@ -602,6 +652,15 @@ fn settings_netplay<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config
     let frame_delay = config
         .frame_delay
         .clamp(tango_pvp::battle::MIN_FRAME_DELAY, tango_pvp::battle::MAX_FRAME_DELAY);
+    
+    // Build endpoint preset options
+    let preset_options: Vec<Choice<String>> = vec![
+        Choice::new("default".to_string(), t!(lang, "settings-netplay-endpoint-default")),
+        Choice::new("cnserver".to_string(), t!(lang, "settings-netplay-endpoint-cnserver")),
+        Choice::new("tango".to_string(), t!(lang, "settings-netplay-endpoint-tango")),
+    ];
+    let selected_preset = None; // No preset selected by default, showing placeholder
+    
     column![
         labeled::<Message>(
             t!(lang, "settings-matchmaking-endpoint"),
@@ -611,6 +670,14 @@ fn settings_netplay<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config
                 .width(Length::Fixed(480.0))
                 .style(widgets::chunky_text_input),
         ),
+        labeled::<Message>(t!(lang, "settings-netplay-endpoint-preset"), {
+            pick_list(preset_options, selected_preset, |c: Choice<String>| {
+                Message::EndpointPresetChanged(c.value)
+            })
+            .placeholder(t!(lang, "settings-netplay-endpoint-preset"))
+            .padding(STANDARD_PADDING)
+            .style(widgets::chunky_pick_list)
+        }),
         labeled::<Message>(
             t!(lang, "settings-netplay-frame-delay"),
             row![

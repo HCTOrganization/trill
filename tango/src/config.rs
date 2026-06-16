@@ -10,7 +10,7 @@ const QUALIFIER: &str = "com";
 const ORGANIZATION: &str = "hikaricalyx";
 const APPLICATION: &str = "trill";
 
-pub const DEFAULT_MATCHMAKING_ENDPOINT: &str = "ws://matchmaking.trill.hikaricalyx.com";
+pub const DEFAULT_MATCHMAKING_ENDPOINT: &str = "wss://matchmaking.trill.hikaricalyx.com";
 pub const DEFAULT_PATCH_REPO: &str = "https://patches.trill.hikaricalyx.com";
 
 fn default_matchmaking_endpoint() -> String {
