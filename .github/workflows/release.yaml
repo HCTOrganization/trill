@@ -324,15 +324,22 @@ jobs:
           $ExtractPath = "C:\ImageMagick"
           Invoke-WebRequest -Uri $ImageMagickUrl -OutFile $ArchivePath
           7z x $ArchivePath -o$ExtractPath
+          # Find magick.exe in the extracted directory
+          $MagickPath = Get-ChildItem -Path $ExtractPath -Name magick.exe -Recurse | Select-Object -First 1
+          if ($MagickPath) {
+            $MagickDir = Split-Path -Parent "$ExtractPath\$MagickPath"
+            Write-Host "Found magick at: $MagickDir"
+            Add-Content $env:GITHUB_ENV "MAGICK_EXE=$MagickDir\magick.exe"
+            Add-Content $env:GITHUB_ENV "MAGICK_CONFIGURE_PATH=$MagickDir"
+          } else {
+            Write-Host "magick.exe not found, listing contents:"
+            Get-ChildItem -Path $ExtractPath -Recurse | Select-Object -First 20
+            exit 1
+          }
 
       - name: Build
         shell: bash
-        env:
-          MAGICK_EXE: "C:\\ImageMagick\\magick.exe"
-          MAGICK_CONFIGURE_PATH: "C:\\ImageMagick"
-        run: |
-          export PATH="C:\\ImageMagick:$PATH"
-          ./win/build_arm64.sh
+        run: ./win/build_arm64.sh
 
       - uses: softprops/action-gh-release@v2
         with:
