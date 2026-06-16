@@ -16,8 +16,11 @@ use iced::Theme;
 /// accidentally drift to a different shade. (The Legacy
 /// Collection restyle briefly ran the PET cyan here; the
 /// structure stayed, the color came back home.)
-pub const TANGO_GREEN: iced::Color =
-    iced::Color::from_rgb(0x4c as f32 / 255.0, 0xaf as f32 / 255.0, 0x50 as f32 / 255.0);
+pub const TRILL_YELLOW_LIGHT: iced::Color =
+    iced::Color::from_rgb(0xff as f32 / 255.0, 0xf2 as f32 / 255.0, 0xa7 as f32 / 255.0);
+
+pub const TRILL_YELLOW_DARK: iced::Color =
+    iced::Color::from_rgb(0xdc as f32 / 255.0, 0xb2 as f32 / 255.0, 0x7a as f32 / 255.0);
 
 /// The Legacy Collection's selection gold — BNLC paints the picked
 /// list row / focused thumbnail in this yellow with dark ink text.
@@ -41,8 +44,8 @@ pub fn theme_for(config: &config::Config) -> Theme {
             iced::theme::Palette {
                 background: iced::Color::from_rgb(0xf3 as f32 / 255.0, 0xee as f32 / 255.0, 0xdc as f32 / 255.0),
                 text: iced::Color::from_rgb(0x14 as f32 / 255.0, 0x22 as f32 / 255.0, 0x34 as f32 / 255.0),
-                primary: TANGO_GREEN,
-                success: TANGO_GREEN,
+                primary: TRILL_YELLOW_LIGHT,
+                success: TRILL_YELLOW_LIGHT,
                 warning: iced::Color::from_rgb(0xb7 as f32 / 255.0, 0x7e as f32 / 255.0, 0x33 as f32 / 255.0),
                 danger: iced::Color::from_rgb(0xd1 as f32 / 255.0, 0x3a as f32 / 255.0, 0x3a as f32 / 255.0),
             },
@@ -63,8 +66,8 @@ pub fn theme_for(config: &config::Config) -> Theme {
                 // (the old cyan, then green) casts its hue onto
                 // every surface mixed from it.
                 text: iced::Color::from_rgb(0xec as f32 / 255.0, 0xee as f32 / 255.0, 0xed as f32 / 255.0),
-                primary: TANGO_GREEN,
-                success: TANGO_GREEN,
+                primary: TRILL_YELLOW_DARK,
+                success: TRILL_YELLOW_DARK,
                 warning: iced::Color::from_rgb(0xff as f32 / 255.0, 0xb5 as f32 / 255.0, 0x47 as f32 / 255.0),
                 danger: iced::Color::from_rgb(0xff as f32 / 255.0, 0x52 as f32 / 255.0, 0x52 as f32 / 255.0),
             },
