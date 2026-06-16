@@ -34,15 +34,23 @@ cargo build --bin tango --profile release-dist --target x86_64-pc-windows-msvc
 
 # Download and install Nsis7z plugin before building installer
 nsis7z_url="https://nsis.sourceforge.io/mediawiki/images/6/69/Nsis7z_19.00.7zPlugins/x86-unicode/nsis7z.dll"
-nsis_plugins_dir="${PROGRAMFILES}/NSIS/Plugins/x86-unicode"
-if [ ! -d "$nsis_plugins_dir" ]; then
-    # Try alternate NSIS path for different installations
-    nsis_plugins_dir="${PROGRAMFILES(X86)}/NSIS/Plugins/x86-unicode"
+nsis_plugins_dir=""
+
+# Try to find NSIS installation
+if [ -d "${PROGRAMFILES}/NSIS/Plugins/x86-unicode" ]; then
+    nsis_plugins_dir="${PROGRAMFILES}/NSIS/Plugins/x86-unicode"
+elif [ -d "$(cygpath 'C:\Program Files (x86)')/NSIS/Plugins/x86-unicode" ]; then
+    nsis_plugins_dir="$(cygpath 'C:\Program Files (x86)')/NSIS/Plugins/x86-unicode"
+elif [ -d "/c/Program Files (x86)/NSIS/Plugins/x86-unicode" ]; then
+    nsis_plugins_dir="/c/Program Files (x86)/NSIS/Plugins/x86-unicode"
 fi
-if [ ! -d "$nsis_plugins_dir" ]; then
-    echo "Warning: NSIS plugins directory not found. Attempting to create it."
-    mkdir -p "$nsis_plugins_dir"
+
+if [ -z "$nsis_plugins_dir" ]; then
+    echo "Warning: NSIS plugins directory not found. Attempting to create default location."
+    nsis_plugins_dir="/c/Program Files (x86)/NSIS/Plugins/x86-unicode"
 fi
+
+mkdir -p "$nsis_plugins_dir"
 curl -L -o nsis7z.dll "${nsis7z_url}"
 cp nsis7z.dll "$nsis_plugins_dir/"
 
