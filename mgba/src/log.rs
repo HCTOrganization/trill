@@ -92,7 +92,7 @@ impl Logger {
 
         Self {
             logger: mgba_sys::mLogger {
-                log: Some(c_log),
+                log: Some(c_log as unsafe extern "C" fn(*mut mgba_sys::mLogger, i32, mgba_sys::mLogLevel, *const std::os::raw::c_char, VaListArg)),
                 filter: log_filter.as_ref() as *const _ as *mut _,
             },
             _log_filter: log_filter,
