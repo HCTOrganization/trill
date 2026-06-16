@@ -13,6 +13,7 @@ members = [
     "tango-pvp",
     "tango-replaytool",
     "tango-signaling",
+    "tango-signaling-server-rs",
 ]
 
 # `release` keeps Cargo's defaults (lto = false, codegen-units = 16) so

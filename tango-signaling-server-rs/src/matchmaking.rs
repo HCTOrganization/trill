@@ -67,6 +67,7 @@ impl Server {
     ) -> anyhow::Result<()> {
         let (mut tx, mut rx) = ws.split();
 
+        // Get ICE servers
         let ice_servers = if let Some(backend) = self.iceconfig_backend.as_ref() {
             match tokio::time::timeout(ICECONFIG_TIMEOUT, backend.get(&remote_ip))
                 .await
@@ -102,6 +103,7 @@ impl Server {
                 .collect::<Vec<_>>()
         });
 
+        // Send hello message with ICE servers
         tokio::time::timeout(
             TX_TIMEOUT,
             tx.send(tungstenite::Message::Binary(
@@ -115,16 +117,20 @@ impl Server {
         )
         .await??;
 
-        let tx = std::sync::Arc::new(tokio::sync::Mutex::new(tx));
+        let tx = Arc::new(tokio::sync::Mutex::new(tx));
         let mut ping_timer = tokio::time::interval(PING_TIMEOUT);
 
+        // Main event loop
         loop {
             tokio::select! {
                 _ = ping_timer.tick() => {
                     let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?;
                     let mut buf = vec![];
                     buf.write_u64::<byteorder::LittleEndian>(now.as_millis() as u64)?;
-                    tokio::time::timeout(TX_TIMEOUT, tx.lock().await.send(tungstenite::Message::Ping(buf))).await??;
+                    let _ = tokio::time::timeout(
+                        TX_TIMEOUT,
+                        tx.lock().await.send(tungstenite::Message::Ping(buf))
+                    ).await;
                 }
 
                 msg = tokio::time::timeout(RX_TIMEOUT, rx.try_next()) => {
@@ -133,14 +139,13 @@ impl Server {
                             match tango_signaling::proto::signaling::Packet::decode(d.as_slice())?.which {
                                 Some(tango_signaling::proto::signaling::packet::Which::Start(start)) => {
                                     self.handle_start(&tx, session_id, start).await?;
-                                    continue;
-                                },
+                                }
                                 Some(tango_signaling::proto::signaling::packet::Which::Answer(answer)) => {
                                     self.handle_answer(&tx, session_id, answer).await?;
                                     return Ok(());
-                                },
+                                }
                                 Some(tango_signaling::proto::signaling::packet::Which::Ping(_)) => {
-                                    tokio::time::timeout(
+                                    let _ = tokio::time::timeout(
                                         TX_TIMEOUT,
                                         tx.lock().await.send(tungstenite::Message::Binary(
                                             tango_signaling::proto::signaling::Packet {
@@ -150,21 +155,21 @@ impl Server {
                                             }
                                             .encode_to_vec(),
                                         )),
-                                    )
-                                    .await??;
-                                    continue;
-                                },
-                                m => anyhow::bail!("unexpected message: {:?}", m),
+                                    ).await;
+                                }
+                                m => {
+                                    log::warn!("unexpected message: {:?}", m);
+                                }
                             }
                         }
                         Some(tungstenite::Message::Pong(_)) => {
-                            continue;
+                            // Pong received, continue
                         }
                         Some(tungstenite::Message::Close(_)) | None => {
                             return Ok(());
                         }
                         m => {
-                            anyhow::bail!("unexpected message: {:?}", m);
+                            log::warn!("unexpected message: {:?}", m);
                         }
                     }
                 }
@@ -174,7 +179,7 @@ impl Server {
 
     async fn handle_start(
         &self,
-        tx: &std::sync::Arc<tokio::sync::Mutex<futures_util::stream::SplitSink<hyper_tungstenite::WebSocketStream<hyper::upgrade::Upgraded>, tungstenite::Message>>>,
+        tx: &Arc<tokio::sync::Mutex<WebSocketTx>>,
         session_id: &str,
         start: tango_signaling::proto::signaling::packet::Start,
     ) -> anyhow::Result<()> {
@@ -184,18 +189,24 @@ impl Server {
         if let Some(offerer) = offerers.get(session_id) {
             // There's an existing offerer
             if connection_id.is_some() && connection_id == offerer.connection_id {
-                // Same connection_id: this is a reconnecting offerer with a fresh offer
-                // Replace the stale offer
-                offerers.insert(
+                // Same connection_id: reconnecting offerer with fresh offer
+                // Replace stale offer and evict old socket
+                let old_offerer = offerers.insert(
                     session_id.to_string(),
-                    OffererAttachment {
+                    OffererInfo {
                         offer_sdp: start.offer_sdp,
                         connection_id: connection_id.clone(),
+                        ws_tx: tx.clone(),
                     },
                 );
+
+                if let Some(old) = old_offerer {
+                    // Clear the stale socket's offer and close it
+                    let _ = tokio::time::timeout(TX_TIMEOUT, old.ws_tx.lock().await.close()).await;
+                }
             } else {
-                // Different peer: send the existing offer so it can answer
-                tokio::time::timeout(
+                // Different peer: send existing offer so it can answer
+                let _ = tokio::time::timeout(
                     TX_TIMEOUT,
                     tx.lock().await.send(tungstenite::Message::Binary(
                         tango_signaling::proto::signaling::Packet {
@@ -207,16 +218,16 @@ impl Server {
                         }
                         .encode_to_vec(),
                     )),
-                )
-                .await??;
+                ).await;
             }
         } else {
             // No offerer yet: become the offerer
             offerers.insert(
                 session_id.to_string(),
-                OffererAttachment {
+                OffererInfo {
                     offer_sdp: start.offer_sdp,
                     connection_id,
+                    ws_tx: tx.clone(),
                 },
             );
         }
@@ -226,34 +237,35 @@ impl Server {
 
     async fn handle_answer(
         &self,
-        tx: &std::sync::Arc<tokio::sync::Mutex<futures_util::stream::SplitSink<hyper_tungstenite::WebSocketStream<hyper::upgrade::Upgraded>, tungstenite::Message>>>,
+        tx: &Arc<tokio::sync::Mutex<WebSocketTx>>,
         session_id: &str,
         answer: tango_signaling::proto::signaling::packet::Answer,
     ) -> anyhow::Result<()> {
         let mut offerers = self.offerers.lock().await;
-        
+
         if let Some(offerer) = offerers.remove(session_id) {
-            // Get the offerer's tx from sessions
-            let mut sessions = self.sessions.lock().await;
-            if let Some(session) = sessions.remove(session_id) {
-                let mut offerer_tx = session.offerer_tx.lock().await;
-                let _ = tokio::time::timeout(
-                    TX_TIMEOUT,
-                    offerer_tx.send(tungstenite::Message::Binary(
-                        tango_signaling::proto::signaling::Packet {
-                            which: Some(tango_signaling::proto::signaling::packet::Which::Answer(
-                                tango_signaling::proto::signaling::packet::Answer { sdp: answer.sdp },
-                            )),
-                        }
-                        .encode_to_vec(),
-                    )),
-                )
-                .await;
-                let _ = tokio::time::timeout(TX_TIMEOUT, offerer_tx.close()).await;
-            }
+            // Send answer to offerer
+            let mut offerer_tx = offerer.ws_tx.lock().await;
+            let _ = tokio::time::timeout(
+                TX_TIMEOUT,
+                offerer_tx.send(tungstenite::Message::Binary(
+                    tango_signaling::proto::signaling::Packet {
+                        which: Some(tango_signaling::proto::signaling::packet::Which::Answer(
+                            tango_signaling::proto::signaling::packet::Answer { sdp: answer.sdp },
+                        )),
+                    }
+                    .encode_to_vec(),
+                )),
+            ).await;
+            
+            // Close offerer connection
+            let _ = tokio::time::timeout(TX_TIMEOUT, offerer_tx.close()).await;
         }
 
-        let _ = tokio::time::timeout(TX_TIMEOUT, tx.lock().await.close()).await;
+        // Close answerer connection
+        let mut answerer_tx = tx.lock().await;
+        let _ = tokio::time::timeout(TX_TIMEOUT, answerer_tx.close()).await;
+
         Ok(())
     }
 }
