@@ -70,6 +70,9 @@ pub const EXPECTED_PROTOCOL_VERSION: u8 = 0x3a;
 async fn handle_matchmaking_request(
     mut request: hyper::Request<hyper::Body>,
 ) -> Result<hyper::Response<hyper::Body>, anyhow::Error> {
+    let query = request.uri().query().unwrap_or("");
+    log::debug!("matchmaking request: path={}, query={}", request.uri().path(), query);
+
     let remote_ip = if let Some(remote_ip) = request
         .data::<State>()
         .unwrap()
@@ -78,6 +81,7 @@ async fn handle_matchmaking_request(
     {
         remote_ip
     } else {
+        log::error!("could not determine remote IP");
         return Ok(hyper::Response::builder()
             .status(hyper::StatusCode::INTERNAL_SERVER_ERROR)
             .body(hyper::Body::from("internal error"))
@@ -90,8 +94,10 @@ async fn handle_matchmaking_request(
             .find(|(k, _)| k == "session_id")
             .map(|(_, v)| v)
     }) {
+        log::debug!("session_id: {}", session_id);
         session_id
     } else {
+        log::warn!("missing session_id");
         return Ok(hyper::Response::builder()
             .status(hyper::StatusCode::BAD_REQUEST)
             .body(hyper::Body::from(
@@ -110,6 +116,7 @@ async fn handle_matchmaking_request(
         .and_then(|v| u32::from_str_radix(v, 16).ok());
     if let Some(protocol_version) = protocol_version {
         if protocol_version as u8 != EXPECTED_PROTOCOL_VERSION {
+            log::warn!("protocol version mismatch: got {:x}, expected {:x}", protocol_version as u8, EXPECTED_PROTOCOL_VERSION);
             return Ok(hyper::Response::builder()
                 .status(hyper::StatusCode::BAD_REQUEST)
                 .body(hyper::Body::from(
@@ -127,6 +134,7 @@ async fn handle_matchmaking_request(
     }
 
     if !hyper_tungstenite::is_upgrade_request(&request) {
+        log::warn!("not an upgrade request");
         return Ok(hyper::Response::builder()
             .status(hyper::StatusCode::BAD_REQUEST)
             .body(hyper::Body::from(
@@ -137,6 +145,8 @@ async fn handle_matchmaking_request(
             ))
             .unwrap());
     }
+
+    log::info!("upgrading to websocket for session {}", session_id);
 
     let (response, websocket) = hyper_tungstenite::upgrade(
         &mut request,
@@ -157,12 +167,16 @@ async fn handle_matchmaking_request(
             }
         };
 
+        log::info!("websocket connected for session {}", session_id);
+
         if let Err(e) = matchmaking_server
             .handle_stream(websocket, remote_ip, &session_id)
             .await
         {
             log::error!("error in websocket connection: {}", e);
         }
+
+        log::info!("websocket closed for session {}", session_id);
     });
 
     Ok(response)

@@ -1,0 +1,45 @@
+# Workerd configuration for local VPS deployment
+# This mimics Cloudflare Workers environment
+
+[env.production]
+name = "tango-signaling-server"
+main = "src/index.ts"
+compatibility_date = "2026-05-11"
+
+# Durable Objects configuration
+[[env.production.durable_objects.bindings]]
+name = "MATCHMAKING"
+class_name = "MatchmakingHub"
+script_name = "tango-signaling-server"
+
+# SQLite migration
+[[env.production.migrations]]
+tag = "v1"
+new_sqlite_classes = ["MatchmakingHub"]
+
+# Server listening configuration
+[env.production.server]
+ip = "0.0.0.0"
+port = 8787
+https = false
+
+# For production with HTTPS, use nginx/caddy as reverse proxy
+
+[env.development]
+name = "tango-signaling-server-dev"
+main = "src/index.ts"
+compatibility_date = "2026-05-11"
+
+[[env.development.durable_objects.bindings]]
+name = "MATCHMAKING"
+class_name = "MatchmakingHub"
+script_name = "tango-signaling-server-dev"
+
+[[env.development.migrations]]
+tag = "v1"
+new_sqlite_classes = ["MatchmakingHub"]
+
+[env.development.server]
+ip = "127.0.0.1"
+port = 8787
+https = false

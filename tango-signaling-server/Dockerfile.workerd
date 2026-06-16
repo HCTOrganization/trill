@@ -1,0 +1,51 @@
+# Multi-stage build for workerd deployment
+FROM node:20-bullseye as builder
+
+WORKDIR /build
+
+# Copy proto files first
+COPY ../tango-signaling/src/proto ./proto-src/
+COPY package*.json tsconfig.json ./
+COPY src ./src/
+
+# Install dependencies
+RUN npm ci
+
+# Build protocol buffers
+RUN npm run proto
+
+# Generate Cloudflare types
+RUN npm run typecheck || true
+
+
+FROM debian:bullseye-slim
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download workerd binary
+RUN wget -q https://github.com/cloudflare/workerd/releases/download/v1.20241203.0/workerd-linux-64 \
+    -O /usr/local/bin/workerd && \
+    chmod +x /usr/local/bin/workerd
+
+WORKDIR /app
+
+# Copy built artifacts
+COPY --from=builder /build ./
+COPY workerd.toml ./
+
+# Create non-root user
+RUN useradd -r -s /bin/false workerd
+
+USER workerd
+
+EXPOSE 8787
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8787/ok || exit 1
+
+# Run workerd
+CMD ["workerd", "--config", "workerd.toml", "--env", "production"]

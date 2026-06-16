@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  workerd:
+    build:
+      context: .
+      dockerfile: Dockerfile.workerd
+    container_name: tango-signaling-server
+    ports:
+      - "8787:8787"
+    environment:
+      # TURN server (self-hosted)
+      - TURN_ADDR=${TURN_ADDR:-}
+      - TURN_USER=${TURN_USER:-}
+      - TURN_CREDENTIAL=${TURN_CREDENTIAL:-}
+      
+      # Or Cloudflare TURN service
+      - CLOUDFLARE_TURN_SERVICE_ID=${CLOUDFLARE_TURN_SERVICE_ID:-}
+      - CLOUDFLARE_TURN_SERVICE_API_TOKEN=${CLOUDFLARE_TURN_SERVICE_API_TOKEN:-}
+    volumes:
+      # Persist durable object data
+      - workerd_data:/root/.workerd
+    restart: unless-stopped
+    networks:
+      - tango-network
+    # Resource limits
+    mem_limit: 512m
+    cpus: "1"
+
+  nginx:
+    image: nginx:latest
+    container_name: tango-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      - workerd
+    restart: unless-stopped
+    networks:
+      - tango-network
+
+volumes:
+  workerd_data:
+  nginx_cache:
+
+networks:
+  tango-network:
+    driver: bridge

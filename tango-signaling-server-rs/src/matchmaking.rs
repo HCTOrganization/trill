@@ -65,6 +65,7 @@ impl Server {
         remote_ip: std::net::IpAddr,
         session_id: &str,
     ) -> anyhow::Result<()> {
+        log::info!("handle_stream_inner starting for session {}", session_id);
         let (mut tx, mut rx) = ws.split();
 
         // Get ICE servers
@@ -81,6 +82,7 @@ impl Server {
                 }
             }
         } else {
+            log::debug!("no iceconfig backend configured");
             None
         };
 
@@ -103,6 +105,8 @@ impl Server {
                 .collect::<Vec<_>>()
         });
 
+        log::debug!("sending hello with {} ice servers", ice_servers.len());
+
         // Send hello message with ICE servers
         tokio::time::timeout(
             TX_TIMEOUT,
@@ -120,10 +124,13 @@ impl Server {
         let tx = Arc::new(tokio::sync::Mutex::new(tx));
         let mut ping_timer = tokio::time::interval(PING_TIMEOUT);
 
+        log::debug!("entering main event loop for session {}", session_id);
+
         // Main event loop
         loop {
             tokio::select! {
                 _ = ping_timer.tick() => {
+                    log::trace!("sending ping");
                     let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?;
                     let mut buf = vec![];
                     buf.write_u64::<byteorder::LittleEndian>(now.as_millis() as u64)?;
@@ -136,15 +143,19 @@ impl Server {
                 msg = tokio::time::timeout(RX_TIMEOUT, rx.try_next()) => {
                     match msg?? {
                         Some(tungstenite::Message::Binary(d)) => {
+                            log::trace!("received binary message, {} bytes", d.len());
                             match tango_signaling::proto::signaling::Packet::decode(d.as_slice())?.which {
                                 Some(tango_signaling::proto::signaling::packet::Which::Start(start)) => {
+                                    log::info!("received start message");
                                     self.handle_start(&tx, session_id, start).await?;
                                 }
                                 Some(tango_signaling::proto::signaling::packet::Which::Answer(answer)) => {
+                                    log::info!("received answer message");
                                     self.handle_answer(&tx, session_id, answer).await?;
                                     return Ok(());
                                 }
                                 Some(tango_signaling::proto::signaling::packet::Which::Ping(_)) => {
+                                    log::trace!("received ping, sending pong");
                                     let _ = tokio::time::timeout(
                                         TX_TIMEOUT,
                                         tx.lock().await.send(tungstenite::Message::Binary(
@@ -163,9 +174,10 @@ impl Server {
                             }
                         }
                         Some(tungstenite::Message::Pong(_)) => {
-                            // Pong received, continue
+                            log::trace!("received pong");
                         }
                         Some(tungstenite::Message::Close(_)) | None => {
+                            log::info!("websocket closed");
                             return Ok(());
                         }
                         m => {
@@ -183,6 +195,26 @@ impl Server {
         session_id: &str,
         start: tango_signaling::proto::signaling::packet::Start,
     ) -> anyhow::Result<()> {
+        // Validate protocol version
+        if start.protocol_version as u8 != super::EXPECTED_PROTOCOL_VERSION {
+            let abort = tango_signaling::proto::signaling::Packet {
+                which: Some(tango_signaling::proto::signaling::packet::Which::Abort(
+                    tango_signaling::proto::signaling::packet::Abort {
+                        reason: if (start.protocol_version as u8) < super::EXPECTED_PROTOCOL_VERSION {
+                            tango_signaling::proto::signaling::packet::abort::Reason::ProtocolVersionTooOld
+                        } else {
+                            tango_signaling::proto::signaling::packet::abort::Reason::ProtocolVersionTooNew
+                        } as i32,
+                    },
+                )),
+            };
+            let _ = tokio::time::timeout(
+                TX_TIMEOUT,
+                tx.lock().await.send(tungstenite::Message::Binary(abort.encode_to_vec())),
+            ).await;
+            return Ok(());
+        }
+
         let connection_id = Self::encode_connection_id(&start.connection_id);
         let mut offerers = self.offerers.lock().await;
 
