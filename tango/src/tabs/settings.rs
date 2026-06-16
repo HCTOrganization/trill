@@ -877,7 +877,7 @@ impl AboutMarkdown {
     fn content(&self) -> &iced::widget::markdown::Content {
         self.0.get_or_init(|| {
             iced::widget::markdown::Content::parse(&format!(
-                "# Tango {}\n{}",
+                "# Trill {}\n{}",
                 env!("CARGO_PKG_VERSION"),
                 include_str!("../../../CREDITS.md")
             ))
