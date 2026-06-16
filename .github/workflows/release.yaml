@@ -319,11 +319,12 @@ jobs:
 
       - name: Install ImageMagick (ARM64)
         run: |
-          $ImageMagickUrl = "https://imagemagick.org/download/windows/ImageMagick-7.1.1-43-aarch64-windows.exe"
-          $InstallerPath = "$env:TEMP\ImageMagick-arm64.exe"
-          Invoke-WebRequest -Uri $ImageMagickUrl -OutFile $InstallerPath
-          & $InstallerPath /S /D="C:\ImageMagick"
-          Add-Content $env:GITHUB_PATH "C:\ImageMagick"
+          $ImageMagickUrl = "https://github.com/ImageMagick/ImageMagick/releases/download/7.1.2-25/ImageMagick-7.1.2-25-portable-Q16-HDRI-arm64.7z"
+          $ArchivePath = "$env:TEMP\ImageMagick-arm64.7z"
+          $ExtractPath = "C:\ImageMagick"
+          Invoke-WebRequest -Uri $ImageMagickUrl -OutFile $ArchivePath
+          7z x $ArchivePath -o$ExtractPath
+          Add-Content $env:GITHUB_PATH $ExtractPath
 
       - name: Build
         shell: bash
