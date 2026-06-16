@@ -90,7 +90,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            ./dist/tango-x86_64-windows.exe
+            ./dist/trill-x86_64-windows.exe
 
   release-mac-universal:
     runs-on: macos-14
@@ -135,7 +135,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            ./dist/tango-macos.dmg
+            ./dist/trill-macos.dmg
 
   release-linux-x86_64:
     runs-on: ubuntu-22.04 # Ubuntu 22.04 is used for higher glibc compatibility across users
@@ -182,7 +182,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          files: ./dist/tango-x86_64-linux.AppImage
+          files: ./dist/trill-x86_64-linux.AppImage
 
   release-linux-arm64:
     runs-on: ubuntu-22.04-arm
@@ -229,7 +229,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          files: ./dist/tango-aarch64-linux.AppImage
+          files: ./dist/trill-aarch64-linux.AppImage
 
   release-win32-i686:
     runs-on: windows-2022
@@ -277,7 +277,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            ./dist/tango-i686-windows.exe
+            ./dist/trill-i686-windows.exe
 
   release-win32-arm64:
     runs-on: windows-11-arm
@@ -325,4 +325,4 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            ./dist/tango-aarch64-windows.exe
+            ./dist/trill-aarch64-windows.exe
