@@ -317,6 +317,14 @@ jobs:
       - name: Install Python build deps
         run: pip install semver==3.0.0-dev3 toml mako
 
+      - name: Install ImageMagick (ARM64)
+        run: |
+          $ImageMagickUrl = "https://imagemagick.org/download/windows/ImageMagick-7.1.1-43-aarch64-windows.exe"
+          $InstallerPath = "$env:TEMP\ImageMagick-arm64.exe"
+          Invoke-WebRequest -Uri $ImageMagickUrl -OutFile $InstallerPath
+          & $InstallerPath /S /D="C:\ImageMagick"
+          Add-Content $env:GITHUB_PATH "C:\ImageMagick"
+
       - name: Build
         shell: bash
         run: ./win/build_arm64.sh
