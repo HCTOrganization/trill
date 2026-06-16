@@ -149,8 +149,8 @@ pub fn get_voice_file_path(lang: &LanguageIdentifier) -> &'static str {
 /// Load a voice file from the embedded resources
 pub fn load_voice_file(filename: &str) -> anyhow::Result<VoiceClip> {
     let data = match filename {
-        "ja.wav" => include_bytes!("../../voice/ja.wav"),
-        "en.wav" => include_bytes!("../../voice/en.wav"),
+        "ja.wav" => include_bytes!("../voice/ja.wav"),
+        "en.wav" => include_bytes!("../voice/en.wav"),
         _ => anyhow::bail!("unknown voice file: {}", filename),
     };
 

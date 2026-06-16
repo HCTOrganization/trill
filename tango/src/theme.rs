@@ -40,18 +40,18 @@ pub fn theme_for(config: &config::Config) -> Theme {
     // the same UI under daylight, not a separate identity.
     match config.theme {
         config::ThemeMode::Light => Theme::custom(
-            "Tango Light".to_string(),
+            "Trill Light".to_string(),
             iced::theme::Palette {
                 background: iced::Color::from_rgb(0xf3 as f32 / 255.0, 0xee as f32 / 255.0, 0xdc as f32 / 255.0),
                 text: iced::Color::from_rgb(0x14 as f32 / 255.0, 0x22 as f32 / 255.0, 0x34 as f32 / 255.0),
-                primary: TRILL_YELLOW_LIGHT,
+                primary: TRILL_YELLOW_DARK,
                 success: TRILL_YELLOW_LIGHT,
                 warning: iced::Color::from_rgb(0xb7 as f32 / 255.0, 0x7e as f32 / 255.0, 0x33 as f32 / 255.0),
                 danger: iced::Color::from_rgb(0xd1 as f32 / 255.0, 0x3a as f32 / 255.0, 0x3a as f32 / 255.0),
             },
         ),
         config::ThemeMode::Dark => Theme::custom(
-            "Tango Dark".to_string(),
+            "Trill Dark".to_string(),
             iced::theme::Palette {
                 // Neutral charcoal, the faintest hair cool. The
                 // base went navy ("too blue" next to the green
