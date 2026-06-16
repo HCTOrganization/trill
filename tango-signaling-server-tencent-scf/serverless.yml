@@ -1,0 +1,73 @@
+# Serverless Framework configuration for Tencent Cloud SCF
+service: tango-signaling-server
+
+frameworkVersion: '3'
+
+provider:
+  name: tencentcloud
+  runtime: nodejs18
+  region: ap-shanghai
+  memorySize: 512
+  timeout: 30
+  # Enable VPC if needed for database access
+  # vpc:
+  #   subnetId: subnet-xxxxx
+  #   vpcId: vpc-xxxxx
+  environment:
+    NODE_ENV: production
+    # Set these in serverless parameters or environment
+    # TURN_ADDR: your-turn-server.com
+    # TURN_USER: your-turn-user
+    # TURN_CREDENTIAL: your-turn-credential
+
+package:
+  patterns:
+    - '!.git/**'
+    - '!.gitignore'
+    - '!node_modules/typescript/**'
+    - '!node_modules/protobufjs-cli/**'
+    - '!src/**'
+    - '!*.ts'
+    - '!tsconfig.json'
+    - '!.dev.vars'
+    - '!wrangler.toml'
+
+functions:
+  websocket:
+    handler: dist/scf-handler.handler
+    description: Tango signaling server with WebSocket support
+    runtime: nodejs18
+    memorySize: 512
+    timeout: 30
+    # Enable function URL for direct WebSocket connection
+    # (Alternative: use API Gateway with WebSocket)
+    # functionUrl:
+    #   qualifier: $LATEST
+
+  # Optional: Separate handler for HTTP-triggered functions
+  # http:
+  #   handler: dist/scf-handler.httpHandler
+  #   description: HTTP handler for signaling server
+  #   events:
+  #     - http:
+  #         path: /{proxy+}
+  #         method: ANY
+
+plugins:
+  - serverless-tencent-scf
+
+# Parameters for deployment
+# Usage: serverless deploy --param="turnAddr=your-server.com" --param="turnUser=user" --param="turnCredential=pass"
+params:
+  turnAddr:
+    type: string
+    description: TURN server address
+    default: ''
+  turnUser:
+    type: string
+    description: TURN server username
+    default: ''
+  turnCredential:
+    type: string
+    description: TURN server credential
+    default: ''
