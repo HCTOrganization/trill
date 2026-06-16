@@ -1,0 +1,18 @@
+[Unit]
+Description=Tango Signaling Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/tango-signaling-server-python
+ExecStart=python3 app.py
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=trilld2
+Environment=USE_X_REAL_IP=true
+Environment=TURN_ADDR=123.45.67.89:3478
+Environment=TURN_USER=turn_user
+Environment=TURN_CREDENTIAL=turn_password_here
+
+[Install]
+WantedBy=multi-user.target
