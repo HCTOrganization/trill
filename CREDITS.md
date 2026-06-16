@@ -26,7 +26,7 @@
 
 ## Art
 
-- Logo: [saladdammit](https://twitter.com/saladdammit)
+- Logo: [NAKUSAN](https://space.bilibili.com/303949)
 
 ## Special thanks
 
@@ -35,4 +35,4 @@
 
 And, of course, a huge thank you to [CAPCOM](https://www.capcom.com) for making Mega Man Battle Network!
 
-Trill is licensed under the terms of the [GNU Affero General Public License v3](https://tldrlegal.com/license/gnu-affero-general-public-license-v3-%28agpl-3.0%29). That means you're free to modify the [source code](https://github.com/tangobattle), as long as you contribute your changes back!
+Trill is licensed under the terms of the [GNU Affero General Public License v3](https://tldrlegal.com/license/gnu-affero-general-public-license-v3-%28agpl-3.0%29). That means you're free to modify the [source code](https://github.com/HCTOrganization/trill), as long as you contribute your changes back!
