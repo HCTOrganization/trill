@@ -183,3 +183,98 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: ./dist/tango-x86_64-linux.AppImage
+
+  release-linux-arm64:
+    runs-on: ubuntu-22.04-arm
+    needs: create-release
+    env:
+      CMAKE_POLICY_VERSION_MINIMUM: 3.5
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - run: git fetch --tags --force
+
+      - uses: pat-s/always-upload-cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            core/target
+          key: linux-arm64-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - run: |
+          sudo pip3 install semver==3.0.0-dev3 toml mako
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: aarch64-unknown-linux-gnu
+
+      - name: Build
+        run: |
+          sudo apt-get update -y
+          sudo apt-get upgrade -y
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y alsa build-essential clang cmake curl fuse git libnss3 librust-atk-dev librust-gdk-pixbuf-dev librust-gdk-sys-dev librust-pango-dev libsdl2-dev pkgconf sudo wget
+
+      - run: ./linux/build_arm64.sh
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: ./dist/tango-aarch64-linux.AppImage
+
+  release-win32-i686:
+    runs-on: windows-2022
+    needs: create-release
+    env:
+      CMAKE_POLICY_VERSION_MINIMUM: 3.5
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - run: git fetch --tags --force
+
+      - uses: pat-s/always-upload-cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: win32-i686-msvc-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x86
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: i686-pc-windows-msvc
+
+      - name: Install Python build deps
+        run: pip install semver==3.0.0-dev3 toml mako
+
+      - name: Build
+        shell: bash
+        run: ./win/build_i686.sh
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            ./dist/tango-i686-windows.exe

@@ -9,7 +9,7 @@ trap cleanup EXIT
 cleanup
 
 # Grab a copy of appimagetool.
-wget -c https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-aarch64.AppImage
+wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-aarch64.AppImage
 chmod a+x appimagetool-aarch64.AppImage
 
 # Build Linux binaries.
@@ -24,9 +24,9 @@ cp linux/tango.desktop tango_linux_workdir/tango.desktop
 cp "target/${target_arch}-unknown-linux-gnu/release-dist/tango" "tango_linux_workdir/${target_arch}/bin/tango"
 
 # Bundle ffmpeg.
-ffmpeg_version="6.0"
+ffmpeg_version="8.1.1"
 
-wget -c "https://github.com/eugeneware/ffmpeg-static/releases/download/b${ffmpeg_version}/ffmpeg-linux-arm64" -O "tango_linux_workdir/${target_arch}/bin/ffmpeg"
+wget "https://github.com/HCTOrganization/ffmpeg-build/releases/download/ffmpeg-${ffmpeg_version}/ffmpeg-linux-arm64" -O "tango_linux_workdir/${target_arch}/bin/ffmpeg"
 chmod a+x "tango_linux_workdir/${target_arch}/bin/ffmpeg"
 
 # Build AppImage.
