@@ -4,14 +4,14 @@
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 
-const DATA_DIR_NAME: &str = "Tango";
+const DATA_DIR_NAME: &str = "Trill";
 
-const QUALIFIER: &str = "net";
-const ORGANIZATION: &str = "n1gp";
-const APPLICATION: &str = "tango";
+const QUALIFIER: &str = "com";
+const ORGANIZATION: &str = "hikaricalyx";
+const APPLICATION: &str = "trill";
 
-pub const DEFAULT_MATCHMAKING_ENDPOINT: &str = "wss://matchmaking.tango.n1gp.net";
-pub const DEFAULT_PATCH_REPO: &str = "https://patches.tango.n1gp.net";
+pub const DEFAULT_MATCHMAKING_ENDPOINT: &str = "ws://matchmaking.trill.hikaricalyx.com";
+pub const DEFAULT_PATCH_REPO: &str = "https://patches.trill.hikaricalyx.com";
 
 fn default_matchmaking_endpoint() -> String {
     DEFAULT_MATCHMAKING_ENDPOINT.to_string()
