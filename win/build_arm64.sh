@@ -19,6 +19,31 @@ if [ -d "/c/Strawberry/perl/bin" ]; then
     export PATH="/c/Strawberry/perl/bin:$PATH"
 fi
 
+# Install ImageMagick if not already available
+if ! command -v magick &> /dev/null; then
+    echo "Installing ImageMagick (ARM64)..."
+    imagemagick_url="https://github.com/ImageMagick/ImageMagick/releases/download/7.1.2-25/ImageMagick-7.1.2-25-portable-Q16-HDRI-arm64.7z"
+    archive_path="/tmp/ImageMagick-arm64.7z"
+    extract_path="/c/ImageMagick"
+    
+    curl -L -o "$archive_path" "$imagemagick_url"
+    mkdir -p "$extract_path"
+    7z x "$archive_path" -o"$extract_path"
+    
+    # Find magick.exe and add to PATH
+    magick_dir=$(find "$extract_path" -name magick.exe -type f | head -1 | xargs dirname)
+    if [ -z "$magick_dir" ]; then
+        echo "Failed to find magick.exe in extracted archive"
+        echo "Contents of $extract_path:"
+        find "$extract_path" -type f | head -20
+        exit 1
+    fi
+    
+    export PATH="$magick_dir:$PATH"
+    export MAGICK_CONFIGURE_PATH="$magick_dir"
+    echo "ImageMagick installed at: $magick_dir"
+fi
+
 # Cleanup.
 function cleanup {
     rm -rf Tango.iconset tango_win_workdir

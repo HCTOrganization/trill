@@ -317,26 +317,6 @@ jobs:
       - name: Install Python build deps
         run: pip install semver==3.0.0-dev3 toml mako
 
-      - name: Install ImageMagick (ARM64)
-        run: |
-          $ImageMagickUrl = "https://github.com/ImageMagick/ImageMagick/releases/download/7.1.2-25/ImageMagick-7.1.2-25-portable-Q16-HDRI-arm64.7z"
-          $ArchivePath = "$env:TEMP\ImageMagick-arm64.7z"
-          $ExtractPath = "C:\ImageMagick"
-          Invoke-WebRequest -Uri $ImageMagickUrl -OutFile $ArchivePath
-          7z x $ArchivePath -o$ExtractPath
-          # Find magick.exe in the extracted directory
-          $MagickPath = Get-ChildItem -Path $ExtractPath -Name magick.exe -Recurse | Select-Object -First 1
-          if ($MagickPath) {
-            $MagickDir = Split-Path -Parent "$ExtractPath\$MagickPath"
-            Write-Host "Found magick at: $MagickDir"
-            Add-Content $env:GITHUB_ENV "MAGICK_EXE=$MagickDir\magick.exe"
-            Add-Content $env:GITHUB_ENV "MAGICK_CONFIGURE_PATH=$MagickDir"
-          } else {
-            Write-Host "magick.exe not found, listing contents:"
-            Get-ChildItem -Path $ExtractPath -Recurse | Select-Object -First 20
-            exit 1
-          }
-
       - name: Build
         shell: bash
         run: ./win/build_arm64.sh
