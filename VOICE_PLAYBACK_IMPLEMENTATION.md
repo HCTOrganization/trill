@@ -77,8 +77,9 @@ App.try_play_match_ready_voice()
 - **Non-blocking**: Voice loading and binding is synchronous but fast (embedded bytes, no I/O)
 - **Language-aware**: Automatically respects the user's UI language setting
 - **Graceful fallback**: If voice files are missing or audio is already in use, playback is skipped with a log message
-- **Auto-cleanup**: The binding is automatically released when the voice finishes playing
+- **Auto-cleanup**: The binding is automatically released after 3 seconds maximum to ensure game audio can bind
 - **WAV Format Support**: Supports 16-bit stereo PCM WAV files at any sample rate
+- **Game Audio Priority**: If game audio attempts to bind while voice is playing, it will fail gracefully with a log message. Voice is released after 3 seconds regardless to prevent interference with PvP session audio
 
 ## Testing
 

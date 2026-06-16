@@ -184,6 +184,9 @@ pub struct App {
     /// Holds the active voice clip being played. When it finishes,
     /// this becomes None and the underlying audio stream is released.
     _voice_clip_binding: Option<audio::Binding>,
+    /// Time when voice playback started, used to auto-release the binding
+    /// after a reasonable maximum duration (e.g., 5 seconds)
+    voice_started_at: Option<std::time::Instant>,
 }
 
 /// See [`App::screen_enter_scope`].
@@ -362,6 +365,7 @@ impl App {
             lobby_exit_snapshot: None,
             prev_match_ready: false,
             _voice_clip_binding: None,
+            voice_started_at: None,
         };
         app.refresh_loaded();
         let stats_task = app.kick_replay_stats_loader().map(Message::Replays);
@@ -558,19 +562,19 @@ impl App {
     fn try_play_match_ready_voice(&mut self) -> iced::Task<Message> {
         let filename = audio::voice::get_voice_file_path(&self.config.language);
         
-        match audio::voice::load_voice_file(filename, self.audio_binder.clone()) {
+        match audio::voice::load_voice_file(filename) {
             Ok(player) => {
                 // Try to bind the player to the audio backend
                 match self.audio_binder.bind(Some(Box::new(player))) {
                     Ok(binding) => {
                         // Store the binding so it stays alive while playing
-                        // The VoicePlayer will automatically clear this when done
                         self._voice_clip_binding = Some(binding);
+                        self.voice_started_at = Some(std::time::Instant::now());
                         log::info!("playing match-ready voice: {}", filename);
                         iced::Task::none()
                     }
                     Err(audio::BindingError::AlreadyBound) => {
-                        // Audio already playing (perhaps another voice),
+                        // Audio already playing (perhaps game audio),
                         // skip this one gracefully
                         log::debug!("audio already bound, skipping match-ready voice");
                         iced::Task::none()
@@ -580,6 +584,23 @@ impl App {
             Err(e) => {
                 log::warn!("failed to load voice file {}: {}", filename, e);
                 iced::Task::none()
+            }
+        }
+    }
+
+    /// Release the voice binding if it's still active and has expired.
+    /// Voice clips are typically very short (< 2 seconds), so we release
+    /// after a maximum of 3 seconds to ensure game audio can bind.
+    fn release_voice_binding_if_expired(&mut self) {
+        if let Some(started) = self.voice_started_at {
+            let elapsed = started.elapsed();
+            // Release after 3 seconds max, or keep if very recent
+            if elapsed > std::time::Duration::from_secs(3) {
+                if self._voice_clip_binding.is_some() {
+                    self._voice_clip_binding = None;
+                    self.voice_started_at = None;
+                    log::debug!("released voice binding after {:.2}s", elapsed.as_secs_f64());
+                }
             }
         }
     }
@@ -860,6 +881,10 @@ impl App {
     }
 
     fn update_inner(&mut self, message: Message) -> iced::Task<Message> {
+        // Try to release voice binding if it's expired
+        // This allows game audio to bind after voice finishes
+        self.release_voice_binding_if_expired();
+        
         match message {
             Message::NoOp => iced::Task::none(),
             Message::AnimTick => iced::Task::none(),

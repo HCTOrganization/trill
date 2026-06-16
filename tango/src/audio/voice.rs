@@ -42,6 +42,7 @@ impl WavFile {
         let mut sample_rate = 44100u32;
         let mut channels = 2u16;
         let mut bits_per_sample = 16u16;
+        let mut byte_rate = 0u32;
 
         while pos + 8 < data.len() {
             let chunk_id = &data[pos..pos + 4];
@@ -59,7 +60,12 @@ impl WavFile {
                 }
                 channels = u16::from_le_bytes([data[pos + 2], data[pos + 3]]);
                 sample_rate = u32::from_le_bytes([data[pos + 4], data[pos + 5], data[pos + 6], data[pos + 7]]);
+                byte_rate = u32::from_le_bytes([data[pos + 8], data[pos + 9], data[pos + 10], data[pos + 11]]);
                 bits_per_sample = u16::from_le_bytes([data[pos + 14], data[pos + 15]]);
+                log::debug!(
+                    "WAV format: {} Hz, {} channels, {} bits/sample, {} byte/s",
+                    sample_rate, channels, bits_per_sample, byte_rate
+                );
             } else if chunk_id == b"data" {
                 if bits_per_sample != 16 {
                     anyhow::bail!("unsupported bits per sample: {}", bits_per_sample);
@@ -81,6 +87,12 @@ impl WavFile {
                     }
                 }
 
+                log::debug!(
+                    "loaded {} samples ({:.2}s) at {} Hz",
+                    sample_count,
+                    sample_count as f64 / sample_rate as f64,
+                    sample_rate
+                );
                 return Ok(WavFile { samples, sample_rate });
             }
 
@@ -133,28 +145,36 @@ impl audio::Stream for VoiceClip {
     }
 }
 
-/// Wrapper around the LateBinder to auto-clear when voice finishes.
-/// This ensures the audio stream is released once playback completes.
+/// Wrapper that plays voice and then returns silence to release the stream.
+/// When the clip finishes, we continue returning silence until auto-released.
 pub struct VoicePlayer {
     clip: VoiceClip,
-    binder: audio::LateBinder,
+    finished: bool,
 }
 
 impl VoicePlayer {
-    pub fn new(clip: VoiceClip, binder: audio::LateBinder) -> Self {
-        Self { clip, binder }
+    pub fn new(clip: VoiceClip) -> Self {
+        Self {
+            clip,
+            finished: false,
+        }
     }
 }
 
 impl audio::Stream for VoicePlayer {
     fn fill(&mut self, buf: &mut [[i16; audio::NUM_CHANNELS]]) -> usize {
+        if self.finished {
+            // Already done, fill with silence
+            for sample in buf.iter_mut() {
+                *sample = [0, 0];
+            }
+            return buf.len();
+        }
+
         let n = self.clip.fill(buf);
         
-        // If clip is finished and we filled nothing, clear the binding
-        // to release the audio stream
         if self.clip.is_finished() && n == 0 {
-            // Drop the binding by resetting the stream to None
-            let _ = self.binder.bind(None);
+            self.finished = true;
         }
         
         n
@@ -175,7 +195,7 @@ pub fn get_voice_file_path(lang: &LanguageIdentifier) -> &'static str {
 }
 
 /// Load a voice file from the embedded resources
-pub fn load_voice_file(filename: &str, binder: audio::LateBinder) -> anyhow::Result<VoicePlayer> {
+pub fn load_voice_file(filename: &str) -> anyhow::Result<VoicePlayer> {
     let data = match filename {
         "ja.wav" => include_bytes!("../voice/ja.wav"),
         "en.wav" => include_bytes!("../voice/en.wav"),
@@ -184,7 +204,7 @@ pub fn load_voice_file(filename: &str, binder: audio::LateBinder) -> anyhow::Res
 
     let wav = WavFile::from_bytes(data)?;
     let clip = VoiceClip::new(wav.samples);
-    Ok(VoicePlayer::new(clip, binder))
+    Ok(VoicePlayer::new(clip))
 }
 
 #[cfg(test)]
