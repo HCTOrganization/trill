@@ -4,7 +4,7 @@
   "private": true,
   "main": "dist/index.js",
   "scripts": {
-    "proto": "mkdir -p src/proto && npx pbjs --es6 ../tango-signaling/src/proto/signaling.proto > src/proto/signaling.js && npx pbts src/proto/signaling.js > src/proto/signaling.d.ts",
+    "proto": "mkdir -p src/proto && npx pbjs --es6 src/proto/signaling.js ../tango-signaling/src/proto/signaling.proto && npx pbts src/proto/signaling.d.ts src/proto/signaling.js",
     "build": "npm run proto && tsc",
     "typecheck": "tsc --noEmit",
     "dev": "npm run build && node dist/index.js",
