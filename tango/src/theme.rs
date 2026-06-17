@@ -20,13 +20,13 @@ pub const TRILL_YELLOW_LIGHT: iced::Color =
     iced::Color::from_rgb(0xdc as f32 / 255.0, 0xb2 as f32 / 255.0, 0x7a as f32 / 255.0);
 
 pub const TRILL_YELLOW_DARK: iced::Color =
-    iced::Color::from_rgb(0xdc as f32 / 255.0, 0xb2 as f32 / 255.0, 0x7a as f32 / 255.0);
+    iced::Color::from_rgb(0xff as f32 / 255.0, 0xf2 as f32 / 255.0, 0xa7 as f32 / 255.0);
 
 pub const PEGASUS_BLUE_LIGHT: iced::Color =
-    iced::Color::from_rgb(0x63 as f32 / 255.0, 0xc6 as f32 / 255.0, 0xff as f32 / 255.0);
+    iced::Color::from_rgb(0x29 as f32 / 255.0, 0x6b as f32 / 255.0, 0xff as f32 / 255.0);
 
 pub const PEGASUS_BLUE_DARK: iced::Color =
-    iced::Color::from_rgb(0x29 as f32 / 255.0, 0x6b as f32 / 255.0, 0xff as f32 / 255.0);
+    iced::Color::from_rgb(0x63 as f32 / 255.0, 0xc6 as f32 / 255.0, 0xff as f32 / 255.0);
 
 pub const SONIA_PINK_LIGHT: iced::Color =
     iced::Color::from_rgb(0xef as f32 / 255.0, 0x74 as f32 / 255.0, 0x84 as f32 / 255.0);
@@ -53,16 +53,16 @@ pub const SAURIAN_ORANGE_DARK: iced::Color =
     iced::Color::from_rgb(0xff as f32 / 255.0, 0x5a as f32 / 255.0, 0x00 as f32 / 255.0);
 
 pub const ROGUE_PURPLE_LIGHT: iced::Color =
-    iced::Color::from_rgb(0x42 as f32 / 255.0, 0x21 as f32 / 255.0, 0x8c as f32 / 255.0);
+    iced::Color::from_rgb(0x39 as f32 / 255.0, 0x21 as f32 / 255.0, 0x42 as f32 / 255.0);
 
 pub const ROGUE_PURPLE_DARK: iced::Color =
-    iced::Color::from_rgb(0x60 as f32 / 255.0, 0x60 as f32 / 255.0, 0xa8 as f32 / 255.0);
+    iced::Color::from_rgb(0x42 as f32 / 255.0, 0x21 as f32 / 255.0, 0x8c as f32 / 255.0);
 
 pub const ACE_BLACK_LIGHT: iced::Color =
-    iced::Color::from_rgb(0x31 as f32 / 255.0, 0x4a as f32 / 255.0, 0x5a as f32 / 255.0);
+    iced::Color::from_rgb(0x21 as f32 / 255.0, 0x39 as f32 / 255.0, 0x4a as f32 / 255.0);
 
 pub const ACE_BLACK_DARK: iced::Color =
-    iced::Color::from_rgb(0x78 as f32 / 255.0, 0x7f as f32 / 255.0, 0x86 as f32 / 255.0);
+    iced::Color::from_rgb(0x31 as f32 / 255.0, 0x4a as f32 / 255.0, 0x5a as f32 / 255.0);
 
 pub const JOKER_RED_LIGHT: iced::Color =
     iced::Color::from_rgb(0xad as f32 / 255.0, 0x00 as f32 / 255.0, 0x18 as f32 / 255.0);
