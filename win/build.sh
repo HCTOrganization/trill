@@ -10,6 +10,17 @@ if command -v cl.exe >/dev/null 2>&1; then
     export PATH="$msvc_bin:$PATH"
 fi
 
+# libdatachannel-sys -> openssl-src shells out to `perl ./Configure` to
+# build OpenSSL from source. Under Git Bash the MSYS perl (/usr/bin/perl)
+# is first on PATH but lacks core modules OpenSSL's Configure requires
+# (e.g. Locale::Maketext::Simple), so the build aborts. If the caller
+# hasn't already pinned a perl, point openssl-src at the full Strawberry
+# Perl. A Windows-style path (forward slashes are fine) is required so the
+# build script can spawn it directly.
+if [ -z "${OPENSSL_SRC_PERL:-}" ] && [ -x "/c/Strawberry/perl/bin/perl.exe" ]; then
+    export OPENSSL_SRC_PERL="C:/Strawberry/perl/bin/perl.exe"
+fi
+
 # Cleanup.
 function cleanup {
     rm -rf Trill.iconset trill_win_workdir

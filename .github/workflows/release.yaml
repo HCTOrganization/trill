@@ -46,6 +46,11 @@ jobs:
     needs: create-release
     env:
       CMAKE_POLICY_VERSION_MINIMUM: 3.5
+      # libdatachannel-sys -> openssl-src runs `perl ./Configure` to build
+      # OpenSSL from source. The build runs under Git Bash, whose MSYS perl
+      # (/usr/bin/perl) lacks core modules OpenSSL's Configure needs. Point
+      # openssl-src at the full Strawberry Perl preinstalled on the runner.
+      OPENSSL_SRC_PERL: C:\Strawberry\perl\bin\perl.exe
 
     steps:
       - uses: actions/checkout@v2
@@ -238,6 +243,9 @@ jobs:
     needs: create-release
     env:
       CMAKE_POLICY_VERSION_MINIMUM: 3.5
+      # See release-win32-x64: force openssl-src to use Strawberry Perl
+      # instead of the MSYS perl that Git Bash puts first on PATH.
+      OPENSSL_SRC_PERL: C:\Strawberry\perl\bin\perl.exe
 
     steps:
       - uses: actions/checkout@v2
@@ -287,6 +295,9 @@ jobs:
     needs: create-release
     env:
       CMAKE_POLICY_VERSION_MINIMUM: 3.5
+      # See release-win32-x64: force openssl-src to use Strawberry Perl.
+      # NOTE: verify this path on the windows-11-arm image before enabling.
+      OPENSSL_SRC_PERL: C:\Strawberry\perl\bin\perl.exe
 
     steps:
       - uses: actions/checkout@v2
