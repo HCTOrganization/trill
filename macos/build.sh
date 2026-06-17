@@ -26,7 +26,7 @@ sips -z 256 256 tango/src/icon.png --out Trill.iconset/icon_256x256.png
 sips -z 512 512 tango/src/icon.png --out Trill.iconset/icon_256x256@2x.png
 sips -z 512 512 tango/src/icon.png --out Trill.iconset/icon_512x512.png
 sips -z 1024 1024 tango/src/icon.png --out Trill.iconset/icon_512x512@2x.png
-iconutil -c icns Trill.iconset --output Trill 5.app/Contents/Resources/Trill.icns
+iconutil -c icns Trill.iconset --output Trill\ 5.app/Contents/Resources/Trill.icns
 rm -rf Trill.iconset
 
 # Build macOS binaries.
