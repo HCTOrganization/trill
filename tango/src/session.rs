@@ -834,10 +834,10 @@ fn resolve_ffmpeg_path() -> std::path::PathBuf {
 
 /// A running ffmpeg-backed border-video decoder. ffmpeg loops the
 /// source forever (`-stream_loop -1`) at native frame rate (`-re`)
-/// with audio dropped (`-an`), piping BMP frames to a reader thread
-/// that publishes the most-recent frame into `latest`. The in-session
-/// redraw loop samples `latest` each frame, so the border animates at
-/// whatever rate iced is already repainting.
+/// with audio dropped (`-an`), piping fixed-size raw RGBA frames to a
+/// reader thread that publishes the most-recent frame into `latest`.
+/// The in-session redraw loop samples `latest` each frame, so the
+/// border animates at whatever rate iced is already repainting.
 struct VideoBorder {
     path: std::path::PathBuf,
     latest: std::sync::Arc<std::sync::Mutex<Option<iced::widget::image::Handle>>>,
@@ -859,73 +859,61 @@ const VIDEO_BORDER_IDLE: std::time::Duration = std::time::Duration::from_secs(2)
 
 /// Returns the latest decoded frame of the looping border video at
 /// `path`, lazily (re)starting the single shared ffmpeg decoder when
-/// the requested path changes or the previous one exited. `None`
-/// until the first frame is decoded, or if ffmpeg can't be launched —
-/// the caller then falls back to the plain black backdrop.
+/// the requested path changes or the previous one exited.
+///
+/// To avoid the black "blink" on every decoder (re)start, the most
+/// recent decoded frame is persisted per-path in `LAST` and returned
+/// as a fallback whenever the live decoder hasn't produced a frame yet
+/// (cold start, idle resume, loop boundary). Only a never-before-seen
+/// path returns `None` (→ plain black backdrop) until its first frame.
 fn video_border_handle(path: &std::path::Path) -> Option<iced::widget::image::Handle> {
     use std::sync::atomic::Ordering;
     use std::sync::LazyLock;
     static ACTIVE: LazyLock<std::sync::Mutex<Option<VideoBorder>>> = LazyLock::new(Default::default);
+    // Survives `ACTIVE` being swapped out, so a restart shows the
+    // previous frame instead of flashing black.
+    static LAST: LazyLock<std::sync::Mutex<Option<(std::path::PathBuf, iced::widget::image::Handle)>>> =
+        LazyLock::new(Default::default);
 
     let mut guard = ACTIVE.lock().unwrap();
-    if let Some(vb) = guard.as_ref() {
-        if vb.path == path && !vb.finished.load(Ordering::Relaxed) {
-            *vb.last_access.lock().unwrap() = std::time::Instant::now();
-            return vb.latest.lock().unwrap().clone();
+    let alive = matches!(guard.as_ref(), Some(vb) if vb.path == path && !vb.finished.load(Ordering::Relaxed));
+    if !alive {
+        // Signal any stale decoder to tear down its ffmpeg, then start
+        // a fresh one. The probe + spawn happen on the decoder thread,
+        // so this never blocks the UI thread.
+        if let Some(vb) = guard.as_ref() {
+            vb.stop.store(true, Ordering::Relaxed);
         }
-        // Different source (or the old decoder exited): signal the old
-        // reader thread to stop and reap its ffmpeg before replacing.
-        vb.stop.store(true, Ordering::Relaxed);
+        *guard = start_video_border(path);
     }
-    match start_video_border(path) {
-        Ok(vb) => {
-            let frame = vb.latest.lock().unwrap().clone();
-            *guard = Some(vb);
-            frame
+    let fresh = guard.as_ref().and_then(|vb| {
+        *vb.last_access.lock().unwrap() = std::time::Instant::now();
+        vb.latest.lock().unwrap().clone()
+    });
+
+    let mut last = LAST.lock().unwrap();
+    match fresh {
+        Some(handle) => {
+            *last = Some((path.to_path_buf(), handle.clone()));
+            Some(handle)
         }
-        Err(e) => {
-            log::warn!("custom border video {}: {e}", path.display());
-            *guard = None;
-            None
-        }
+        // No live frame yet — reuse the last frame decoded for this
+        // same path so a restart doesn't blink to black.
+        None => match last.as_ref() {
+            Some((p, h)) if p == path => Some(h.clone()),
+            _ => None,
+        },
     }
 }
 
-/// Spawns the looping, muted ffmpeg decode for `path` and the reader
-/// thread that owns it, returning the handle bundle the lookup parks
-/// in `ACTIVE`. Dimensions are probed up front so the reader can pull
-/// fixed-length raw RGBA frames — every frame is exactly `w*h*4`
-/// bytes, so the stream can never desync (which is what made the
-/// earlier self-delimiting-BMP approach flicker).
-fn start_video_border(path: &std::path::Path) -> anyhow::Result<VideoBorder> {
-    use std::sync::atomic::{AtomicBool, Ordering};
+/// Sets up the shared decoder state and spawns the reader thread that
+/// owns the ffmpeg subprocess(es). Returns `None` only if the thread
+/// itself can't be spawned; ffmpeg launch/probe failures are handled
+/// on the thread (the border just stays on its black/last-frame
+/// fallback).
+fn start_video_border(path: &std::path::Path) -> Option<VideoBorder> {
+    use std::sync::atomic::AtomicBool;
     use std::sync::{Arc, Mutex};
-
-    let (width, height) = probe_video_dimensions(path)?;
-    let frame_len = width as usize * height as usize * 4;
-    anyhow::ensure!(frame_len > 0, "video has zero dimensions");
-
-    let mut cmd = std::process::Command::new(resolve_ffmpeg_path());
-    cmd.args(["-hide_banner", "-loglevel", "error", "-stream_loop", "-1", "-re"])
-        .arg("-i")
-        .arg(path)
-        // `-an`: never decode/route audio — the border is silent.
-        // Raw RGBA frames are a fixed `w*h*4` bytes each, read with
-        // `read_exact`, so frame boundaries stay perfectly aligned.
-        .args(["-an", "-f", "rawvideo", "-pix_fmt", "rgba", "pipe:1"])
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::null());
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
-    }
-    let mut child = cmd.spawn()?;
-    let stdout = child
-        .stdout
-        .take()
-        .ok_or_else(|| anyhow::anyhow!("ffmpeg stdout missing"))?;
 
     let latest = Arc::new(Mutex::new(None));
     let stop = Arc::new(AtomicBool::new(false));
@@ -940,34 +928,116 @@ fn start_video_border(path: &std::path::Path) -> anyhow::Result<VideoBorder> {
         last_access: last_access.clone(),
     };
 
-    std::thread::Builder::new()
+    let path_owned = path.to_path_buf();
+    let spawned = std::thread::Builder::new()
         .name("border-video".into())
         .spawn(move || {
-            use std::io::Read;
-            let mut reader = std::io::BufReader::new(stdout);
-            let mut buf = vec![0u8; frame_len];
-            loop {
-                if stop.load(Ordering::Relaxed) {
-                    break;
-                }
-                if last_access.lock().unwrap().elapsed() > VIDEO_BORDER_IDLE {
-                    break;
-                }
-                // Fixed-size read: a full frame or end-of-stream. EOF
-                // only happens if the source errors — looping ffmpeg
-                // otherwise never ends.
-                if reader.read_exact(&mut buf).is_err() {
-                    break;
-                }
-                let handle = iced::widget::image::Handle::from_rgba(width, height, buf.clone());
-                *latest.lock().unwrap() = Some(handle);
-            }
-            let _ = child.kill();
-            let _ = child.wait();
-            finished.store(true, Ordering::Relaxed);
-        })?;
+            run_video_border(&path_owned, &latest, &stop, &last_access);
+            finished.store(true, std::sync::atomic::Ordering::Relaxed);
+        });
+    if let Err(e) = spawned {
+        log::warn!("custom border video {}: thread spawn: {e}", path.display());
+        return None;
+    }
+    Some(vb)
+}
 
-    Ok(vb)
+/// Decoder thread body: probe the dimensions once, then keep an ffmpeg
+/// pass feeding fixed-size raw RGBA frames into `latest`. If a pass
+/// ends (EOF — only when `-stream_loop -1` doesn't hold on a given
+/// input/build), it's respawned *without* clearing `latest`, so the
+/// loop point never blinks. Exits when stopped (path changed) or after
+/// the border has gone unrendered for `VIDEO_BORDER_IDLE` (session
+/// closed). Bails out if ffmpeg can't produce frames, to avoid a
+/// tight respawn storm.
+fn run_video_border(
+    path: &std::path::Path,
+    latest: &std::sync::Mutex<Option<iced::widget::image::Handle>>,
+    stop: &std::sync::atomic::AtomicBool,
+    last_access: &std::sync::Mutex<std::time::Instant>,
+) {
+    use std::io::Read;
+    use std::sync::atomic::Ordering;
+
+    let (width, height) = match probe_video_dimensions(path) {
+        Ok(dims) => dims,
+        Err(e) => {
+            log::warn!("custom border video {}: probe: {e}", path.display());
+            return;
+        }
+    };
+    let frame_len = width as usize * height as usize * 4;
+    if frame_len == 0 {
+        return;
+    }
+
+    let stopped = |la: &std::sync::Mutex<std::time::Instant>| {
+        stop.load(Ordering::Relaxed) || la.lock().unwrap().elapsed() > VIDEO_BORDER_IDLE
+    };
+
+    let mut dry_passes = 0u32;
+    while !stopped(last_access) {
+        let mut child = match spawn_border_stream(path) {
+            Ok(c) => c,
+            Err(e) => {
+                log::warn!("custom border video {}: ffmpeg spawn: {e}", path.display());
+                break;
+            }
+        };
+        let Some(stdout) = child.stdout.take() else {
+            let _ = child.kill();
+            break;
+        };
+        let mut reader = std::io::BufReader::new(stdout);
+        let mut buf = vec![0u8; frame_len];
+        let mut got_frame = false;
+        loop {
+            if stopped(last_access) {
+                break;
+            }
+            // Fixed-size read keeps frame boundaries aligned; an error
+            // here is EOF/short read, which ends this pass.
+            if reader.read_exact(&mut buf).is_err() {
+                break;
+            }
+            *latest.lock().unwrap() = Some(iced::widget::image::Handle::from_rgba(width, height, buf.clone()));
+            got_frame = true;
+        }
+        let _ = child.kill();
+        let _ = child.wait();
+
+        // A pass that produced nothing twice running means ffmpeg can't
+        // decode this file — stop rather than respawn-spin forever.
+        if got_frame {
+            dry_passes = 0;
+        } else {
+            dry_passes += 1;
+            if dry_passes >= 2 {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(200));
+        }
+    }
+}
+
+/// Spawns one looping, muted, native-rate ffmpeg pass that writes
+/// fixed-size raw RGBA frames to stdout.
+fn spawn_border_stream(path: &std::path::Path) -> std::io::Result<std::process::Child> {
+    let mut cmd = std::process::Command::new(resolve_ffmpeg_path());
+    cmd.args(["-hide_banner", "-loglevel", "error", "-stream_loop", "-1", "-re"])
+        .arg("-i")
+        .arg(path)
+        // `-an`: never decode/route audio — the border is silent.
+        .args(["-an", "-f", "rawvideo", "-pix_fmt", "rgba", "pipe:1"])
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+    cmd.spawn()
 }
 
 /// One-shot probe of a video's pixel dimensions: decode its first
