@@ -65,10 +65,11 @@ pub enum ThemeMode {
 pub enum ThemeColor {
     #[default]
     TrillYellow,
-    DjangoOrange,
     PegasusBlue,
     SoniaPink,
+    ZerkerGrey,
     NinjaGreen,
+    SaurianOrange,
     RoguePurple,
     AceBlack,
     JokerRed,
@@ -76,12 +77,13 @@ pub enum ThemeColor {
 
 impl ThemeColor {
     /// Every accent color, in pick-list display order.
-    pub const ALL: [ThemeColor; 8] = [
+    pub const ALL: [ThemeColor; 9] = [
         ThemeColor::TrillYellow,
-        ThemeColor::DjangoOrange,
         ThemeColor::PegasusBlue,
         ThemeColor::SoniaPink,
+        ThemeColor::ZerkerGrey,
         ThemeColor::NinjaGreen,
+        ThemeColor::SaurianOrange,
         ThemeColor::RoguePurple,
         ThemeColor::AceBlack,
         ThemeColor::JokerRed,
@@ -91,10 +93,11 @@ impl ThemeColor {
     pub fn i18n_key(self) -> &'static str {
         match self {
             ThemeColor::TrillYellow => "settings-theme-color-trill-yellow",
-            ThemeColor::DjangoOrange => "settings-theme-color-django-orange",
             ThemeColor::PegasusBlue => "settings-theme-color-pegasus-blue",
             ThemeColor::SoniaPink => "settings-theme-color-sonia-pink",
+            ThemeColor::ZerkerGrey => "settings-theme-color-zerker-grey",
             ThemeColor::NinjaGreen => "settings-theme-color-ninja-green",
+            ThemeColor::SaurianOrange => "settings-theme-color-saurian-orange",
             ThemeColor::RoguePurple => "settings-theme-color-rogue-purple",
             ThemeColor::AceBlack => "settings-theme-color-ace-black",
             ThemeColor::JokerRed => "settings-theme-color-joker-red",

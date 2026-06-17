@@ -22,12 +22,6 @@ pub const TRILL_YELLOW_LIGHT: iced::Color =
 pub const TRILL_YELLOW_DARK: iced::Color =
     iced::Color::from_rgb(0xdc as f32 / 255.0, 0xb2 as f32 / 255.0, 0x7a as f32 / 255.0);
 
-pub const DJANGO_ORANGE_LIGHT: iced::Color =
-    iced::Color::from_rgb(0xf8 as f32 / 255.0, 0xd8 as f32 / 255.0, 0x38 as f32 / 255.0);
-
-pub const DJANGO_ORANGE_DARK: iced::Color =
-    iced::Color::from_rgb(0xe0 as f32 / 255.0, 0x68 as f32 / 255.0, 0x28 as f32 / 255.0);
-
 pub const PEGASUS_BLUE_LIGHT: iced::Color =
     iced::Color::from_rgb(0x70 as f32 / 255.0, 0x90 as f32 / 255.0, 0xd8 as f32 / 255.0);
 
@@ -35,22 +29,34 @@ pub const PEGASUS_BLUE_DARK: iced::Color =
     iced::Color::from_rgb(0x60 as f32 / 255.0, 0x60 as f32 / 255.0, 0xa8 as f32 / 255.0);
 
 pub const SONIA_PINK_LIGHT: iced::Color =
-    iced::Color::from_rgb(0xf0 as f32 / 255.0, 0x38 as f32 / 255.0, 0x60 as f32 / 255.0);
+    iced::Color::from_rgb(0xef as f32 / 255.0, 0x74 as f32 / 255.0, 0x84 as f32 / 255.0);
 
 pub const SONIA_PINK_DARK: iced::Color =
-    iced::Color::from_rgb(0xe0 as f32 / 255.0, 0x00 as f32 / 255.0, 0x38 as f32 / 255.0);
+    iced::Color::from_rgb(0xf0 as f32 / 255.0, 0x38 as f32 / 255.0, 0x60 as f32 / 255.0);
+
+pub const ZERKER_GREY_LIGHT: iced::Color =
+    iced::Color::from_rgb(0xad as f32 / 255.0, 0xad as f32 / 255.0, 0xad as f32 / 255.0);
+
+pub const ZERKER_GREY_DARK: iced::Color =
+    iced::Color::from_rgb(0x94 as f32 / 255.0, 0x94 as f32 / 255.0, 0x94 as f32 / 255.0);
 
 pub const NINJA_GREEN_LIGHT: iced::Color =
-    iced::Color::from_rgb(0x28 as f32 / 255.0, 0xa2 as f32 / 255.0, 0x20 as f32 / 255.0);
+    iced::Color::from_rgb(0x00 as f32 / 255.0, 0xce as f32 / 255.0, 0x52 as f32 / 255.0);
 
 pub const NINJA_GREEN_DARK: iced::Color =
-    iced::Color::from_rgb(0x11 as f32 / 255.0, 0x64 as f32 / 255.0, 0x0d as f32 / 255.0);
+    iced::Color::from_rgb(0x00 as f32 / 255.0, 0x94 as f32 / 255.0, 0x52 as f32 / 255.0);
+
+pub const SAURIAN_ORANGE_LIGHT: iced::Color =
+    iced::Color::from_rgb(0xff as f32 / 255.0, 0x5a as f32 / 255.0, 0x00 as f32 / 255.0);
+
+pub const SAURIAN_ORANGE_DARK: iced::Color =
+    iced::Color::from_rgb(0xde as f32 / 255.0, 0x18 as f32 / 255.0, 0x00 as f32 / 255.0);
 
 pub const ROGUE_PURPLE_LIGHT: iced::Color =
-    iced::Color::from_rgb(0x88 as f32 / 255.0, 0x60 as f32 / 255.0, 0xf0 as f32 / 255.0);
+    iced::Color::from_rgb(0x42 as f32 / 255.0, 0x21 as f32 / 255.0, 0x8c as f32 / 255.0);
 
 pub const ROGUE_PURPLE_DARK: iced::Color =
-    iced::Color::from_rgb(0x58 as f32 / 255.0, 0x30 as f32 / 255.0, 0xc8 as f32 / 255.0);
+    iced::Color::from_rgb(0x39 as f32 / 255.0, 0x21 as f32 / 255.0, 0x42 as f32 / 255.0);
 
 pub const ACE_BLACK_LIGHT: iced::Color =
     iced::Color::from_rgb(0x31 as f32 / 255.0, 0x4a as f32 / 255.0, 0x5a as f32 / 255.0);
@@ -78,10 +84,11 @@ pub const SELECT_YELLOW: iced::Color =
 pub fn accent_pair(color: config::ThemeColor) -> (iced::Color, iced::Color) {
     match color {
         config::ThemeColor::TrillYellow => (TRILL_YELLOW_LIGHT, TRILL_YELLOW_DARK),
-        config::ThemeColor::DjangoOrange => (DJANGO_ORANGE_LIGHT, DJANGO_ORANGE_DARK),
         config::ThemeColor::PegasusBlue => (PEGASUS_BLUE_LIGHT, PEGASUS_BLUE_DARK),
         config::ThemeColor::SoniaPink => (SONIA_PINK_LIGHT, SONIA_PINK_DARK),
+        config::ThemeColor::ZerkerGrey => (ZERKER_GREY_LIGHT, ZERKER_GREY_DARK),
         config::ThemeColor::NinjaGreen => (NINJA_GREEN_LIGHT, NINJA_GREEN_DARK),
+        config::ThemeColor::SaurianOrange => (SAURIAN_ORANGE_LIGHT, SAURIAN_ORANGE_DARK),
         config::ThemeColor::RoguePurple => (ROGUE_PURPLE_LIGHT, ROGUE_PURPLE_DARK),
         config::ThemeColor::AceBlack => (ACE_BLACK_LIGHT, ACE_BLACK_DARK),
         config::ThemeColor::JokerRed => (JOKER_RED_LIGHT, JOKER_RED_DARK),
