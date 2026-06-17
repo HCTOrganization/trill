@@ -12,7 +12,6 @@ members = [
     "tango-replaytool",
     "tango-rtc",
     "tango-signaling",
-    "tango-signaling-server-rs",
 ]
 # Vendored, patched fork of sctp-proto (str0m's SCTP). Not a workspace member —
 # it's pulled in only via the `[patch.crates.io]` below. See its TANGO PATCH
