@@ -23,7 +23,7 @@ jobs:
       # empty in that case, matching what `gh release create` would do.
       - id: tag-msg
         run: |
-          git fetch --tags --force
+          git fetch --tags --force --no-recurse-submodules
           msg=$(git for-each-ref --format='%(contents)' refs/tags/${{ github.ref_name }})
           {
             echo 'msg<<TANGO_TAG_MSG_EOF'
@@ -52,7 +52,7 @@ jobs:
         with:
           submodules: recursive
 
-      - run: git fetch --tags --force
+      - run: git fetch --tags --force --no-recurse-submodules
 
       - uses: pat-s/always-upload-cache@v2
         with:
@@ -103,7 +103,7 @@ jobs:
         with:
           submodules: recursive
 
-      - run: git fetch --tags --force
+      - run: git fetch --tags --force --no-recurse-submodules
 
       - uses: pat-s/always-upload-cache@v2
         with:
@@ -148,7 +148,7 @@ jobs:
         with:
           submodules: recursive
 
-      - run: git fetch --tags --force
+      - run: git fetch --tags --force --no-recurse-submodules
 
       - uses: pat-s/always-upload-cache@v2
         with:
@@ -196,7 +196,7 @@ jobs:
         with:
           submodules: recursive
 
-      - run: git fetch --tags --force
+      - run: git fetch --tags --force --no-recurse-submodules
 
       - uses: pat-s/always-upload-cache@v2
         with:
@@ -244,7 +244,7 @@ jobs:
         with:
           submodules: recursive
 
-      - run: git fetch --tags --force
+      - run: git fetch --tags --force --no-recurse-submodules
 
       - uses: pat-s/always-upload-cache@v2
         with:
@@ -293,7 +293,7 @@ jobs:
         with:
           submodules: recursive
 
-      - run: git fetch --tags --force
+      - run: git fetch --tags --force --no-recurse-submodules
 
       - uses: pat-s/always-upload-cache@v2
         with:
