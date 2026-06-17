@@ -59,8 +59,18 @@ pub struct Backend {
 
 impl Backend {
     pub fn new(stream: impl audio::Stream + Send + 'static) -> anyhow::Result<Self> {
+        Self::new_at(stream, TARGET_SAMPLE_RATE)
+    }
+
+    /// Open a playback stream at an arbitrary source sample rate.
+    /// SDL converts from this rate to whatever the device wants, so
+    /// callers (e.g. the one-shot voice player) can feed samples at
+    /// their native rate without resampling themselves. Channels and
+    /// format stay fixed at stereo / i16 — the shape every
+    /// `audio::Stream` produces.
+    pub fn new_at(stream: impl audio::Stream + Send + 'static, sample_rate: i32) -> anyhow::Result<Self> {
         let spec = AudioSpec {
-            freq: Some(TARGET_SAMPLE_RATE),
+            freq: Some(sample_rate),
             channels: Some(TARGET_CHANNELS),
             format: Some(AudioFormat::s16_sys()),
         };
@@ -77,10 +87,10 @@ impl Backend {
             .resume()
             .map_err(|e| anyhow::anyhow!("sdl resume: {e}"))?;
 
-        log::info!("sdl audio: stream up at {TARGET_SAMPLE_RATE} Hz / {TARGET_CHANNELS}ch i16");
+        log::info!("sdl audio: stream up at {sample_rate} Hz / {TARGET_CHANNELS}ch i16");
         Ok(Self {
             _stream: stream_with_cb,
-            sample_rate: TARGET_SAMPLE_RATE as u32,
+            sample_rate: sample_rate as u32,
         })
     }
 }

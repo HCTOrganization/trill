@@ -105,6 +105,11 @@ pub struct App {
     /// down the SDL audio stream and the app would go silent.
     _audio_backend: Option<audio::sdl::Backend>,
 
+    /// One-shot voice clip played once at startup. Held so its
+    /// dedicated SDL stream survives long enough to finish; dropped
+    /// with the app.
+    _voice_player: Option<audio::oneshot::Player>,
+
     /// Owned game+save+assets for the current selection. Rebuilt only
     /// when game or save changes; per-frame view() borrows it.
     loaded: Option<selection::Loaded>,
@@ -297,6 +302,20 @@ impl App {
             }
         };
 
+        // Play a short voice clip once at launch on its own SDL
+        // stream (independent of the session audio path). Which clip
+        // plays depends on the configured accent color. Embedded at
+        // build time so it ships in the binary. Failure is non-fatal —
+        // a missing audio device just means no jingle.
+        let startup_voice = audio::oneshot::voice_for_theme(config.theme_color);
+        let voice_player = match audio::oneshot::play(startup_voice) {
+            Ok(p) => Some(p),
+            Err(e) => {
+                log::warn!("audio: startup voice clip failed: {e:?}");
+                None
+            }
+        };
+
         let mut patch_autoupdater = patch::Autoupdater::new(
             config.patches_path(),
             config.patch_repo.clone(),
@@ -336,6 +355,7 @@ impl App {
             scanners,
             audio_binder,
             _audio_backend: audio_backend,
+            _voice_player: voice_player,
             loaded: None,
             loadout: restored,
             play,

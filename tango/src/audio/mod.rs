@@ -3,6 +3,7 @@
 //! adapter that pulls samples out of an mgba thread and resamples
 //! to the host rate.
 
+pub mod oneshot;
 pub mod sdl;
 
 pub const NUM_CHANNELS: usize = 2;
