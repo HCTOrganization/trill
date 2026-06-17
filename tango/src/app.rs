@@ -2303,14 +2303,45 @@ fn entered(el: Element<'_, Message>, progress: Option<f32>, dy: f32) -> Element<
 /// uses the base `icon.png`; every other color ships its own
 /// recolored PNG. Each is embedded + decoded once via LazyLock, so
 /// repeated calls (and theme switches) just clone a cached handle.
+///
+/// The source PNGs are far larger than the 28px nav slot. Handing the
+/// full-res texture to the GPU and letting it scale down in the
+/// fragment shader produces a single bilinear tap per pixel, which
+/// aliases badly on a high-frequency logo mark. Instead we downsample
+/// on the CPU with a Lanczos3 filter (proper area averaging) to a
+/// HiDPI-friendly box, so the result stays smooth at 28px across
+/// display scale factors.
 fn logo_handle(color: config::ThemeColor) -> iced::widget::image::Handle {
     use iced::widget::image::Handle;
     use std::sync::LazyLock;
+
+    /// Longest-edge target for the downsampled mark. The nav slot is
+    /// 28px logical; 96px keeps it crisp up to ~3x scaling while still
+    /// being a real downsample from the source art.
+    const TARGET: u32 = 96;
+
+    fn downsample(raw: &'static [u8]) -> Handle {
+        match image::load_from_memory(raw) {
+            Ok(img) => {
+                let img = img.resize(TARGET, TARGET, image::imageops::FilterType::Lanczos3);
+                let rgba = img.into_rgba8();
+                let (w, h) = rgba.dimensions();
+                Handle::from_rgba(w, h, rgba.into_raw())
+            }
+            // If decode somehow fails, fall back to the raw bytes so
+            // the logo still renders (just without CPU downsampling).
+            Err(e) => {
+                log::warn!("logo decode failed, using raw bytes: {e}");
+                Handle::from_bytes(raw)
+            }
+        }
+    }
+
     macro_rules! logo {
         ($name:literal) => {{
             static H: LazyLock<Handle> = LazyLock::new(|| {
                 let raw: &'static [u8] = include_bytes!($name);
-                Handle::from_bytes(raw)
+                downsample(raw)
             });
             H.clone()
         }};
