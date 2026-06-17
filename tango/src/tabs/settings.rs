@@ -688,6 +688,7 @@ fn settings_netplay<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config
     let preset_options: Vec<Choice<String>> = vec![
         Choice::new("default".to_string(), t!(lang, "settings-netplay-endpoint-default")),
         Choice::new("cnserver".to_string(), t!(lang, "settings-netplay-endpoint-cnserver")),
+        Choice::new("easserver".to_string(), t!(lang, "settings-netplay-endpoint-easserver")),
         Choice::new("tango".to_string(), t!(lang, "settings-netplay-endpoint-tango")),
     ];
     let selected_preset: Option<Choice<String>> = None; // No preset selected by default, showing placeholder
