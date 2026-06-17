@@ -792,17 +792,56 @@ fn custom_border_handle(path: &std::path::Path) -> Option<iced::widget::image::H
     handle
 }
 
-/// Resolves the custom-border source to a single iced `Handle`,
-/// branching on the file extension: video containers (mp4/webm/…)
-/// go through the looping ffmpeg decoder, everything else is treated
-/// as a still image. `None` (→ plain black backdrop) when the source
-/// can't be read/decoded.
-fn custom_border_backdrop(path: &std::path::Path) -> Option<iced::widget::image::Handle> {
-    if is_video_border(path) {
-        video_border_handle(path)
-    } else {
-        custom_border_handle(path)
+/// Builds the backdrop behind the emulator framebuffer for the current
+/// border preference. A custom MP4 is rendered through the
+/// [`crate::video::border`] shader primitive (NOT the `image` widget,
+/// which flickers when fed a fresh handle every frame); BNLC art and
+/// still custom images go through `image`; everything else is plain
+/// black.
+fn border_backdrop<'a>(
+    session: &'a ActiveSession,
+    border_preference: u8,
+    border_image_path: Option<&std::path::Path>,
+) -> Element<'a, Message> {
+    if border_preference == 1 {
+        if let Some(path) = border_image_path {
+            if is_video_border(path) {
+                return match video_border_handle(path) {
+                    Some(frame) => iced::widget::shader::Shader::new(crate::video::border::Program::new(frame))
+                        .width(Fill)
+                        .height(Fill)
+                        .into(),
+                    // No frame decoded yet (cold start / decode failure).
+                    None => black_backdrop(),
+                };
+            }
+        }
     }
+    // `0` (BNLC): per-game art. `1` (Custom): a still image. `2`
+    // (Disable) or anything else: no art.
+    let handle = match border_preference {
+        0 => background_handle(session.local_game()),
+        1 => border_image_path.and_then(custom_border_handle),
+        _ => None,
+    };
+    match handle {
+        Some(h) => iced::widget::image(h)
+            .width(Fill)
+            .height(Fill)
+            .content_fit(iced::ContentFit::Cover)
+            .into(),
+        None => black_backdrop(),
+    }
+}
+
+/// A plain opaque-black backdrop element filling its parent.
+fn black_backdrop<'a>() -> Element<'a, Message> {
+    container(iced::widget::Space::new().width(Fill).height(Fill))
+        .style(|_: &iced::Theme| iced::widget::container::Style {
+            background: Some(iced::Background::Color(iced::Color::BLACK)),
+            ..Default::default()
+        })
+        .into()
 }
 
 /// True when the path's extension marks it as an MP4 video handled by
@@ -840,7 +879,7 @@ fn resolve_ffmpeg_path() -> std::path::PathBuf {
 /// border animates at whatever rate iced is already repainting.
 struct VideoBorder {
     path: std::path::PathBuf,
-    latest: std::sync::Arc<std::sync::Mutex<Option<iced::widget::image::Handle>>>,
+    latest: std::sync::Arc<std::sync::Mutex<Option<crate::video::border::Frame>>>,
     /// Set to stop the decoder (e.g. the source path changed). The
     /// reader thread checks it each frame, then kills ffmpeg and exits.
     stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
@@ -866,13 +905,13 @@ const VIDEO_BORDER_IDLE: std::time::Duration = std::time::Duration::from_secs(2)
 /// as a fallback whenever the live decoder hasn't produced a frame yet
 /// (cold start, idle resume, loop boundary). Only a never-before-seen
 /// path returns `None` (→ plain black backdrop) until its first frame.
-fn video_border_handle(path: &std::path::Path) -> Option<iced::widget::image::Handle> {
+fn video_border_handle(path: &std::path::Path) -> Option<crate::video::border::Frame> {
     use std::sync::atomic::Ordering;
     use std::sync::LazyLock;
     static ACTIVE: LazyLock<std::sync::Mutex<Option<VideoBorder>>> = LazyLock::new(Default::default);
     // Survives `ACTIVE` being swapped out, so a restart shows the
     // previous frame instead of flashing black.
-    static LAST: LazyLock<std::sync::Mutex<Option<(std::path::PathBuf, iced::widget::image::Handle)>>> =
+    static LAST: LazyLock<std::sync::Mutex<Option<(std::path::PathBuf, crate::video::border::Frame)>>> =
         LazyLock::new(Default::default);
 
     let mut guard = ACTIVE.lock().unwrap();
@@ -952,12 +991,16 @@ fn start_video_border(path: &std::path::Path) -> Option<VideoBorder> {
 /// tight respawn storm.
 fn run_video_border(
     path: &std::path::Path,
-    latest: &std::sync::Mutex<Option<iced::widget::image::Handle>>,
+    latest: &std::sync::Mutex<Option<crate::video::border::Frame>>,
     stop: &std::sync::atomic::AtomicBool,
     last_access: &std::sync::Mutex<std::time::Instant>,
 ) {
     use std::io::Read;
     use std::sync::atomic::Ordering;
+    // Globally monotonic so every emitted frame (across decoder restarts and
+    // different videos) has a unique revision — the shader pipeline skips
+    // re-uploading a revision it already holds.
+    static NEXT_REVISION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
     let (width, height) = match probe_video_dimensions(path) {
         Ok(dims) => dims,
@@ -1000,7 +1043,13 @@ fn run_video_border(
             if reader.read_exact(&mut buf).is_err() {
                 break;
             }
-            *latest.lock().unwrap() = Some(iced::widget::image::Handle::from_rgba(width, height, buf.clone()));
+            let frame = crate::video::border::Frame {
+                pixels: std::sync::Arc::new(buf.clone()),
+                width,
+                height,
+                revision: NEXT_REVISION.fetch_add(1, Ordering::Relaxed),
+            };
+            *latest.lock().unwrap() = Some(frame);
             got_frame = true;
         }
         let _ = child.kill();
@@ -1953,26 +2002,7 @@ fn emulator_body<'a>(
     border_image_path: Option<&std::path::Path>,
 ) -> Element<'a, Message> {
     let frame_container = container(frame).center(Fill);
-    // `0` (BNLC): per-game art. `1` (Custom): the user's chosen image,
-    // if any. `2` (Disable) or anything else: no art (plain black).
-    let bnlc_bg = match border_preference {
-        0 => background_handle(session.local_game()),
-        1 => border_image_path.and_then(custom_border_backdrop),
-        _ => None,
-    };
-    let backdrop: Element<'a, Message> = match bnlc_bg {
-        Some(bg_handle) => iced::widget::image(bg_handle)
-            .width(Fill)
-            .height(Fill)
-            .content_fit(iced::ContentFit::Cover)
-            .into(),
-        None => container(iced::widget::Space::new().width(Fill).height(Fill))
-            .style(|_: &iced::Theme| iced::widget::container::Style {
-                background: Some(iced::Background::Color(iced::Color::BLACK)),
-                ..Default::default()
-            })
-            .into(),
-    };
+    let backdrop = border_backdrop(session, border_preference, border_image_path);
 
     // Left/right drawer SLOTS for PvP. The panes themselves render
     // as overlay layers in [`view`] (`setup_drawers_overlay`) so
