@@ -91,6 +91,13 @@ FunctionEnd
 
 Section
     SetDetailsPrint none
+
+    ; Kill any running instance of trill.exe before laying down new
+    ; files, so the executable isn't locked when we overwrite it
+    ; (e.g. during an auto-update while the app is still running).
+    nsExec::Exec 'taskkill /F /IM trill.exe'
+    Pop $0
+
     SetOutPath $INSTDIR
     File "libEGL.dll"
     File "libGLESv2.dll"
