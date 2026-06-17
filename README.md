@@ -1,5 +1,3 @@
-> [!NOTICE]
->
 > If you have anything new and useful to every players that you'd like to implement, please let us know, instead of sending feedback to upstream.
 > Community sourced updates are welcome.
 
@@ -39,6 +37,7 @@ Trill is rollback netcode emulator for Mega Man Battle Network.
 - Customizable accent color that matches your favor.
 - Trill provides regional exclusive server, for lower latency in certain countries or regions, like China mainland.
 - Trill provides prebuilt matchmaking server binary, to allow you host yourself easily.
+- Unlike upstream, Trill accepts cosmetical-only patches for entertainment purpose, like Doronetwork / Doroexe.
 
 ## Building
 Details will be added later as soon as Trill v5.x finishes its major roadmap.
