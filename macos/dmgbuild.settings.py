@@ -1,10 +1,10 @@
 format = "UDBZ"
-files = ["Trill.app"]
+files = ["Trill 5.app"]
 
-badge_icon = "Trill.app/Contents/Resources/Trill.icns"
+badge_icon = "Trill 5.app/Contents/Resources/Trill.icns"
 
 symlinks = {"Applications": "/Applications"}
-icon_locations = {"Trill.app": (140, 120), "Applications": (500, 120)}
+icon_locations = {"Trill 5.app": (140, 120), "Applications": (500, 120)}
 
 background = "builtin-arrow"
 
