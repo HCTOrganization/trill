@@ -792,6 +792,224 @@ fn custom_border_handle(path: &std::path::Path) -> Option<iced::widget::image::H
     handle
 }
 
+/// Resolves the custom-border source to a single iced `Handle`,
+/// branching on the file extension: video containers (mp4/webm/…)
+/// go through the looping ffmpeg decoder, everything else is treated
+/// as a still image. `None` (→ plain black backdrop) when the source
+/// can't be read/decoded.
+fn custom_border_backdrop(path: &std::path::Path) -> Option<iced::widget::image::Handle> {
+    if is_video_border(path) {
+        video_border_handle(path)
+    } else {
+        custom_border_handle(path)
+    }
+}
+
+/// True when the path's extension is one of the video containers the
+/// ffmpeg border decoder handles. Case-insensitive.
+fn is_video_border(path: &std::path::Path) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase())
+        .is_some_and(|e| matches!(e.as_str(), "mp4" | "webm" | "mkv" | "mov" | "m4v"))
+}
+
+/// Locates the bundled `ffmpeg`/`ffmpeg.exe` (sitting next to our own
+/// binary), falling back to a bare `ffmpeg` on `PATH`. Mirrors
+/// `tango_pvp::replay::export`'s resolver so both find the same
+/// shipped binary.
+fn resolve_ffmpeg_path() -> std::path::PathBuf {
+    let mut p = std::env::current_exe()
+        .ok()
+        .as_ref()
+        .and_then(|p| p.parent())
+        .map(|p| p.join("ffmpeg"))
+        .unwrap_or_else(|| "ffmpeg".into());
+    p.set_extension(std::env::consts::EXE_EXTENSION);
+    if p.exists() {
+        p
+    } else {
+        "ffmpeg".into()
+    }
+}
+
+/// A running ffmpeg-backed border-video decoder. ffmpeg loops the
+/// source forever (`-stream_loop -1`) at native frame rate (`-re`)
+/// with audio dropped (`-an`), piping BMP frames to a reader thread
+/// that publishes the most-recent frame into `latest`. The in-session
+/// redraw loop samples `latest` each frame, so the border animates at
+/// whatever rate iced is already repainting.
+struct VideoBorder {
+    path: std::path::PathBuf,
+    latest: std::sync::Arc<std::sync::Mutex<Option<iced::widget::image::Handle>>>,
+    /// Set to stop the decoder (e.g. the source path changed). The
+    /// reader thread checks it each frame, then kills ffmpeg and exits.
+    stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    /// Set by the reader thread once it has exited (idle-timed-out,
+    /// hit EOF, or was stopped) so the next lookup restarts cleanly.
+    finished: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    /// Bumped on every lookup. When the border stops being rendered
+    /// (session closed), the reader self-terminates after a short
+    /// idle window so we don't leave ffmpeg running in the background.
+    last_access: std::sync::Arc<std::sync::Mutex<std::time::Instant>>,
+}
+
+/// How long the decoder keeps running after the border stops being
+/// rendered before it tears ffmpeg down.
+const VIDEO_BORDER_IDLE: std::time::Duration = std::time::Duration::from_secs(2);
+
+/// Returns the latest decoded frame of the looping border video at
+/// `path`, lazily (re)starting the single shared ffmpeg decoder when
+/// the requested path changes or the previous one exited. `None`
+/// until the first frame is decoded, or if ffmpeg can't be launched —
+/// the caller then falls back to the plain black backdrop.
+fn video_border_handle(path: &std::path::Path) -> Option<iced::widget::image::Handle> {
+    use std::sync::atomic::Ordering;
+    use std::sync::LazyLock;
+    static ACTIVE: LazyLock<std::sync::Mutex<Option<VideoBorder>>> = LazyLock::new(Default::default);
+
+    let mut guard = ACTIVE.lock().unwrap();
+    if let Some(vb) = guard.as_ref() {
+        if vb.path == path && !vb.finished.load(Ordering::Relaxed) {
+            *vb.last_access.lock().unwrap() = std::time::Instant::now();
+            return vb.latest.lock().unwrap().clone();
+        }
+        // Different source (or the old decoder exited): signal the old
+        // reader thread to stop and reap its ffmpeg before replacing.
+        vb.stop.store(true, Ordering::Relaxed);
+    }
+    match start_video_border(path) {
+        Ok(vb) => {
+            let frame = vb.latest.lock().unwrap().clone();
+            *guard = Some(vb);
+            frame
+        }
+        Err(e) => {
+            log::warn!("custom border video {}: {e}", path.display());
+            *guard = None;
+            None
+        }
+    }
+}
+
+/// Spawns the looping, muted ffmpeg decode for `path` and the reader
+/// thread that owns it, returning the handle bundle the lookup parks
+/// in `ACTIVE`.
+fn start_video_border(path: &std::path::Path) -> anyhow::Result<VideoBorder> {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::{Arc, Mutex};
+
+    let mut cmd = std::process::Command::new(resolve_ffmpeg_path());
+    cmd.args(["-hide_banner", "-loglevel", "error", "-stream_loop", "-1", "-re"])
+        .arg("-i")
+        .arg(path)
+        // `-an`: never decode/route audio — the border is silent. BMP
+        // frames over image2pipe are self-describing, so the reader
+        // learns each frame's dimensions without a separate probe.
+        .args(["-an", "-f", "image2pipe", "-vcodec", "bmp", "pipe:1"])
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+    let mut child = cmd.spawn()?;
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| anyhow::anyhow!("ffmpeg stdout missing"))?;
+
+    let latest = Arc::new(Mutex::new(None));
+    let stop = Arc::new(AtomicBool::new(false));
+    let finished = Arc::new(AtomicBool::new(false));
+    let last_access = Arc::new(Mutex::new(std::time::Instant::now()));
+
+    let vb = VideoBorder {
+        path: path.to_path_buf(),
+        latest: latest.clone(),
+        stop: stop.clone(),
+        finished: finished.clone(),
+        last_access: last_access.clone(),
+    };
+
+    std::thread::Builder::new()
+        .name("border-video".into())
+        .spawn(move || {
+            let mut reader = std::io::BufReader::new(stdout);
+            loop {
+                if stop.load(Ordering::Relaxed) {
+                    break;
+                }
+                if last_access.lock().unwrap().elapsed() > VIDEO_BORDER_IDLE {
+                    break;
+                }
+                match read_bmp_frame(&mut reader) {
+                    Ok(Some(buf)) => {
+                        if let Ok(img) = image::load_from_memory_with_format(&buf, image::ImageFormat::Bmp) {
+                            let rgba = img.into_rgba8();
+                            let (w, h) = rgba.dimensions();
+                            let handle = iced::widget::image::Handle::from_rgba(w, h, rgba.into_raw());
+                            *latest.lock().unwrap() = Some(handle);
+                        }
+                    }
+                    // EOF (only happens if the source errors — looping
+                    // ffmpeg otherwise never ends) or a malformed frame.
+                    Ok(None) | Err(_) => break,
+                }
+            }
+            let _ = child.kill();
+            let _ = child.wait();
+            finished.store(true, Ordering::Relaxed);
+        })?;
+
+    Ok(vb)
+}
+
+/// Reads one BMP frame from a concatenated `image2pipe`/`bmp` stream.
+/// BMP's 14-byte header carries the total file size at offset 2, so a
+/// frame is self-delimiting: read the 6-byte `BM` + size prefix, then
+/// the remainder. `Ok(None)` on a clean end-of-stream.
+fn read_bmp_frame<R: std::io::Read>(r: &mut R) -> std::io::Result<Option<Vec<u8>>> {
+    let mut header = [0u8; 6];
+    let mut filled = 0;
+    while filled < header.len() {
+        match r.read(&mut header[filled..]) {
+            Ok(0) => {
+                if filled == 0 {
+                    return Ok(None); // clean EOF on a frame boundary
+                }
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::UnexpectedEof,
+                    "truncated BMP header",
+                ));
+            }
+            Ok(n) => filled += n,
+            Err(ref e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(e) => return Err(e),
+        }
+    }
+    if &header[0..2] != b"BM" {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "not a BMP frame",
+        ));
+    }
+    let size = u32::from_le_bytes([header[2], header[3], header[4], header[5]]) as usize;
+    // Guard against a bogus size field driving a huge allocation.
+    if size <= header.len() || size > 256 * 1024 * 1024 {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "implausible BMP frame size",
+        ));
+    }
+    let mut buf = vec![0u8; size];
+    buf[..header.len()].copy_from_slice(&header);
+    r.read_exact(&mut buf[header.len()..])?;
+    Ok(Some(buf))
+}
+
 /// Live frame-delay control: a turtle-icon heading naming it, over the lobby's
 /// frame-delay row (slider, fixed-width numeric readout, latency-driven
 /// "suggest" wand). Lifting the title into the heading frees the control line so
@@ -1686,7 +1904,7 @@ fn emulator_body<'a>(
     // if any. `2` (Disable) or anything else: no art (plain black).
     let bnlc_bg = match border_preference {
         0 => background_handle(session.local_game()),
-        1 => border_image_path.and_then(custom_border_handle),
+        1 => border_image_path.and_then(custom_border_backdrop),
         _ => None,
     };
     let backdrop: Element<'a, Message> = match bnlc_bg {

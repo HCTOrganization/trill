@@ -1885,7 +1885,13 @@ impl App {
                 async move {
                     rfd::AsyncFileDialog::new()
                         .set_directory(&initial)
-                        .add_filter("Image", &["png", "jpg", "jpeg", "bmp", "gif", "webp"])
+                        .add_filter(
+                            "Border media",
+                            &[
+                                "png", "jpg", "jpeg", "bmp", "gif", "webp", "mp4", "webm", "mkv",
+                                "mov", "m4v",
+                            ],
+                        )
                         .pick_file()
                         .await
                         .map(|h| h.path().to_path_buf())
