@@ -104,6 +104,7 @@ session-back-to-session = 대전으로 돌아가기
 # PvP telemetry deck cell tooltips
 session-stat-tps = 틱/초 (현재/최대)
 session-stat-skew = 스큐
+session-stat-lead = 리드
 session-stat-depth = 오측 깊이
 session-stat-ping = 네트워크 지연
 
