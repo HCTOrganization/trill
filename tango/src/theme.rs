@@ -17,10 +17,10 @@ use iced::Theme;
 /// Collection restyle briefly ran the PET cyan here; the
 /// structure stayed, the color came back home.)
 pub const TRILL_YELLOW_LIGHT: iced::Color =
-    iced::Color::from_rgb(0xff as f32 / 255.0, 0xf2 as f32 / 255.0, 0xa7 as f32 / 255.0);
+    iced::Color::from_rgb(0xdc as f32 / 255.0, 0xb2 as f32 / 255.0, 0x7a as f32 / 255.0);
 
 pub const TRILL_YELLOW_DARK: iced::Color =
-    iced::Color::from_rgb(0xff as f32 / 255.0, 0xf2 as f32 / 255.0, 0xa7 as f32 / 255.0);
+    iced::Color::from_rgb(0xdc as f32 / 255.0, 0xb2 as f32 / 255.0, 0x7a as f32 / 255.0);
 
 pub const PEGASUS_BLUE_LIGHT: iced::Color =
     iced::Color::from_rgb(0x63 as f32 / 255.0, 0xc6 as f32 / 255.0, 0xff as f32 / 255.0);
