@@ -22,6 +22,12 @@ fn theme_choice(lang: &LanguageIdentifier, mode: config::ThemeMode) -> Choice<co
     )
 }
 
+/// A [`config::ThemeColor`] as a pick_list [`Choice`], labeled in the
+/// UI language.
+fn theme_color_choice(lang: &LanguageIdentifier, color: config::ThemeColor) -> Choice<config::ThemeColor> {
+    Choice::new(color, t!(lang, color.i18n_key()))
+}
+
 /// A [`config::RelayMode`] as a pick_list [`Choice`], labeled in the
 /// UI language.
 fn relay_mode_choice(lang: &LanguageIdentifier, mode: config::RelayMode) -> Choice<config::RelayMode> {
@@ -160,6 +166,7 @@ pub enum Message {
     /// hands off to the installer + exits the process.
     UpdateNow,
     ThemeChanged(config::ThemeMode),
+    ThemeColorChanged(config::ThemeColor),
     /// User clicked "Add binding" for `k`. The next key/button
     /// event captured by the settings subscription is appended.
     BindingCaptureStart(input::MappedKey),
@@ -209,6 +216,7 @@ pub enum ConfigChange {
     Volume(f32),
     DisableBgmInPvp(bool),
     Theme(config::ThemeMode),
+    ThemeColor(config::ThemeColor),
     AddInputBinding(input::MappedKey, input::PhysicalInput),
     RemoveInputBinding(input::MappedKey, usize),
     ResetInputBindings,
@@ -273,6 +281,7 @@ impl State {
             // process on success. Nothing to fold into config.
             Message::UpdateNow => None,
             Message::ThemeChanged(t) => Some(ConfigChange::Theme(t)),
+            Message::ThemeColorChanged(c) => Some(ConfigChange::ThemeColor(c)),
             Message::BindingCaptureStart(k) => {
                 self.capture_target = Some(k);
                 None
@@ -449,6 +458,18 @@ fn settings_general<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config
             let selected = options.iter().find(|c| c.value == config.theme).cloned();
             pick_list(options, selected, |c: Choice<config::ThemeMode>| {
                 Message::ThemeChanged(c.value)
+            })
+            .padding(STANDARD_PADDING)
+            .style(widgets::chunky_pick_list)
+        }),
+        labeled::<Message>(t!(lang, "settings-theme-color"), {
+            let options: Vec<_> = config::ThemeColor::ALL
+                .into_iter()
+                .map(|c| theme_color_choice(lang, c))
+                .collect();
+            let selected = options.iter().find(|c| c.value == config.theme_color).cloned();
+            pick_list(options, selected, |c: Choice<config::ThemeColor>| {
+                Message::ThemeColorChanged(c.value)
             })
             .padding(STANDARD_PADDING)
             .style(widgets::chunky_pick_list)

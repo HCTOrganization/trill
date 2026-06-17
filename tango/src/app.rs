@@ -1967,6 +1967,7 @@ impl App {
             // Sampled by spawn_pvp at match start; nothing live to poke.
             C::DisableBgmInPvp(b) => self.config.disable_bgm_in_pvp = b,
             C::Theme(t) => self.config.theme = t,
+            C::ThemeColor(c) => self.config.theme_color = c,
             C::AddInputBinding(slot, binding) => {
                 let bindings = self.config.input_mapping.slot_mut(slot);
                 // Avoid dupes — a single binding could be added

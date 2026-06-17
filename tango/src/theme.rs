@@ -22,6 +22,48 @@ pub const TRILL_YELLOW_LIGHT: iced::Color =
 pub const TRILL_YELLOW_DARK: iced::Color =
     iced::Color::from_rgb(0xdc as f32 / 255.0, 0xb2 as f32 / 255.0, 0x7a as f32 / 255.0);
 
+pub const DJANGO_ORANGE_LIGHT: iced::Color =
+    iced::Color::from_rgb(0xf8 as f32 / 255.0, 0xd8 as f32 / 255.0, 0x38 as f32 / 255.0);
+
+pub const DJANGO_ORANGE_DARK: iced::Color =
+    iced::Color::from_rgb(0xe0 as f32 / 255.0, 0x68 as f32 / 255.0, 0x28 as f32 / 255.0);
+
+pub const PEGASUS_BLUE_LIGHT: iced::Color =
+    iced::Color::from_rgb(0x70 as f32 / 255.0, 0x90 as f32 / 255.0, 0xd8 as f32 / 255.0);
+
+pub const PEGASUS_BLUE_DARK: iced::Color =
+    iced::Color::from_rgb(0x60 as f32 / 255.0, 0x60 as f32 / 255.0, 0xa8 as f32 / 255.0);
+
+pub const SONIA_PINK_LIGHT: iced::Color =
+    iced::Color::from_rgb(0xf0 as f32 / 255.0, 0x38 as f32 / 255.0, 0x60 as f32 / 255.0);
+
+pub const SONIA_PINK_DARK: iced::Color =
+    iced::Color::from_rgb(0xe0 as f32 / 255.0, 0x00 as f32 / 255.0, 0x38 as f32 / 255.0);
+
+pub const NINJA_GREEN_LIGHT: iced::Color =
+    iced::Color::from_rgb(0x28 as f32 / 255.0, 0xa2 as f32 / 255.0, 0x20 as f32 / 255.0);
+
+pub const NINJA_GREEN_DARK: iced::Color =
+    iced::Color::from_rgb(0x11 as f32 / 255.0, 0x64 as f32 / 255.0, 0x0d as f32 / 255.0);
+
+pub const ROGUE_PURPLE_LIGHT: iced::Color =
+    iced::Color::from_rgb(0x88 as f32 / 255.0, 0x60 as f32 / 255.0, 0xf0 as f32 / 255.0);
+
+pub const ROGUE_PURPLE_DARK: iced::Color =
+    iced::Color::from_rgb(0x58 as f32 / 255.0, 0x30 as f32 / 255.0, 0xc8 as f32 / 255.0);
+
+pub const ACE_BLACK_LIGHT: iced::Color =
+    iced::Color::from_rgb(0x31 as f32 / 255.0, 0x4a as f32 / 255.0, 0x5a as f32 / 255.0);
+
+pub const ACE_BLACK_DARK: iced::Color =
+    iced::Color::from_rgb(0x21 as f32 / 255.0, 0x39 as f32 / 255.0, 0x4a as f32 / 255.0);
+
+pub const JOKER_RED_LIGHT: iced::Color =
+    iced::Color::from_rgb(0xad as f32 / 255.0, 0x00 as f32 / 255.0, 0x18 as f32 / 255.0);
+
+pub const JOKER_RED_DARK: iced::Color =
+    iced::Color::from_rgb(0x84 as f32 / 255.0, 0x00 as f32 / 255.0, 0x00 as f32 / 255.0);
+
 /// The Legacy Collection's selection gold — BNLC paints the picked
 /// list row / focused thumbnail in this yellow with dark ink text.
 /// Used by `widgets::list_item` for selected rows so "what you've
@@ -29,7 +71,25 @@ pub const TRILL_YELLOW_DARK: iced::Color =
 pub const SELECT_YELLOW: iced::Color =
     iced::Color::from_rgb(0xff as f32 / 255.0, 0xd2 as f32 / 255.0, 0x3d as f32 / 255.0);
 
+/// The light/dark accent pair for the given [`config::ThemeColor`].
+/// `theme_for` selects which half drives the palette based on the
+/// active [`config::ThemeMode`]. Kept here next to the color consts so
+/// the mapping and the values never drift apart.
+pub fn accent_pair(color: config::ThemeColor) -> (iced::Color, iced::Color) {
+    match color {
+        config::ThemeColor::TrillYellow => (TRILL_YELLOW_LIGHT, TRILL_YELLOW_DARK),
+        config::ThemeColor::DjangoOrange => (DJANGO_ORANGE_LIGHT, DJANGO_ORANGE_DARK),
+        config::ThemeColor::PegasusBlue => (PEGASUS_BLUE_LIGHT, PEGASUS_BLUE_DARK),
+        config::ThemeColor::SoniaPink => (SONIA_PINK_LIGHT, SONIA_PINK_DARK),
+        config::ThemeColor::NinjaGreen => (NINJA_GREEN_LIGHT, NINJA_GREEN_DARK),
+        config::ThemeColor::RoguePurple => (ROGUE_PURPLE_LIGHT, ROGUE_PURPLE_DARK),
+        config::ThemeColor::AceBlack => (ACE_BLACK_LIGHT, ACE_BLACK_DARK),
+        config::ThemeColor::JokerRed => (JOKER_RED_LIGHT, JOKER_RED_DARK),
+    }
+}
+
 pub fn theme_for(config: &config::Config) -> Theme {
+    let (accent_light, accent_dark) = accent_pair(config.theme_color);
     // Trill palettes — these aren't tweaks of iced's stock Light /
     // Dark anymore. The dark variant keeps the Battle Network
     // Legacy Collection structure (glowing panel frames, gold
@@ -44,8 +104,8 @@ pub fn theme_for(config: &config::Config) -> Theme {
             iced::theme::Palette {
                 background: iced::Color::from_rgb(0xf3 as f32 / 255.0, 0xee as f32 / 255.0, 0xdc as f32 / 255.0),
                 text: iced::Color::from_rgb(0x14 as f32 / 255.0, 0x22 as f32 / 255.0, 0x34 as f32 / 255.0),
-                primary: TRILL_YELLOW_LIGHT,
-                success: TRILL_YELLOW_LIGHT,
+                primary: accent_light,
+                success: accent_light,
                 warning: iced::Color::from_rgb(0xb7 as f32 / 255.0, 0x7e as f32 / 255.0, 0x33 as f32 / 255.0),
                 danger: iced::Color::from_rgb(0xd1 as f32 / 255.0, 0x3a as f32 / 255.0, 0x3a as f32 / 255.0),
             },
@@ -66,8 +126,8 @@ pub fn theme_for(config: &config::Config) -> Theme {
                 // (the old cyan, then green) casts its hue onto
                 // every surface mixed from it.
                 text: iced::Color::from_rgb(0xec as f32 / 255.0, 0xee as f32 / 255.0, 0xed as f32 / 255.0),
-                primary: TRILL_YELLOW_DARK,
-                success: TRILL_YELLOW_DARK,
+                primary: accent_dark,
+                success: accent_dark,
                 warning: iced::Color::from_rgb(0xff as f32 / 255.0, 0xb5 as f32 / 255.0, 0x47 as f32 / 255.0),
                 danger: iced::Color::from_rgb(0xff as f32 / 255.0, 0x52 as f32 / 255.0, 0x52 as f32 / 255.0),
             },
