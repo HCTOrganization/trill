@@ -800,13 +800,38 @@ pub fn on_accent(accent: iced::Color) -> iced::Color {
 /// bottom border so the two layers don't fight.
 pub fn hud_bar(theme: &Theme) -> iced::widget::container::Style {
     let p = theme.extended_palette();
+    let bg = theme.palette().background;
     let text = theme.palette().text;
-    // Solid plate in the active accent (accent_light / accent_dark,
-    // surfaced through the palette as `primary`) instead of the old
-    // bg-derived gradient, so the HUD reads in the theme color.
-    let accent = theme.palette().primary;
+    let (top, bottom) = if p.is_dark {
+        // Pull toward black at the bottom; the top stays close to
+        // the bg color so the gradient is felt, not seen. Uniform
+        // channel decay — the old blue-retaining multipliers were
+        // a navy-era trick that re-tints a neutral base cool.
+        (
+            iced::Color {
+                r: bg.r * 0.7,
+                g: bg.g * 0.7,
+                b: bg.b * 0.7,
+                a: 1.0,
+            },
+            iced::Color {
+                r: bg.r * 0.4,
+                g: bg.g * 0.4,
+                b: bg.b * 0.4,
+                a: 1.0,
+            },
+        )
+    } else {
+        // Light theme: subtle parchment gradient — top slightly
+        // tinted toward text, bottom slightly more so.
+        (mix(bg, text, 0.05), mix(bg, text, 0.12))
+    };
     iced::widget::container::Style {
-        background: Some(iced::Background::Color(accent)),
+        background: Some(iced::Background::Gradient(iced::Gradient::Linear(
+            iced::gradient::Linear::new(0.0)
+                .add_stop(0.0, top)
+                .add_stop(1.0, bottom),
+        ))),
         text_color: Some(text),
         shadow: iced::Shadow {
             color: iced::Color {
