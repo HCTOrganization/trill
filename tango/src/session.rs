@@ -758,6 +758,40 @@ fn background_handle(game: &'static crate::game::Game) -> Option<iced::widget::i
     handle
 }
 
+/// Decodes the user's custom emulator-border image into an iced
+/// `Handle`, caching the result per file path (the path rarely
+/// changes, so re-decoding on every frame would be wasteful). The
+/// cache keys on the path string and tracks the last-modified time so
+/// replacing the file at the same path picks up the new image.
+/// `None` whenever the path can't be read or decoded — the caller
+/// then falls back to the plain black backdrop.
+fn custom_border_handle(path: &std::path::Path) -> Option<iced::widget::image::Handle> {
+    use std::collections::HashMap;
+    use std::sync::LazyLock;
+    type Stamp = Option<std::time::SystemTime>;
+    static CACHE: LazyLock<std::sync::Mutex<HashMap<std::path::PathBuf, (Stamp, Option<iced::widget::image::Handle>)>>> =
+        LazyLock::new(Default::default);
+    let modified: Stamp = std::fs::metadata(path).and_then(|m| m.modified()).ok();
+    if let Some((stamp, cached)) = CACHE.lock().unwrap().get(path).cloned() {
+        if stamp == modified {
+            return cached;
+        }
+    }
+    let handle = image::open(path)
+        .inspect_err(|e| log::warn!("custom border {}: decode: {e}", path.display()))
+        .ok()
+        .map(|img| {
+            let rgba = img.into_rgba8();
+            let (w, h) = rgba.dimensions();
+            iced::widget::image::Handle::from_rgba(w, h, rgba.into_raw())
+        });
+    CACHE
+        .lock()
+        .unwrap()
+        .insert(path.to_path_buf(), (modified, handle.clone()));
+    handle
+}
+
 /// Live frame-delay control: a turtle-icon heading naming it, over the lobby's
 /// frame-delay row (slider, fixed-width numeric readout, latency-driven
 /// "suggest" wand). Lifting the title into the heading frees the control line so
@@ -1461,7 +1495,8 @@ pub fn view<'a>(
     lang: &'a LanguageIdentifier,
     state: &'a State,
     fractional_scaling: bool,
-    hide_emulator_border: bool,
+    border_preference: u8,
+    border_image_path: Option<&'a std::path::Path>,
     effect: &'static Effect,
 ) -> Element<'a, Message> {
     let Some(session) = state.active.as_ref() else {
@@ -1470,7 +1505,13 @@ pub fn view<'a>(
 
     let frame = framebuffer_view(state, fractional_scaling, effect);
     let mut layout = column![].spacing(0).width(Fill).height(Fill);
-    layout = layout.push(emulator_body(session, state, frame, hide_emulator_border));
+    layout = layout.push(emulator_body(
+        session,
+        state,
+        frame,
+        border_preference,
+        border_image_path,
+    ));
 
     // The controls live in a floating bar over the emulator (no
     // reserved bottom strip), sliding away after the cursor sits
@@ -1637,13 +1678,16 @@ fn emulator_body<'a>(
     session: &'a ActiveSession,
     state: &'a State,
     frame: Element<'a, Message>,
-    hide_emulator_border: bool,
+    border_preference: u8,
+    border_image_path: Option<&std::path::Path>,
 ) -> Element<'a, Message> {
     let frame_container = container(frame).center(Fill);
-    let bnlc_bg = if hide_emulator_border {
-        None
-    } else {
-        background_handle(session.local_game())
+    // `0` (BNLC): per-game art. `1` (Custom): the user's chosen image,
+    // if any. `2` (Disable) or anything else: no art (plain black).
+    let bnlc_bg = match border_preference {
+        0 => background_handle(session.local_game()),
+        1 => border_image_path.and_then(custom_border_handle),
+        _ => None,
     };
     let backdrop: Element<'a, Message> = match bnlc_bg {
         Some(bg_handle) => iced::widget::image(bg_handle)

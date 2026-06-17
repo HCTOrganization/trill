@@ -156,7 +156,16 @@ pub enum Message {
     TogglePatchAutoupdate(bool),
     VideoFilterChanged(String),
     ToggleFractionalScaling(bool),
-    ToggleHideEmulatorBorder(bool),
+    /// Emulator border preference picked: `0` = BNLC, `1` = Custom,
+    /// `2` = Disable. See [`config::Config::border_preference`].
+    BorderPreferenceChanged(u8),
+    /// "Locate" clicked for a custom border image. Intercepted by the
+    /// App (before `State::update`) to open an async image picker,
+    /// which comes back as `BorderImagePicked`.
+    OpenBorderImagePicker,
+    /// Border image picker resolved: `Some(path)` if the user chose
+    /// one, `None` if they dismissed it.
+    BorderImagePicked(Option<std::path::PathBuf>),
     ToggleFullscreen(bool),
     /// New windowed size picked, as `(width, height)`.
     ResolutionChanged((f32, f32)),
@@ -217,7 +226,8 @@ pub enum ConfigChange {
     PatchAutoupdate(bool),
     VideoFilter(String),
     FractionalScaling(bool),
-    HideEmulatorBorder(bool),
+    BorderPreference(u8),
+    BorderImagePath(Option<std::path::PathBuf>),
     Fullscreen(bool),
     Resolution(f32, f32),
     UiScale(f32),
@@ -278,7 +288,11 @@ impl State {
             Message::TogglePatchAutoupdate(b) => Some(ConfigChange::PatchAutoupdate(b)),
             Message::VideoFilterChanged(s) => Some(ConfigChange::VideoFilter(s)),
             Message::ToggleFractionalScaling(b) => Some(ConfigChange::FractionalScaling(b)),
-            Message::ToggleHideEmulatorBorder(b) => Some(ConfigChange::HideEmulatorBorder(b)),
+            Message::BorderPreferenceChanged(p) => Some(ConfigChange::BorderPreference(p)),
+            // Intercepted by the App before it reaches here (it opens the
+            // image picker); the arm exists only for exhaustiveness.
+            Message::OpenBorderImagePicker => None,
+            Message::BorderImagePicked(path) => Some(ConfigChange::BorderImagePath(path)),
             Message::ToggleFullscreen(b) => Some(ConfigChange::Fullscreen(b)),
             Message::ResolutionChanged((w, h)) => Some(ConfigChange::Resolution(w, h)),
             Message::UiScaleChanged(s) => Some(ConfigChange::UiScale(s)),
@@ -678,10 +692,33 @@ fn settings_graphics<'a>(lang: &'a LanguageIdentifier, config: &'a config::Confi
             .label(t!(lang, "settings-fractional-scaling"))
             .on_toggle(Message::ToggleFractionalScaling)
             .style(widgets::chunky_checkbox),
-        iced::widget::checkbox(config.hide_emulator_border)
-            .label(t!(lang, "settings-hide-emulator-border"))
-            .on_toggle(Message::ToggleHideEmulatorBorder)
-            .style(widgets::chunky_checkbox),
+        labeled::<Message>(t!(lang, "settings-border-preference"), {
+            let options: Vec<Choice<u8>> = vec![
+                Choice::new(0, t!(lang, "settings-border-preference-bnlc")),
+                Choice::new(1, t!(lang, "settings-border-preference-custom")),
+                Choice::new(2, t!(lang, "settings-border-preference-disable")),
+            ];
+            let selected = options.iter().find(|c| c.value == config.border_preference).cloned();
+            // The "Locate" button only does anything for the Custom
+            // preference, so leave its `on_press` off (which disables
+            // it in iced) unless Custom is selected.
+            let mut locate = button(text(t!(lang, "settings-border-preference-locate")))
+                .padding(STANDARD_PADDING)
+                .style(widgets::neutral);
+            if config.border_preference == 1 {
+                locate = locate.on_press(Message::OpenBorderImagePicker);
+            }
+            row![
+                pick_list(options, selected, |c: Choice<u8>| {
+                    Message::BorderPreferenceChanged(c.value)
+                })
+                .padding(STANDARD_PADDING)
+                .style(widgets::chunky_pick_list),
+                locate,
+            ]
+            .spacing(14)
+            .align_y(Alignment::Center)
+        }),
     ]
     .spacing(14)
     .padding(style::PANE_PADDING)

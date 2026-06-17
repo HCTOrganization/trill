@@ -175,12 +175,22 @@ pub struct Config {
     /// no bilinear shimmer at non-integer scales.
     #[serde(default)]
     pub fractional_scaling: bool,
-    /// When true, hide the BNLC per-game background art that
-    /// sits behind the framebuffer — fall back to a plain black
-    /// backdrop instead. Default (false) shows the BNLC border
-    /// when the corresponding volume is installed.
+    /// How the emulator border (the art behind the framebuffer) is
+    /// chosen:
+    /// - `0` (BNLC): show the BNLC per-game background art when the
+    ///   corresponding volume is installed — same as the old
+    ///   `hide_emulator_border = false`.
+    /// - `1` (Custom): use the image at [`Config::border_image_path`]
+    ///   if one is set; otherwise fall back to a plain black backdrop.
+    /// - `2` (Disable): always use a plain black backdrop — same as the
+    ///   old `hide_emulator_border = true`.
     #[serde(default)]
-    pub hide_emulator_border: bool,
+    pub border_preference: u8,
+    /// Path to a user-chosen image used as the emulator border when
+    /// [`Config::border_preference`] is `1` (Custom). `None` until the
+    /// user picks one via the "Locate" button in graphics settings.
+    #[serde(default)]
+    pub border_image_path: Option<std::path::PathBuf>,
     /// When true, the self-updater (`updater::Updater`) runs in
     /// the background and downloads any newer GitHub release.
     /// Toggle takes effect immediately via Settings; downloaded
@@ -306,7 +316,8 @@ impl Default for Config {
             enable_patch_autoupdate: true,
             video_filter: String::new(),
             fractional_scaling: false,
-            hide_emulator_border: false,
+            border_preference: 0,
+            border_image_path: None,
             enable_updater: true,
             allow_prerelease_upgrades: false,
             last_game: None,
