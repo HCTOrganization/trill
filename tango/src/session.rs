@@ -2454,7 +2454,7 @@ fn disconnect_overlay<'a>(
     Some(iced::widget::stack![Element::from(backdrop), Element::from(placement)].into())
 }
 
-/// Decode a `.tangoreplay`, resolve both sides' ROM (+ optional
+/// Decode a `.t5replay`, resolve both sides' ROM (+ optional
 /// patch) from the scanners, and spin up a playback session bound to
 /// the shared audio binder. Ready to drop straight into the app's
 /// `session` slot.

@@ -2,19 +2,19 @@
 LANGUAGE = Русский
 
 crash =
-    Ой, Танго столкнулся с ошибкой и Сломался!
+    Ой, Трель столкнулся с ошибкой и Сломался!
 
     При сообщении о Поломке, пожалуйста, укажите следующий файл журнала:
 
     { $path }
 crash-no-log =
-    Упс, Танго столкнулся с ошибкой и Сломался!
+    Упс, Трель столкнулся с ошибкой и Сломался!
 
     { $error }
-window-title = Танго
-    .running = Танго(запушен)
+window-title = Трель
+    .running = Трель(запушен)
 # Tooltip on the top bar's close button (fullscreen only).
-window-quit = Выйти из Танго
+window-quit = Выйти из Трель
 play-play = Воспроизвести
 play-fight = В бой!
 play-link-code = Код ссылки (оставьте пустым для случайного)
@@ -45,6 +45,16 @@ settings-theme-light = Светлая
     .light = Светлая
     .dark = Темная
     .system = Следовать настройкам системы
+settings-theme-color = Цвет темы
+settings-theme-color-trill-yellow = Трель Жёлтая
+settings-theme-color-pegasus-blue = Пегас Синяя
+settings-theme-color-sonia-pink = Соня Розовая
+settings-theme-color-zerker-grey = Зеркер Серая
+settings-theme-color-ninja-green = Ниндзя Зелёная
+settings-theme-color-saurian-orange = Сауриан Оранжевая
+settings-theme-color-rogue-purple = Рогу Фиолетовая
+settings-theme-color-ace-black = Туз Чёрная
+settings-theme-color-joker-red = Джокер Красная
 settings-video-filter = Видео фильтр
     .null = Ничего
     .hq2x = hq2x
@@ -59,11 +69,17 @@ settings-enable-save-editor = Включить редактор сохранен
 settings-experimental-warning = Экспериментальные функции могут повредить ваши сохранения или сделать их непригодными, могут быть изменены или удалены в любой момент и могут не иметь проверок, обеспечивающих допустимость сохранений для онлайн-игры. Используйте на свой страх и риск.
     .tooltip = Включение этого режима добавит дополнительную вкладку "Обложение" в окно сохранения, которая скрывает всю информацию о вашем текущем файле сохранения.
 settings-matchmaking-endpoint = Точка окончания матча
+settings-netplay-endpoint-preset = Предустановка конечной точки
+settings-netplay-endpoint-default = Trill (По умолчанию)
+settings-netplay-endpoint-cnserver = Trill (Китайский сервер)
+settings-netplay-endpoint-tango = Tango
 settings-patch-repo = Репозитория Патчей
 settings-enable-patch-autoupdate = Включить авто обновление
 settings-data-path = Путь к данным
     .open = Открыть
     .change = Изменить
+settings-data-folder = Папка данных
+settings-data-folder-change = Изменить…
 settings-window-size = Размер окна
 settings-fullscreen = Полноэкранный режим
 settings-ui-scale = Масштаб интерфейса
@@ -129,8 +145,8 @@ play-status-negotiating = Согласование…
 play-status-failed = Сбой подключения: { $error }
 play-status-peer-disconnected = Другой игрок покинул игру.
 play-status-negotiate-expected-hello = Другой игрок не отправил ожидаемое рукопожатие.
-play-status-negotiate-version-too-old = Другой игрок использует более старую версию Tango.
-play-status-negotiate-version-too-new = Другой игрок использует более новую версию Tango.
+play-status-negotiate-version-too-old = Другой игрок использует более старую версию Трель.
+play-status-negotiate-version-too-new = Другой игрок использует более новую версию Трель.
 play-status-negotiate-failed = Произошла ошибка во время согласования: { $error }
 lobby-waiting = Ожидание…
 lobby-no-game = (игра не выбрана)
@@ -167,6 +183,7 @@ session-back-to-session = Вернуться к сессии
 # PvP telemetry deck cell tooltips
 session-stat-tps = Тик/с (текущее/макс.)
 session-stat-skew = Смещение
+session-stat-lead = Преимущество
 session-stat-depth = Глубина ошибки предсказания
 session-stat-ping = Сетевая задержка
 navi-style = Стиль
@@ -333,7 +350,7 @@ updater-up-to-date = v{ $version } (актуальная)
 updater-downloading = Загрузка: { $pct }%
 updater-ready-to-update = Обновление загружено и готово к установке.
 updater-update-now = Обновить сейчас
-welcome-title = Добро пожаловать в Tango!
+welcome-title = Добро пожаловать в Трель!
 welcome-subtitle = Осталось пару шагов до начала игры.
 welcome-step-roms = Добавьте свои ROM
 welcome-step-roms-description = Поместите ваши файлы .gba от Battle Network / Rockman EXE в:

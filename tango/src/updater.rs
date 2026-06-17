@@ -1,8 +1,8 @@
-//! Self-updater. Ported from `tango/src/updater.rs`.
+//! Self-updater. Ported from `trill/src/updater.rs`.
 //!
 //! Lifecycle (matches legacy):
 //!
-//!   1. Query GitHub for the latest tango release.
+//!   1. Query GitHub for the latest trill release.
 //!   2. If newer than the current build, stream the platform's
 //!      installer asset to `<data>/updater/incomplete`.
 //!   3. On clean download, rename → `pending.<ext>`.
@@ -19,7 +19,7 @@ use crate::config;
 use futures::StreamExt;
 use tokio::io::AsyncWriteExt;
 
-const GITHUB_RELEASES_URL: &str = "https://api.github.com/repos/tangobattle/tango/releases";
+const GITHUB_RELEASES_URL: &str = "https://api.hikaricalyx.com/Trill/v5/GetLatestUpdate";
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Release {
@@ -67,10 +67,16 @@ fn is_target_installer(s: &str) -> bool {
         s.ends_with("-macos.dmg")
     } else if cfg!(all(target_os = "windows", target_arch = "x86_64")) {
         s.ends_with("-x86_64-windows.exe")
+    } else if cfg!(all(target_os = "windows", target_arch = "x86")) {
+        s.ends_with("-i686-windows.exe")
+    } else if cfg!(all(target_os = "windows", target_arch = "aarch64")) {
+        s.ends_with("-aarch64-windows.exe")
     } else if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
         s.ends_with("-x86_64-linux.AppImage")
     } else if cfg!(all(target_os = "linux", target_arch = "aarch64")) {
         s.ends_with("-aarch64-linux.AppImage")
+    } else if cfg!(all(target_os = "linux", target_arch = "arm")) {
+        s.ends_with("-armv7-linux.AppImage")
     } else {
         false
     }
@@ -100,7 +106,7 @@ const IN_PROGRESS_FILENAME: &str = "in_progress.bin";
 
 #[cfg(target_os = "windows")]
 fn do_update(path: &std::path::Path) {
-    // Detach so closing tango's process doesn't take the
+    // Detach so closing trill's process doesn't take the
     // installer down with it.
     use std::os::windows::process::CommandExt;
     const DETACHED_PROCESS: u32 = 0x00000008;
@@ -196,7 +202,7 @@ impl Updater {
                         Ok::<_, anyhow::Error>(
                             client
                                 .get(GITHUB_RELEASES_URL)
-                                .header("User-Agent", "tango")
+                                .header("User-Agent", "trill")
                                 .send()
                                 .await?
                                 .json::<Vec<GithubReleaseInfo>>()

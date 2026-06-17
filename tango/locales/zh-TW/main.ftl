@@ -2,20 +2,20 @@
 LANGUAGE = 中文 (繁體)
 
 crash =
-    哎呀，Tango 遇到錯誤並崩潰了！
+    哎呀，Trill 遇到錯誤並崩潰了！
 
     報告此崩潰時，請包含以下日誌文件：
 
     { $path }
 crash-no-log =
-    哎呀，Tango 遇到錯誤並崩潰了！
+    哎呀，Trill 遇到錯誤並崩潰了！
 
     { $error }
-window-title = Tango
-    .running = Tango（進行中）
+window-title = Trill
+    .running = Trill（進行中）
 # Tooltip on the top bar's close button (fullscreen only).
-window-quit = 結束 Tango
-play-play = 啓動
+window-quit = 結束 Trill
+play-play = 啟動
 play-fight = 戰鬥！
 play-link-code = 鏈接代碼（留空則隨機生成）
 play-no-game = No game selected
@@ -29,7 +29,7 @@ replays-export-twosided = 雙視角
 replays-export-success = 渲染完成。
 replays-export-error = 渲染失敗: { $error }
 replays-export-open = 打開
-patches-open-folder = 打開文件夾
+patches-open-folder = 打開資料夾
 patches-favorite = 加入最愛
 patches-unfavorite = 從最愛移除
 patches-search-placeholder = 搜尋修補檔…
@@ -45,6 +45,16 @@ settings-theme-light = 淺色
     .light = 淺色
     .dark = 深色
     .system = 遵循系統設置
+settings-theme-color = 主題顏色
+settings-theme-color-trill-yellow = 托里爾黃
+settings-theme-color-pegasus-blue = 天馬藍
+settings-theme-color-sonia-pink = 美空粉
+settings-theme-color-zerker-grey = 狂戰灰
+settings-theme-color-ninja-green = 忍者綠
+settings-theme-color-saurian-orange = 恐龍橙
+settings-theme-color-rogue-purple = 無賴紫
+settings-theme-color-ace-black = 王牌黑
+settings-theme-color-joker-red = 鬼牌紅
 settings-video-filter = 圖形過濾器
     .null = 無
     .hq2x = hq2x
@@ -57,13 +67,19 @@ settings-streamer-mode = 直播隱私模式
 settings-section-experimental = 實驗性
 settings-enable-save-editor = 啟用存檔編輯器
 settings-experimental-warning = 實驗性功能可能會損壞或破壞你的存檔，隨時可能被變更或移除，並且可能缺少使存檔在連線對戰中保持合法的檢查。使用風險自負。
-    .tooltip = 啓用此模式將爲保存查看器添加一個額外的「封面」選項卡，該選項卡隱藏有關當前保存文件的所有信息。
-settings-matchmaking-endpoint = 配對服務器端點
+    .tooltip = 啟用此模式將為保存查看器添加一個額外的「封面」選項卡，該選項卡隱藏有關當前保存文件的所有信息。
+settings-matchmaking-endpoint = 配對伺服器端點
+settings-netplay-endpoint-preset = 端點預設
+settings-netplay-endpoint-default = Trill (預設)
+settings-netplay-endpoint-cnserver = Trill (中國伺服器)
+settings-netplay-endpoint-tango = Tango
 settings-patch-repo = 補丁倉庫
 settings-enable-patch-autoupdate = 自動更新
 settings-data-path = 數據路徑
     .open = 打開
     .change = 改變
+settings-data-folder = 數據資料夾
+settings-data-folder-change = 改變…
 settings-window-size = 視窗大小
 settings-fullscreen = 全螢幕
 settings-ui-scale = 介面縮放
@@ -85,7 +101,7 @@ auto-battle-data-program-advance = 程式強化
 auto-battle-data-edit-used = 使用次數
 auto-battle-data-edit-secondary = 二次
 auto-battle-data-edit-count = { $count } 個晶片
-welcome-open-folder = 打開文件夾
+welcome-open-folder = 打開資料夾
 welcome-continue = 已完成！
 discord-presence-looking = 尋找對戰中
 discord-presence-in-single-player = 單人遊戲中
@@ -125,8 +141,8 @@ play-status-negotiating = 協商中…
 play-status-failed = 連線失敗: { $error }
 play-status-peer-disconnected = 對方已離開。
 play-status-negotiate-expected-hello = 對方未發送預期的握手信號。
-play-status-negotiate-version-too-old = 對方使用的是較舊版本的Tango。
-play-status-negotiate-version-too-new = 對方使用的是較新版本的Tango。
+play-status-negotiate-version-too-old = 對方使用的是較舊版本的Trill。
+play-status-negotiate-version-too-new = 對方使用的是較新版本的Trill。
 play-status-negotiate-failed = 協商時發生錯誤：{ $error }
 lobby-waiting = 等待中…
 lobby-no-game = （未選擇遊戲）
@@ -163,6 +179,7 @@ session-back-to-session = 返回對戰
 # PvP telemetry deck cell tooltips
 session-stat-tps = 每秒刻數（目前/上限）
 session-stat-skew = 偏移
+session-stat-lead = 領先
 session-stat-depth = 誤預測深度
 session-stat-ping = 網路延遲
 navi-style = 風格
@@ -317,7 +334,7 @@ updater-up-to-date = v{ $version } (已是最新)
 updater-downloading = 下載中: { $pct }%
 updater-ready-to-update = 更新已下載，可進行安裝。
 updater-update-now = 立即更新
-welcome-title = 歡迎使用 Tango！
+welcome-title = 歡迎使用 Trill！
 welcome-subtitle = 再幾個步驟就可以開始對戰。
 welcome-step-roms = 新增 ROM
 welcome-step-roms-description = 請將 Battle Network / Rockman EXE 的 .gba 檔放入：

@@ -11,7 +11,7 @@ pub use rpc::activity;
 use crate::i18n::{self, LOCALES};
 use fluent_templates::Loader;
 
-const APP_ID: u64 = 974089681333534750;
+const APP_ID: u64 = 1341723708565225502;
 
 pub struct GameInfo {
     pub title: String,
@@ -57,8 +57,8 @@ pub fn make_looking_activity(
 ) -> rpc::activity::Activity {
     rpc::activity::Activity {
         state: Some(i18n::t!(lang, "discord-presence-looking")),
-        // Only matchmaking codes carry a join secret — direct-TCP
-        // sessions aren't joinable via Discord deep-link.
+        // Only matchmaking codes carry a join secret — direct
+        // link-code sessions aren't joinable via Discord deep-link.
         secrets: ident.discord_join_secret().map(|s| rpc::activity::Secrets {
             join: Some(s.to_string()),
             ..Default::default()

@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  signaling-server:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8000
+      - LOG_LEVEL=INFO
+      # Uncomment and configure for TURN server
+      # - TURN_ADDR=turn.example.com:3478
+      # - TURN_USER=username
+      # - TURN_CREDENTIAL=password
+      # Or configure for Cloudflare
+      # - CLOUDFLARE_TURN_SERVICE_ID=your-id
+      # - CLOUDFLARE_TURN_SERVICE_API_TOKEN=your-token
+    restart: unless-stopped

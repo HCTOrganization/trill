@@ -2,19 +2,19 @@
 LANGUAGE = Tiếng Việt
 
 crash =
-    Tango đã gặp lỗi và ngừng hoạt động!
+    Trill đã gặp lỗi và ngừng hoạt động!
 
     Khi báo lỗi, hãy đính kèm file log sau đây:
 
     {$path}
 crash-no-log =
-    Tango đã gặp lỗi và ngừng hoạt động!
+    Trill đã gặp lỗi và ngừng hoạt động!
 
     {$error}
-window-title = Tango
-    .running = Tango (đang chạy)
+window-title = Trill
+    .running = Trill (đang chạy)
 # Tooltip on the top bar's close button (fullscreen only).
-window-quit = Thoát Tango
+window-quit = Thoát Trill
 play-play = Chơi
 play-fight = Đấu!
 play-link-code = Mã kết nối (để trống để tạo mã ngẫu nhiên)
@@ -45,6 +45,16 @@ settings-theme-light = Sáng
     .light = Sáng
     .dark = Tối
     .system = Theo thiết lập hệ thống
+settings-theme-color = Màu giao diện
+settings-theme-color-trill-yellow = Trill Vàng
+settings-theme-color-pegasus-blue = Pegasus Xanh dương
+settings-theme-color-sonia-pink = Sonia Hồng
+settings-theme-color-zerker-grey = Zerker Xám
+settings-theme-color-ninja-green = Ninja Xanh lá
+settings-theme-color-saurian-orange = Saurian Cam
+settings-theme-color-rogue-purple = Rogue Tím
+settings-theme-color-ace-black = Ace Đen
+settings-theme-color-joker-red = Joker Đỏ
 settings-video-filter = Bộ lọc ảnh
     .null = Không
     .hq2x = hq2x
@@ -59,11 +69,17 @@ settings-enable-save-editor = Bật trình chỉnh sửa save
 settings-experimental-warning = Các tính năng thử nghiệm có thể làm hỏng save của bạn, có thể bị thay đổi hoặc gỡ bỏ bất cứ lúc nào, và có thể thiếu các kiểm tra giúp save hợp lệ khi chơi mạng. Hãy tự chịu rủi ro khi sử dụng.
     .tooltip = Bật chế độ này để che đi tất cả thông tin setup của bạn.
 settings-matchmaking-endpoint = Điểm cuối tạo trận đấu
+settings-netplay-endpoint-preset = Cài đặt sẵn điểm cuối
+settings-netplay-endpoint-default = Trill (Mặc định)
+settings-netplay-endpoint-cnserver = Trill (Máy chủ CN)
+settings-netplay-endpoint-tango = Tango
 settings-patch-repo = Kho lưu trữ bản vá
 settings-enable-patch-autoupdate = Bật tự động cập nhật
 settings-data-path = Đường dẫn dữ liệu
     .open = Mở
     .change = Thay đổi
+settings-data-folder = Thư mục dữ liệu
+settings-data-folder-change = Thay đổi…
 settings-window-size = Kích thước cửa sổ
 settings-fullscreen = Toàn màn hình
 settings-ui-scale = Tỉ lệ giao diện
@@ -125,8 +141,8 @@ play-status-negotiating = Đang thương lượng…
 play-status-failed = Kết nối thất bại: { $error }
 play-status-peer-disconnected = Người chơi kia đã rời đi.
 play-status-negotiate-expected-hello = Người chơi kia không gửi tín hiệu bắt tay mong đợi.
-play-status-negotiate-version-too-old = Người chơi kia đang dùng phiên bản Tango cũ hơn.
-play-status-negotiate-version-too-new = Người chơi kia đang dùng phiên bản Tango mới hơn.
+play-status-negotiate-version-too-old = Người chơi kia đang dùng phiên bản Trill cũ hơn.
+play-status-negotiate-version-too-new = Người chơi kia đang dùng phiên bản Trill mới hơn.
 play-status-negotiate-failed = Đã xảy ra lỗi trong khi đàm phán: { $error }
 lobby-waiting = Đang đợi…
 lobby-no-game = (chưa chọn game)
@@ -163,6 +179,7 @@ session-back-to-session = Trở về phiên
 # PvP telemetry deck cell tooltips
 session-stat-tps = Tick/giây (hiện tại/tối đa)
 session-stat-skew = Độ lệch
+session-stat-lead = Dẫn trước
 session-stat-depth = Độ sâu dự đoán sai
 session-stat-ping = Độ trễ mạng
 navi-style = Style
@@ -317,7 +334,7 @@ updater-up-to-date = v{ $version } (đã cập nhật)
 updater-downloading = Đang tải: { $pct }%
 updater-ready-to-update = Đã tải xong, sẵn sàng cài.
 updater-update-now = Cập nhật ngay
-welcome-title = Chào mừng đến với Tango!
+welcome-title = Chào mừng đến với Trill!
 welcome-subtitle = Còn vài bước nữa trước khi bạn bắt đầu chơi.
 welcome-step-roms = Thêm ROM của bạn
 welcome-step-roms-description = Đặt các tệp .gba Battle Network / Rockman EXE của bạn vào:

@@ -2,24 +2,24 @@
 LANGUAGE = 中文 (简体)
 
 crash =
-    哎呀，Tango 遇到错误并崩溃了！
+    哎呀，Trill 遇到错误并崩溃了！
 
     报告此崩溃时，请包含以下日志文件：
 
     { $path }
 crash-no-log =
-    哎呀，Tango 遇到错误并崩溃了！
+    哎呀，Trill 遇到错误并崩溃了！
 
     { $error }
-window-title = Tango
-    .running = Tango（进行中）
+window-title = Trill
+    .running = Trill（进行中）
 # Tooltip on the top bar's close button (fullscreen only).
-window-quit = 退出 Tango
+window-quit = 退出 Trill
 play-play = 启动
 play-fight = 战斗！
 play-link-code = 链接代码（留空则随机生成）
-play-no-game = No game selected
-play-no-patch = No patch
+play-no-game = 未选择游戏
+play-no-patch = 未选择补丁
 play-patch-toggle = 使用补丁…
 play-you = 自己
 play-cancel = 取消
@@ -45,6 +45,16 @@ settings-theme-light = 浅色
     .light = 浅色
     .dark = 深色
     .system = 遵循系统设置
+settings-theme-color = 主题颜色
+settings-theme-color-trill-yellow = 托里尔黄
+settings-theme-color-pegasus-blue = 飞马蓝
+settings-theme-color-sonia-pink = 美空粉
+settings-theme-color-zerker-grey = 战狂灰
+settings-theme-color-ninja-green = 忍者绿
+settings-theme-color-saurian-orange = 恐龙橙
+settings-theme-color-rogue-purple = 孤胆紫
+settings-theme-color-ace-black = 王牌黑
+settings-theme-color-joker-red = 鬼牌红
 settings-video-filter = 图形过滤器
     .null = 无
     .hq2x = hq2x
@@ -59,11 +69,17 @@ settings-enable-save-editor = 启用存档编辑器
 settings-experimental-warning = 实验性功能可能会损坏或破坏你的存档，随时可能被更改或移除，并且可能缺少使存档在联机对战中保持合法的检查。使用风险自负。
     .tooltip = 启用此模式将为保存查看器添加一个额外的“封面”选项卡，该选项卡隐藏有关当前保存文件的所有信息。
 settings-matchmaking-endpoint = 配对服务器端点
+settings-netplay-endpoint-preset = 端点预设
+settings-netplay-endpoint-default = Trill (默认)
+settings-netplay-endpoint-cnserver = Trill (国服)
+settings-netplay-endpoint-tango = Tango
 settings-patch-repo = 补丁仓库
 settings-enable-patch-autoupdate = 自动更新
 settings-data-path = 数据路径
     .open = 打开
     .change = 改变
+settings-data-folder = 数据文件夹
+settings-data-folder-change = 改变…
 settings-window-size = 窗口大小
 settings-fullscreen = 全屏
 settings-ui-scale = 界面缩放
@@ -76,8 +92,8 @@ save-tab-patch-cards = 改造卡
 save-tab-auto-battle-data = ABD
 auto-battle-data-secondary-standard-chips = 普通芯片（二次）
 auto-battle-data-standard-chips = 普通芯片
-auto-battle-data-mega-chips = 高级芯片
-auto-battle-data-giga-chip = 究极芯片
+auto-battle-data-mega-chips = MEGA芯片
+auto-battle-data-giga-chip = GIGA芯片
 auto-battle-data-combos = 组合
 auto-battle-data-program-advance = 程序强化
 
@@ -125,8 +141,8 @@ play-status-negotiating = 正在协商…
 play-status-failed = 连接失败: { $error }
 play-status-peer-disconnected = 对方已离开。
 play-status-negotiate-expected-hello = 对方未发送预期的握手信号。
-play-status-negotiate-version-too-old = 对方使用的是较旧版本的Tango。
-play-status-negotiate-version-too-new = 对方使用的是较新版本的Tango。
+play-status-negotiate-version-too-old = 对方使用的是较旧版本的Trill。
+play-status-negotiate-version-too-new = 对方使用的是较新版本的Trill。
 play-status-negotiate-failed = 协商时发生错误：{ $error }
 lobby-waiting = 等待中…
 lobby-no-game = （未选择游戏）
@@ -163,6 +179,7 @@ session-back-to-session = 返回对战
 # PvP telemetry deck cell tooltips
 session-stat-tps = 每秒刻数（当前/上限）
 session-stat-skew = 偏移
+session-stat-lead = 领先
 session-stat-depth = 误预测深度
 session-stat-ping = 网络延迟
 navi-style = 样式
@@ -185,11 +202,11 @@ folder-edit-search = 搜索芯片…
 folder-edit-folder = 芯片夹
 folder-edit-count = { $count } / { $limit }
 folder-edit-navi = 领航员 { $used } / { $limit }
-folder-edit-mega = 高级 { $used } / { $limit }
-folder-edit-giga = 究极 { $used } / { $limit }
+folder-edit-mega = MEGA { $used } / { $limit }
+folder-edit-giga = GIGA { $used } / { $limit }
 folder-edit-dark = 黑暗 { $used } / { $limit }
-folder-edit-reg-memory = Reg { $mb }MB
-folder-edit-tag-memory = Tag { $mb }MB
+folder-edit-reg-memory = 常规 { $mb }MB
+folder-edit-tag-memory = 配组 { $mb }MB
 save-edit-sort = 排序
 save-edit-clear = 全部清除
 folder-sort-id = ID
@@ -317,7 +334,7 @@ updater-up-to-date = v{ $version } (已是最新)
 updater-downloading = 下载中: { $pct }%
 updater-ready-to-update = 更新已下载，可安装。
 updater-update-now = 立即更新
-welcome-title = 欢迎使用 Tango！
+welcome-title = 欢迎使用 Trill！
 welcome-subtitle = 还有几个步骤就可以开始对战啦。
 welcome-step-roms = 添加 ROM
 welcome-step-roms-description = 将 Battle Network / Rockman EXE 的 .gba 文件放入：
