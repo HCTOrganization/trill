@@ -78,7 +78,7 @@ pub enum ThemeColor {
 
 impl ThemeColor {
     /// Every accent color, in pick-list display order.
-    pub const ALL: [ThemeColor; 9] = [
+    pub const ALL: [ThemeColor; 10] = [
         ThemeColor::TrillYellow,
         ThemeColor::PegasusBlue,
         ThemeColor::SoniaPink,
