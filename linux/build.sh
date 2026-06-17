@@ -24,7 +24,7 @@ cp linux/tango.desktop trill_linux_workdir/trill.desktop
 cp "target/${target_arch}-unknown-linux-gnu/release-dist/tango" "trill_linux_workdir/${target_arch}/bin/trill"
 
 # Bundle ffmpeg.
-ffmpeg_version="8.1.1"
+ffmpeg_version="8.1.2"
 
 wget "https://github.com/HCTOrganization/ffmpeg-build/releases/download/ffmpeg-${ffmpeg_version}/ffmpeg-linux-x86_64" -O "trill_linux_workdir/${target_arch}/bin/ffmpeg"
 chmod a+x "trill_linux_workdir/${target_arch}/bin/ffmpeg"

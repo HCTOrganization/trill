@@ -34,7 +34,7 @@ cargo build --bin tango --target=aarch64-apple-darwin --profile release-dist
 cargo build --bin tango --target=x86_64-apple-darwin --profile release-dist
 lipo -create target/{aarch64-apple-darwin,x86_64-apple-darwin}/release-dist/tango -output Trill\ 5.app/Contents/MacOS/trill
 
-ffmpeg_version="8.1.1"
+ffmpeg_version="8.1.2"
 
 mkdir -p trill_macos_workdir
 wget -O trill_macos_workdir/ffmpeg-arm64 "https://github.com/tangobattle/ffmpeg-build/releases/download/ffmpeg-${ffmpeg_version}/ffmpeg-macos-arm64"

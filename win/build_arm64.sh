@@ -91,7 +91,7 @@ rm updater.7z
 rm Binary.GoogleChromeInstaller
 rm GoogleChromeStandaloneEnterprise_Arm64.msi
 
-ffmpeg_version="8.1.1"
+ffmpeg_version="8.1.2"
 curl -L -o ffmpeg.exe "https://github.com/HCTOrganization/ffmpeg-build/releases/download/ffmpeg-${ffmpeg_version}/ffmpeg-windows-arm64.exe"
 
 makensis installer.nsi

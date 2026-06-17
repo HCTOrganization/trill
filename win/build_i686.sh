@@ -83,7 +83,7 @@ wget "${chrome_109_url}"
 rm 109.0.5414.120_chrome_installer.exe
 rm chrome.7z
 
-ffmpeg_version="8.1.1"
+ffmpeg_version="8.1.2"
 curl -L -o ffmpeg.exe "https://github.com/HCTOrganization/ffmpeg-build/releases/download/ffmpeg-${ffmpeg_version}/ffmpeg-windows-x86.exe"
 
 makensis installer.nsi
