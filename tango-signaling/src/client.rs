@@ -19,52 +19,42 @@ const PING_INTERVAL: std::time::Duration = std::time::Duration::from_secs(15);
 const MIN_RECONNECT_BACKOFF: std::time::Duration = std::time::Duration::from_millis(500);
 const MAX_RECONNECT_BACKOFF: std::time::Duration = std::time::Duration::from_secs(8);
 
-async fn create_data_channels(
-    rtc_config: tango_rtc::RtcConfig,
+async fn create_data_channel(
+    rtc_config: datachannel_wrapper::RtcConfig,
 ) -> Result<
     (
-        // Reliable, ordered — lobby handshake + save-state transfer.
-        tango_rtc::DataChannel,
-        // Unreliable, unordered — the per-frame in-match `wire` datagrams.
-        tango_rtc::DataChannel,
-        tokio::sync::mpsc::Receiver<tango_rtc::PeerConnectionEvent>,
-        tango_rtc::PeerConnection,
+        datachannel_wrapper::DataChannel,
+        tokio::sync::mpsc::Receiver<datachannel_wrapper::PeerConnectionEvent>,
+        datachannel_wrapper::PeerConnection,
     ),
     std::io::Error,
 > {
-    // Two in-band channels: the reliable lobby channel, plus a second
-    // unreliable + unordered one for inputs, so a lost datagram never
-    // head-of-line-blocks the ones behind it (the in-match protocol recovers
-    // loss with its own redundancy + block-ack).
-    let (peer_conn, mut dcs, mut event_rx) = tango_rtc::PeerConnection::new(
-        rtc_config,
-        &[
-            tango_rtc::ChannelConfig {
-                label: "tango".to_owned(),
-                ordered: true,
-                reliability: tango_rtc::Reliability::Reliable,
-                ..Default::default()
-            },
-            tango_rtc::ChannelConfig {
-                label: "tango-input".to_owned(),
-                ordered: false,
-                reliability: tango_rtc::Reliability::MaxRetransmits { retransmits: 0 },
-                ..Default::default()
-            },
-        ],
+    let (mut peer_conn, mut event_rx) = datachannel_wrapper::PeerConnection::new(rtc_config)?;
+
+    let dc = peer_conn.create_data_channel(
+        "tango",
+        datachannel_wrapper::DataChannelInit::default()
+            .reliability(datachannel_wrapper::Reliability {
+                unordered: false,
+                unreliable: false,
+                max_packet_life_time: 0,
+                max_retransmits: 0,
+            })
+            .negotiated()
+            .manual_stream()
+            .stream(0),
     )?;
-    let unreliable = dcs.pop().unwrap();
-    let reliable = dcs.pop().unwrap();
 
     loop {
-        if let Some(tango_rtc::PeerConnectionEvent::GatheringStateChange(tango_rtc::GatheringState::Complete)) =
-            event_rx.recv().await
+        if let Some(datachannel_wrapper::PeerConnectionEvent::GatheringStateChange(
+            datachannel_wrapper::GatheringState::Complete,
+        )) = event_rx.recv().await
         {
             break;
         }
     }
 
-    Ok((reliable, unreliable, event_rx, peer_conn))
+    Ok((dc, event_rx, peer_conn))
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -121,15 +111,7 @@ fn is_transient(e: &Error) -> bool {
 
 pub type Connecting = futures_util::future::BoxFuture<
     'static,
-    Result<
-        (
-            // Reliable lobby channel, unreliable in-match channel, peer connection.
-            tango_rtc::DataChannel,
-            tango_rtc::DataChannel,
-            tango_rtc::PeerConnection,
-        ),
-        Error,
-    >,
+    Result<(datachannel_wrapper::DataChannel, datachannel_wrapper::PeerConnection), Error>,
 >;
 
 /// Bring up a fresh signaling websocket end to end: connect, read the server's
@@ -145,10 +127,9 @@ async fn establish(
 ) -> Result<
     (
         SignalingStream,
-        tango_rtc::DataChannel,
-        tango_rtc::DataChannel,
-        tokio::sync::mpsc::Receiver<tango_rtc::PeerConnectionEvent>,
-        tango_rtc::PeerConnection,
+        datachannel_wrapper::DataChannel,
+        tokio::sync::mpsc::Receiver<datachannel_wrapper::PeerConnectionEvent>,
+        datachannel_wrapper::PeerConnection,
     ),
     Error,
 > {
@@ -204,32 +185,51 @@ async fn establish(
 
     log::info!("hello received from signaling stream: {:?}", hello);
 
-    let rtc_config = tango_rtc::RtcConfig {
-        ice_servers: hello
+    let mut rtc_config = datachannel_wrapper::RtcConfig::new(
+        &hello
             .ice_servers
             .into_iter()
-            .map(|ice_server| tango_rtc::IceServer {
-                urls: ice_server
+            .flat_map(|ice_server| {
+                ice_server
                     .urls
                     .into_iter()
-                    .filter(|url| {
-                        // Relaying explicitly disabled: don't even gather
-                        // relay candidates.
-                        !((url.starts_with("turn:") || url.starts_with("turns:")) && use_relay == Some(false))
+                    .flat_map(|url| {
+                        let Some(colon_idx) = url.chars().position(|c| c == ':') else {
+                            return vec![];
+                        };
+
+                        let proto = &url[..colon_idx];
+                        let rest = &url[colon_idx + 1..];
+
+                        if (proto == "turn" || proto == "turns") && use_relay == Some(false) {
+                            return vec![];
+                        }
+
+                        // libdatachannel doesn't support TURN over TCP: in fact, it explodes!
+                        if url.chars().skip_while(|c| *c != '?').collect::<String>() == "?transport=tcp" {
+                            return vec![];
+                        }
+
+                        if let (Some(username), Some(credential)) = (&ice_server.username, &ice_server.credential) {
+                            vec![format!(
+                                "{}:{}:{}@{}",
+                                proto,
+                                urlencoding::encode(username),
+                                urlencoding::encode(credential),
+                                rest
+                            )]
+                        } else {
+                            vec![format!("{}:{}", proto, rest)]
+                        }
                     })
-                    .collect(),
-                username: ice_server.username,
-                credential: ice_server.credential,
+                    .collect::<Vec<_>>()
             })
-            .collect(),
-        ice_transport_policy: if use_relay == Some(true) {
-            tango_rtc::TransportPolicy::Relay
-        } else {
-            tango_rtc::TransportPolicy::All
-        },
-        ..Default::default()
-    };
-    let (dc, unreliable_dc, event_rx, peer_conn) = create_data_channels(rtc_config).await?;
+            .collect::<Vec<_>>(),
+    );
+    if use_relay == Some(true) {
+        rtc_config.ice_transport_policy = datachannel_wrapper::TransportPolicy::Relay;
+    }
+    let (dc, event_rx, peer_conn) = create_data_channel(rtc_config).await?;
 
     signaling_stream
         .send(tokio_tungstenite::tungstenite::Message::Binary(
@@ -246,15 +246,15 @@ async fn establish(
         ))
         .await?;
 
-    Ok((signaling_stream, dc, unreliable_dc, event_rx, peer_conn))
+    Ok((signaling_stream, dc, event_rx, peer_conn))
 }
 
 /// Outcome of waiting on a single signaling websocket for the peer to begin the
 /// SDP exchange.
 enum WaitOutcome {
     /// We received the peer's `Offer` (and answered it) or `Answer` (and applied
-    /// it). The peer has committed to this handshake — the connection now holds
-    /// the remote description and we proceed to the ICE phase.
+    /// it). The peer has committed to this handshake — `peer_conn` now holds the
+    /// remote description and we proceed to the ICE phase.
     Exchanged,
     /// The websocket dropped (closed / reset / timed out / EOF) *before* the peer
     /// sent any SDP. Nothing is committed on either side, so it's safe to throw
@@ -271,7 +271,7 @@ enum WaitOutcome {
 /// anything become `Dropped`, which the caller may transparently reconnect.
 async fn wait_for_exchange(
     signaling_stream: &mut SignalingStream,
-    pc: &mut tango_rtc::PeerConnection,
+    peer_conn: &mut datachannel_wrapper::PeerConnection,
 ) -> Result<WaitOutcome, Error> {
     let mut ping_interval = tokio::time::interval_at(tokio::time::Instant::now() + PING_INTERVAL, PING_INTERVAL);
     ping_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
@@ -349,15 +349,14 @@ async fn wait_for_exchange(
                 log::info!("received an offer, this is the polite side. rolling back our local description and switching to answer");
 
                 // From here on the peer has committed to this offer: any failure
-                // is fatal, never a reconnect. Accepting the remote offer
-                // implicitly rolls back our own pending offer and produces
-                // the answer as our new local description.
-                pc.set_remote_description(tango_rtc::SessionDescription {
-                    sdp_type: tango_rtc::SdpType::Offer,
+                // is fatal, never a reconnect.
+                peer_conn.set_local_description(datachannel_wrapper::SdpType::Rollback, None)?;
+                peer_conn.set_remote_description(datachannel_wrapper::SessionDescription {
+                    sdp_type: datachannel_wrapper::SdpType::Offer,
                     sdp: offer.sdp.clone(),
                 })?;
 
-                let local_description = pc.local_description().unwrap();
+                let local_description = peer_conn.local_description().unwrap();
                 signaling_stream
                     .send(tokio_tungstenite::tungstenite::Message::Binary(
                         crate::proto::signaling::Packet {
@@ -376,8 +375,8 @@ async fn wait_for_exchange(
             Some(crate::proto::signaling::packet::Which::Answer(answer)) => {
                 log::info!("received an answer, this is the impolite side");
 
-                pc.set_remote_description(tango_rtc::SessionDescription {
-                    sdp_type: tango_rtc::SdpType::Answer,
+                peer_conn.set_remote_description(datachannel_wrapper::SessionDescription {
+                    sdp_type: datachannel_wrapper::SdpType::Answer,
                     sdp: answer.sdp.clone(),
                 })?;
                 return Ok(WaitOutcome::Exchanged);
@@ -405,7 +404,7 @@ pub async fn connect(
     // The initial dial surfaces failures to the caller (so "couldn't reach the
     // matchmaking server" is reported promptly); transparent reconnects only
     // kick in once we've successfully connected at least once.
-    let (mut signaling_stream, mut dc, mut unreliable_dc, mut event_rx, mut pc) =
+    let (mut signaling_stream, mut dc, mut event_rx, mut peer_conn) =
         establish(addr, session_id, use_relay, protocol_version, &connection_id).await?;
 
     let addr = addr.to_owned();
@@ -416,7 +415,7 @@ pub async fn connect(
         // started, a websocket drop is recoverable: tear everything down and dial
         // again with a fresh peer connection / offer.
         loop {
-            match wait_for_exchange(&mut signaling_stream, &mut pc).await? {
+            match wait_for_exchange(&mut signaling_stream, &mut peer_conn).await? {
                 WaitOutcome::Exchanged => break,
                 WaitOutcome::Dropped(reason) => {
                     log::warn!(
@@ -426,12 +425,11 @@ pub async fn connect(
                     let mut backoff = MIN_RECONNECT_BACKOFF;
                     loop {
                         match establish(&addr, &session_id, use_relay, protocol_version, &connection_id).await {
-                            Ok((s, d, u, e, p)) => {
+                            Ok((s, d, e, p)) => {
                                 signaling_stream = s;
-                                pc = p;
                                 dc = d;
-                                unreliable_dc = u;
                                 event_rx = e;
+                                peer_conn = p;
                                 log::info!("signaling reconnected; still waiting for the peer");
                                 break;
                             }
@@ -456,30 +454,30 @@ pub async fn connect(
 
         log::debug!(
             "local sdp (type = {:?}): {}",
-            pc.local_description().expect("local sdp").sdp_type,
-            pc.local_description().expect("local sdp").sdp
+            peer_conn.local_description().expect("local sdp").sdp_type,
+            peer_conn.local_description().expect("local sdp").sdp
         );
         log::debug!(
             "remote sdp (type = {:?}): {}",
-            pc.remote_description().expect("remote sdp").sdp_type,
-            pc.remote_description().expect("remote sdp").sdp
+            peer_conn.remote_description().expect("remote sdp").sdp_type,
+            peer_conn.remote_description().expect("remote sdp").sdp
         );
 
         loop {
             let signal = event_rx.recv().await.unwrap();
 
-            if let tango_rtc::PeerConnectionEvent::ConnectionStateChange(c) = signal {
+            if let datachannel_wrapper::PeerConnectionEvent::ConnectionStateChange(c) = signal {
                 match c {
-                    tango_rtc::ConnectionState::Connected => {
+                    datachannel_wrapper::ConnectionState::Connected => {
                         break;
                     }
-                    tango_rtc::ConnectionState::Disconnected => {
+                    datachannel_wrapper::ConnectionState::Disconnected => {
                         return Err(Error::PeerConnectionDisconnected);
                     }
-                    tango_rtc::ConnectionState::Failed => {
+                    datachannel_wrapper::ConnectionState::Failed => {
                         return Err(Error::PeerConnectionFailed);
                     }
-                    tango_rtc::ConnectionState::Closed => {
+                    datachannel_wrapper::ConnectionState::Closed => {
                         return Err(Error::PeerConnectionClosed);
                     }
                     _ => {}
@@ -487,6 +485,6 @@ pub async fn connect(
             }
         }
 
-        Ok((dc, unreliable_dc, pc))
+        Ok((dc, peer_conn))
     }))
 }
