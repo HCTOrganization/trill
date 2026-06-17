@@ -74,6 +74,11 @@ jobs:
         with:
           arch: x64
 
+      # aws-lc-sys (pulled in via rustls/aws-lc-rs) assembles its crypto
+      # with NASM on x86/x86_64 Windows MSVC targets. Without it the build
+      # aborts with "NASM command not found!".
+      - uses: ilammy/setup-nasm@v1
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
@@ -260,6 +265,11 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x86
+
+      # aws-lc-sys (pulled in via rustls/aws-lc-rs) assembles its crypto
+      # with NASM on x86/x86_64 Windows MSVC targets. Without it the build
+      # aborts with "NASM command not found!".
+      - uses: ilammy/setup-nasm@v1
 
       - uses: dtolnay/rust-toolchain@stable
         with:
