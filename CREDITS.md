@@ -1,4 +1,4 @@
-[Trill](https://trill.hikaricalyx.com), as well as it's parent project [Tango](https://tango.n1gp.net) would not be a reality without the work of the many people who have helped make this possible.
+[Trill](https://trill.hikaricalyx.com), as well as it's parent project Tango would not be a reality without the work of the many people who have helped make this possible.
 
 ## Development
 
