@@ -53,6 +53,7 @@ fn endpoint_preset_choice(preset: &str) -> Choice<String> {
 pub enum EndpointPreset {
     Default,
     CnServer,
+    EasServer,
     Tango,
 }
 
@@ -61,6 +62,7 @@ impl EndpointPreset {
         match self {
             EndpointPreset::Default => "wss://matchmaking.trill.hikaricalyx.com",
             EndpointPreset::CnServer => "wss://matchmakingcn.trill.hikaricalyx.cn",
+            EndpointPreset::EasServer => "wss://matchmakingeas.trill.hikaricalyx.com",
             EndpointPreset::Tango => "wss://matchmaking.tango.n1gp.net",
         }
     }
@@ -69,6 +71,7 @@ impl EndpointPreset {
         match self {
             EndpointPreset::Default => "default",
             EndpointPreset::CnServer => "cnserver",
+            EndpointPreset::EasServer => "easserver",
             EndpointPreset::Tango => "tango",
         }
     }
@@ -77,6 +80,7 @@ impl EndpointPreset {
         match id {
             "default" => Some(EndpointPreset::Default),
             "cnserver" => Some(EndpointPreset::CnServer),
+            "easserver" => Some(EndpointPreset::EasServer),
             "tango" => Some(EndpointPreset::Tango),
             _ => None,
         }
