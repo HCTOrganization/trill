@@ -4,15 +4,15 @@ LANGUAGE = 日本語
 
 window-title = トリル
 # Tooltip on the top bar's close button (fullscreen only).
-window-quit = トリル を終了
+window-quit = トリルを終了
 
 # Crash handler dialogs (parent process)
-crash = トリル がエラーで終了しました。
+crash = トリルがエラーで終了しました。
 
     報告の際は次のログファイルを添付してください：
 
     { $path }
-crash-no-log = トリル がエラーで終了しました。
+crash-no-log = トリルがエラーで終了しました。
 
     { $error }
 
@@ -36,11 +36,11 @@ play-no-save = セーブを選択
 save-open-folder = フォルダを開く
 save-duplicate = 複製
 save-rename = 名前変更
-save-delete = 削除
+save-delete = デリート
 save-rename-confirm = 名前変更
-save-delete-confirm = 削除
+save-delete-confirm = デリート
 save-action-cancel = キャンセル
-save-delete-prompt = { $name } を削除しますか？
+save-delete-prompt = { $name } をデリートしますか？
 save-name-placeholder = 新しい名前
 save-new = 新規セーブ
 save-new-confirm = 作成
@@ -266,7 +266,7 @@ settings-data-folder-change = 変更…
 settings-streamer-mode = 配信プライバシーモード
 settings-section-experimental = 実験的機能
 settings-enable-save-editor = セーブエディターを有効にする
-settings-experimental-warning = 実験的機能はセーブデータを破損させたり使用できなくする可能性があり、予告なく変更・削除されることがあります。また、オンライン対戦でセーブを正規の状態に保つためのチェックが省かれている場合があります。自己責任でご利用ください。
+settings-experimental-warning = 実験的機能はセーブデータを破損させたり使用できなくする可能性があり、予告なく変更・デリートされることがあります。また、オンライン対戦でセーブを正規の状態に保つためのチェックが省かれている場合があります。自己責任でご利用ください。
 settings-section-about = アプリ情報
 settings-section-input = 入力
 settings-input-press-key = キーまたはボタンを押してください…

@@ -191,6 +191,10 @@ pub enum Message {
     /// iced markdown widget can pass its parsed `Uri` straight
     /// in via `.map(Message::OpenUrl)`.
     OpenUrl(String),
+    /// User clicked the Quit button in General settings. Side
+    /// effect only — intercepted by the App, which exits the
+    /// process; never reaches `State::update`.
+    Quit,
 }
 
 /// Messages the settings panel emits that affect persisted
@@ -310,6 +314,9 @@ impl State {
                 }
                 None
             }
+            // Intercepted by the App (it exits the process); the
+            // arm exists only for exhaustiveness.
+            Message::Quit => None,
         }
     }
 }
@@ -516,6 +523,10 @@ fn settings_general<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config
             .label(t!(lang, "settings-allow-prerelease-upgrades"))
             .on_toggle(Message::ToggleAllowPrereleaseUpgrades)
             .style(widgets::chunky_checkbox),
+        button(text(t!(lang, "window-quit")))
+            .on_press(Message::Quit)
+            .padding(STANDARD_PADDING)
+            .style(widgets::neutral),
     ]
     .spacing(14)
     .padding(style::PANE_PADDING)

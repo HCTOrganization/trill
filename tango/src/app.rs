@@ -1850,6 +1850,12 @@ impl App {
             self.updater.finish_update();
             return iced::Task::none();
         }
+        // The Quit button in General settings exits the app
+        // immediately — a side effect, not a config change, so
+        // intercept before delegating.
+        if matches!(msg, tabs::settings::Message::Quit) {
+            std::process::exit(0);
+        }
         // The data-folder "Change…" button opens a native folder picker. It's
         // async, so intercept here and surface the result as DataFolderPicked.
         if matches!(msg, tabs::settings::Message::OpenDataFolderPicker) {
