@@ -54,6 +54,7 @@ const FONT_NOTO_SANS: &[u8] = include_bytes!("../fonts/NotoSans-Regular.ttf");
 const FONT_NOTO_SANS_JP: &[u8] = include_bytes!("../fonts/NotoSansJP-Regular.otf");
 const FONT_NOTO_SANS_SC: &[u8] = include_bytes!("../fonts/NotoSansSC-Regular.otf");
 const FONT_NOTO_SANS_TC: &[u8] = include_bytes!("../fonts/NotoSansTC-Regular.otf");
+const FONT_NOTO_SANS_KR: &[u8] = include_bytes!("../fonts/NotoSansKR-Regular.otf");
 const FONT_NOTO_SANS_MONO: &[u8] = include_bytes!("../fonts/NotoSansMono-Regular.ttf");
 const FONT_NOTO_EMOJI: &[u8] = include_bytes!("../fonts/NotoEmoji-Regular.ttf");
 // Lucide icon font ships with the `lucide-icons` crate as
@@ -115,7 +116,7 @@ pub fn main() {
 ///      file inside it.
 ///   2. Spawn `current_exe()` again with `TANGO_CHILD=1` +
 ///      `RUST_BACKTRACE=1`, redirecting the child's stderr into
-///      the log file so panics + datachannel/mgba C-side stderr
+///      the log file so panics + mgba C-side stderr
 ///      get captured.
 ///   3. Wait. On non-zero exit, pop up a localized rfd dialog
 ///      pointing at the log file path.
@@ -176,7 +177,7 @@ static INIT_LINK_CODE: std::sync::OnceLock<Option<String>> = std::sync::OnceLock
 /// mismatch, etc.) — the OS just falls back to its default
 /// icon, no need to escalate.
 fn load_window_icon() -> Option<iced::window::Icon> {
-    let img = image::load_from_memory(include_bytes!("icon.png")).ok()?.into_rgba8();
+    let img = image::load_from_memory(include_bytes!("icon_16.png")).ok()?.into_rgba8();
     let (w, h) = img.dimensions();
     iced::window::icon::from_rgba(img.into_raw(), w, h).ok()
 }
@@ -185,7 +186,7 @@ fn run_app() -> iced::Result {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     // Catch native crashes (segfaults, SEH violations, Mach
-    // EXC_BAD_ACCESS) from mgba / datachannel / wgpu C code and
+    // EXC_BAD_ACCESS) from mgba / wgpu C code and
     // dump a backtrace to stderr — which the supervisor pipes
     // into the log file. Also installs a panic hook that does
     // the same for Rust panics. Leak the handle so it stays
@@ -322,6 +323,7 @@ fn run_app() -> iced::Result {
         .font(FONT_NOTO_SANS_JP)
         .font(FONT_NOTO_SANS_SC)
         .font(FONT_NOTO_SANS_TC)
+        .font(FONT_NOTO_SANS_KR)
         .font(FONT_NOTO_SANS_MONO)
         .font(FONT_NOTO_EMOJI)
         .font(lucide_icons::LUCIDE_FONT_BYTES)

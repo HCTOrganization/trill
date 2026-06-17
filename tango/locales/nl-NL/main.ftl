@@ -2,19 +2,19 @@
 LANGUAGE = Nederlands
 
 crash =
-    Oepsie woepsie! Tango is een fout tegengekomen en is gecrasht!
+    Oepsie woepsie! Trill is een fout tegengekomen en is gecrasht!
 
     Bij het rapporteren van deze crash, gaarne het volgende logboekbestand toe te voegen:
 
     { $path }
 crash-no-log =
-    Oepsie woepsie! Tango is stukkie wukkie!
+    Oepsie woepsie! Trill is stukkie wukkie!
 
     { $error }
-window-title = Tango
-    .running = Tango (actief)
+window-title = Trill
+    .running = Trill (actief)
 # Tooltip on the top bar's close button (fullscreen only).
-window-quit = Tango afsluiten
+window-quit = Trill afsluiten
 play-play = Spelen
 play-fight = Vechten!
 play-link-code = Link code (laat leeg voor een willekeurige)
@@ -45,6 +45,16 @@ settings-theme-light = Licht
     .light = Licht
     .dark = Donker
     .system = Gebruik systeeminstellingen
+settings-theme-color = Themakleur
+settings-theme-color-trill-yellow = Trill Geel
+settings-theme-color-pegasus-blue = Pegasus Blauw
+settings-theme-color-sonia-pink = Sonia Roze
+settings-theme-color-zerker-grey = Zerker Grijs
+settings-theme-color-ninja-green = Ninja Groen
+settings-theme-color-saurian-orange = Saurian Oranje
+settings-theme-color-rogue-purple = Rogue Paars
+settings-theme-color-ace-black = Ace Zwart
+settings-theme-color-joker-red = Joker Rood
 settings-video-filter = Videofilter
     .null = Geen
     .hq2x = hq2x
@@ -59,11 +69,17 @@ settings-enable-save-editor = Save-editor inschakelen
 settings-experimental-warning = Experimentele functies kunnen je saves beschadigen of corrupt maken, kunnen op elk moment worden gewijzigd of verwijderd, en missen mogelijk controles die je saves geldig houden voor online spelen. Gebruik op eigen risico.
     .tooltip = Het inschakelen van deze modus zal een extra "Cover" tabblad toevoegen aan de save viewer die alle informatie over uw huidige savebestand verbergt.
 settings-matchmaking-endpoint = Eindpunt matchmaking
+settings-netplay-endpoint-preset = Eindpunt voorinstelling
+settings-netplay-endpoint-default = Trill (Standaard)
+settings-netplay-endpoint-cnserver = Trill (CN-server)
+settings-netplay-endpoint-tango = Tango
 settings-patch-repo = Patches repository
 settings-enable-patch-autoupdate = Autoupdate inschakelen
 settings-data-path = Gegevenspad
     .open = Openen
     .change = Wijzigen
+settings-data-folder = Gegevensmap
+settings-data-folder-change = Wijzigen…
 settings-window-size = Venstergrootte
 settings-fullscreen = Volledig scherm
 settings-ui-scale = UI-schaal
@@ -128,8 +144,8 @@ play-status-negotiating = Onderhandelen…
 play-status-failed = Verbinding mislukt: { $error }
 play-status-peer-disconnected = De andere speler is vertrokken.
 play-status-negotiate-expected-hello = De andere speler heeft de verwachte handshake niet verzonden.
-play-status-negotiate-version-too-old = De andere speler gebruikt een oudere versie van Tango.
-play-status-negotiate-version-too-new = De andere speler gebruikt een nieuwere versie van Tango.
+play-status-negotiate-version-too-old = De andere speler gebruikt een oudere versie van Trill.
+play-status-negotiate-version-too-new = De andere speler gebruikt een nieuwere versie van Trill.
 play-status-negotiate-failed = Er is een fout opgetreden tijdens de onderhandeling: { $error }
 lobby-waiting = Wachten…
 lobby-no-game = (geen spel gekozen)
@@ -166,6 +182,7 @@ session-back-to-session = Terug naar sessie
 # PvP telemetry deck cell tooltips
 session-stat-tps = Tick/s (huidig/max.)
 session-stat-skew = Afwijking
+session-stat-lead = Voorsprong
 session-stat-depth = Misvoorspellingsdiepte
 session-stat-ping = Netwerklatentie
 navi-style = Stijl
@@ -329,7 +346,7 @@ updater-up-to-date = v{ $version } (actueel)
 updater-downloading = Downloaden: { $pct }%
 updater-ready-to-update = Update gedownload en klaar om te installeren.
 updater-update-now = Nu bijwerken
-welcome-title = Welkom bij Tango!
+welcome-title = Welkom bij Trill!
 welcome-subtitle = Nog een paar stappen voor je kunt beginnen met spelen.
 welcome-step-roms = Voeg je ROMs toe
 welcome-step-roms-description = Plaats je Battle Network / Rockman EXE .gba-bestanden in:

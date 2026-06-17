@@ -2,17 +2,17 @@
 # Endonym for this locale; shown in the language picker.
 LANGUAGE = 日本語
 
-window-title = Tango
+window-title = トリル
 # Tooltip on the top bar's close button (fullscreen only).
-window-quit = Tango を終了
+window-quit = トリル を終了
 
 # Crash handler dialogs (parent process)
-crash = Tango がエラーで終了しました。
+crash = トリル がエラーで終了しました。
 
     報告の際は次のログファイルを添付してください：
 
     { $path }
-crash-no-log = Tango がエラーで終了しました。
+crash-no-log = トリル がエラーで終了しました。
 
     { $error }
 
@@ -70,8 +70,8 @@ play-status-negotiating = ネゴシエーション中…
 play-status-failed = 接続失敗: { $error }
 play-status-peer-disconnected = 相手が退出しました。
 play-status-negotiate-expected-hello = 相手から想定したハンドシェイクが届きませんでした。
-play-status-negotiate-version-too-old = 相手は古いバージョンのTangoを使用しています。
-play-status-negotiate-version-too-new = 相手は新しいバージョンのTangoを使用しています。
+play-status-negotiate-version-too-old = 相手は古いバージョンのトリルを使用しています。
+play-status-negotiate-version-too-new = 相手は新しいバージョンのトリルを使用しています。
 play-status-negotiate-failed = ネゴシエーション中にエラーが発生しました: { $error }
 lobby-waiting = 待機中…
 lobby-no-game = （ゲーム未選択）
@@ -108,6 +108,7 @@ session-back-to-session = 対戦に戻る
 # PvP telemetry deck cell tooltips
 session-stat-tps = 毎秒ティック数（現在/上限）
 session-stat-skew = ずれ
+session-stat-lead = リード
 session-stat-depth = 予測ミス深度
 session-stat-ping = ネットワーク遅延
 
@@ -258,6 +259,10 @@ settings-disable-bgm-in-pvp = ネットプレイで音楽を消す
 settings-nickname = ニックネーム
 settings-language = 言語
 settings-data-path = データパス
+    .open = 開く
+    .change = 変更
+settings-data-folder = データフォルダ
+settings-data-folder-change = 変更…
 settings-streamer-mode = 配信プライバシーモード
 settings-section-experimental = 実験的機能
 settings-enable-save-editor = セーブエディターを有効にする
@@ -313,7 +318,21 @@ input-gamepad-axis-trigger-right = 右トリガー
 settings-theme = テーマ
 settings-theme-dark = ダーク
 settings-theme-light = ライト
+settings-theme-color = テーマカラー
+settings-theme-color-trill-yellow = トリルイエロー
+settings-theme-color-pegasus-blue = ペガサスブルー
+settings-theme-color-sonia-pink = ミソラピンク
+settings-theme-color-zerker-grey = ベルセルクグレー
+settings-theme-color-ninja-green = シノビグリーン
+settings-theme-color-saurian-orange = ダイナソーオレンジ
+settings-theme-color-rogue-purple = ブライパープル
+settings-theme-color-ace-black = エースブラック
+settings-theme-color-joker-red = ジョーカーレッド
 settings-matchmaking-endpoint = マッチメイキングエンドポイント
+settings-netplay-endpoint-preset = エンドポイントプリセット
+settings-netplay-endpoint-default = Trill (デフォルト)
+settings-netplay-endpoint-cnserver = Trill (中国サーバー)
+settings-netplay-endpoint-tango = Tango
 settings-patch-repo = パッチリポジトリ
 settings-enable-patch-autoupdate = パッチを自動更新する
 settings-enable-updater = アプリの更新を自動チェック
@@ -333,7 +352,7 @@ updater-ready-to-update = 更新の準備が完了しました。
 updater-update-now = 今すぐ更新
 
 # Welcome screen
-welcome-title = Tango へようこそ！
+welcome-title = トリル へようこそ！
 welcome-subtitle = 対戦できる前にいくつかの初期設定をしてください。
 welcome-continue = 続ける
 welcome-step-roms = ROM を追加

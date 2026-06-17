@@ -1,4 +1,4 @@
-//! Tango's iced `Theme` builder. The dark/light palettes are
+//! Trill's iced `Theme` builder. The dark/light palettes are
 //! custom — not iced's stock Light/Dark — so they live here
 //! rather than picking from `iced::Theme::DARK` etc. Used by
 //! `App::theme` (live theme for the window chrome) and by any
@@ -16,8 +16,59 @@ use iced::Theme;
 /// accidentally drift to a different shade. (The Legacy
 /// Collection restyle briefly ran the PET cyan here; the
 /// structure stayed, the color came back home.)
-pub const TANGO_GREEN: iced::Color =
-    iced::Color::from_rgb(0x4c as f32 / 255.0, 0xaf as f32 / 255.0, 0x50 as f32 / 255.0);
+pub const TRILL_YELLOW_LIGHT: iced::Color =
+    iced::Color::from_rgb(0xff as f32 / 255.0, 0xf2 as f32 / 255.0, 0xa7 as f32 / 255.0);
+
+pub const TRILL_YELLOW_DARK: iced::Color =
+    iced::Color::from_rgb(0xdc as f32 / 255.0, 0xb2 as f32 / 255.0, 0x7a as f32 / 255.0);
+
+pub const PEGASUS_BLUE_LIGHT: iced::Color =
+    iced::Color::from_rgb(0x70 as f32 / 255.0, 0x90 as f32 / 255.0, 0xd8 as f32 / 255.0);
+
+pub const PEGASUS_BLUE_DARK: iced::Color =
+    iced::Color::from_rgb(0x60 as f32 / 255.0, 0x60 as f32 / 255.0, 0xa8 as f32 / 255.0);
+
+pub const SONIA_PINK_LIGHT: iced::Color =
+    iced::Color::from_rgb(0xef as f32 / 255.0, 0x74 as f32 / 255.0, 0x84 as f32 / 255.0);
+
+pub const SONIA_PINK_DARK: iced::Color =
+    iced::Color::from_rgb(0xf0 as f32 / 255.0, 0x38 as f32 / 255.0, 0x60 as f32 / 255.0);
+
+pub const ZERKER_GREY_LIGHT: iced::Color =
+    iced::Color::from_rgb(0xad as f32 / 255.0, 0xad as f32 / 255.0, 0xad as f32 / 255.0);
+
+pub const ZERKER_GREY_DARK: iced::Color =
+    iced::Color::from_rgb(0x94 as f32 / 255.0, 0x94 as f32 / 255.0, 0x94 as f32 / 255.0);
+
+pub const NINJA_GREEN_LIGHT: iced::Color =
+    iced::Color::from_rgb(0x00 as f32 / 255.0, 0xce as f32 / 255.0, 0x52 as f32 / 255.0);
+
+pub const NINJA_GREEN_DARK: iced::Color =
+    iced::Color::from_rgb(0x00 as f32 / 255.0, 0x94 as f32 / 255.0, 0x52 as f32 / 255.0);
+
+pub const SAURIAN_ORANGE_LIGHT: iced::Color =
+    iced::Color::from_rgb(0xff as f32 / 255.0, 0x5a as f32 / 255.0, 0x00 as f32 / 255.0);
+
+pub const SAURIAN_ORANGE_DARK: iced::Color =
+    iced::Color::from_rgb(0xde as f32 / 255.0, 0x18 as f32 / 255.0, 0x00 as f32 / 255.0);
+
+pub const ROGUE_PURPLE_LIGHT: iced::Color =
+    iced::Color::from_rgb(0x42 as f32 / 255.0, 0x21 as f32 / 255.0, 0x8c as f32 / 255.0);
+
+pub const ROGUE_PURPLE_DARK: iced::Color =
+    iced::Color::from_rgb(0x39 as f32 / 255.0, 0x21 as f32 / 255.0, 0x42 as f32 / 255.0);
+
+pub const ACE_BLACK_LIGHT: iced::Color =
+    iced::Color::from_rgb(0x31 as f32 / 255.0, 0x4a as f32 / 255.0, 0x5a as f32 / 255.0);
+
+pub const ACE_BLACK_DARK: iced::Color =
+    iced::Color::from_rgb(0x21 as f32 / 255.0, 0x39 as f32 / 255.0, 0x4a as f32 / 255.0);
+
+pub const JOKER_RED_LIGHT: iced::Color =
+    iced::Color::from_rgb(0xad as f32 / 255.0, 0x00 as f32 / 255.0, 0x18 as f32 / 255.0);
+
+pub const JOKER_RED_DARK: iced::Color =
+    iced::Color::from_rgb(0x84 as f32 / 255.0, 0x00 as f32 / 255.0, 0x00 as f32 / 255.0);
 
 /// The Legacy Collection's selection gold — BNLC paints the picked
 /// list row / focused thumbnail in this yellow with dark ink text.
@@ -26,8 +77,27 @@ pub const TANGO_GREEN: iced::Color =
 pub const SELECT_YELLOW: iced::Color =
     iced::Color::from_rgb(0xff as f32 / 255.0, 0xd2 as f32 / 255.0, 0x3d as f32 / 255.0);
 
+/// The light/dark accent pair for the given [`config::ThemeColor`].
+/// `theme_for` selects which half drives the palette based on the
+/// active [`config::ThemeMode`]. Kept here next to the color consts so
+/// the mapping and the values never drift apart.
+pub fn accent_pair(color: config::ThemeColor) -> (iced::Color, iced::Color) {
+    match color {
+        config::ThemeColor::TrillYellow => (TRILL_YELLOW_LIGHT, TRILL_YELLOW_DARK),
+        config::ThemeColor::PegasusBlue => (PEGASUS_BLUE_LIGHT, PEGASUS_BLUE_DARK),
+        config::ThemeColor::SoniaPink => (SONIA_PINK_LIGHT, SONIA_PINK_DARK),
+        config::ThemeColor::ZerkerGrey => (ZERKER_GREY_LIGHT, ZERKER_GREY_DARK),
+        config::ThemeColor::NinjaGreen => (NINJA_GREEN_LIGHT, NINJA_GREEN_DARK),
+        config::ThemeColor::SaurianOrange => (SAURIAN_ORANGE_LIGHT, SAURIAN_ORANGE_DARK),
+        config::ThemeColor::RoguePurple => (ROGUE_PURPLE_LIGHT, ROGUE_PURPLE_DARK),
+        config::ThemeColor::AceBlack => (ACE_BLACK_LIGHT, ACE_BLACK_DARK),
+        config::ThemeColor::JokerRed => (JOKER_RED_LIGHT, JOKER_RED_DARK),
+    }
+}
+
 pub fn theme_for(config: &config::Config) -> Theme {
-    // Tango palettes — these aren't tweaks of iced's stock Light /
+    let (accent_light, accent_dark) = accent_pair(config.theme_color);
+    // Trill palettes — these aren't tweaks of iced's stock Light /
     // Dark anymore. The dark variant keeps the Battle Network
     // Legacy Collection structure (glowing panel frames, gold
     // selection, the drawn cyberworld backdrop) but runs it in
@@ -37,18 +107,18 @@ pub fn theme_for(config: &config::Config) -> Theme {
     // the same UI under daylight, not a separate identity.
     match config.theme {
         config::ThemeMode::Light => Theme::custom(
-            "Tango Light".to_string(),
+            "Trill Light".to_string(),
             iced::theme::Palette {
                 background: iced::Color::from_rgb(0xf3 as f32 / 255.0, 0xee as f32 / 255.0, 0xdc as f32 / 255.0),
                 text: iced::Color::from_rgb(0x14 as f32 / 255.0, 0x22 as f32 / 255.0, 0x34 as f32 / 255.0),
-                primary: TANGO_GREEN,
-                success: TANGO_GREEN,
+                primary: accent_light,
+                success: accent_light,
                 warning: iced::Color::from_rgb(0xb7 as f32 / 255.0, 0x7e as f32 / 255.0, 0x33 as f32 / 255.0),
                 danger: iced::Color::from_rgb(0xd1 as f32 / 255.0, 0x3a as f32 / 255.0, 0x3a as f32 / 255.0),
             },
         ),
         config::ThemeMode::Dark => Theme::custom(
-            "Tango Dark".to_string(),
+            "Trill Dark".to_string(),
             iced::theme::Palette {
                 // Neutral charcoal, the faintest hair cool. The
                 // base went navy ("too blue" next to the green
@@ -63,8 +133,8 @@ pub fn theme_for(config: &config::Config) -> Theme {
                 // (the old cyan, then green) casts its hue onto
                 // every surface mixed from it.
                 text: iced::Color::from_rgb(0xec as f32 / 255.0, 0xee as f32 / 255.0, 0xed as f32 / 255.0),
-                primary: TANGO_GREEN,
-                success: TANGO_GREEN,
+                primary: accent_dark,
+                success: accent_dark,
                 warning: iced::Color::from_rgb(0xff as f32 / 255.0, 0xb5 as f32 / 255.0, 0x47 as f32 / 255.0),
                 danger: iced::Color::from_rgb(0xff as f32 / 255.0, 0x52 as f32 / 255.0, 0x52 as f32 / 255.0),
             },

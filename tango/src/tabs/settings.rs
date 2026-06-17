@@ -22,6 +22,14 @@ fn theme_choice(lang: &LanguageIdentifier, mode: config::ThemeMode) -> Choice<co
     )
 }
 
+/// A [`config::ThemeColor`] as a pick_list [`Choice`], labeled in the
+/// UI language. Uses [`crate::i18n::t`] directly rather than the `t!`
+/// macro since the Fluent key is computed (the macro only takes a
+/// string literal).
+fn theme_color_choice(lang: &LanguageIdentifier, color: config::ThemeColor) -> Choice<config::ThemeColor> {
+    Choice::new(color, crate::i18n::t(lang, color.i18n_key()))
+}
+
 /// A [`config::RelayMode`] as a pick_list [`Choice`], labeled in the
 /// UI language.
 fn relay_mode_choice(lang: &LanguageIdentifier, mode: config::RelayMode) -> Choice<config::RelayMode> {
@@ -33,6 +41,46 @@ fn relay_mode_choice(lang: &LanguageIdentifier, mode: config::RelayMode) -> Choi
             config::RelayMode::Never => t!(lang, "settings-use-relay-never"),
         },
     )
+}
+
+/// Endpoint presets for the netplay settings combobox.
+fn endpoint_preset_choice(preset: &str) -> Choice<String> {
+    Choice::new(preset.to_string(), preset.to_string())
+}
+
+/// Endpoint preset definitions with their corresponding URLs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EndpointPreset {
+    Default,
+    CnServer,
+    Tango,
+}
+
+impl EndpointPreset {
+    pub fn url(&self) -> &'static str {
+        match self {
+            EndpointPreset::Default => "wss://matchmaking.trill.hikaricalyx.com",
+            EndpointPreset::CnServer => "wss://matchmakingcn.trill.hikaricalyx.cn",
+            EndpointPreset::Tango => "wss://matchmaking.tango.n1gp.net",
+        }
+    }
+
+    pub fn id(&self) -> &'static str {
+        match self {
+            EndpointPreset::Default => "default",
+            EndpointPreset::CnServer => "cnserver",
+            EndpointPreset::Tango => "tango",
+        }
+    }
+
+    pub fn from_id(id: &str) -> Option<Self> {
+        match id {
+            "default" => Some(EndpointPreset::Default),
+            "cnserver" => Some(EndpointPreset::CnServer),
+            "tango" => Some(EndpointPreset::Tango),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
@@ -83,6 +131,8 @@ pub enum Message {
     NicknameChanged(String),
     ToggleStreamerMode(bool),
     MatchmakingEndpointChanged(String),
+    /// Netplay endpoint preset picked from combobox.
+    EndpointPresetChanged(String),
     /// Netplay frame-delay slider moved. Persisted to `config.frame_delay`;
     /// it's this side's local presentation lag, applied at the next match start
     /// (or live via the in-match footer slider).
@@ -118,6 +168,7 @@ pub enum Message {
     /// hands off to the installer + exits the process.
     UpdateNow,
     ThemeChanged(config::ThemeMode),
+    ThemeColorChanged(config::ThemeColor),
     /// User clicked "Add binding" for `k`. The next key/button
     /// event captured by the settings subscription is appended.
     BindingCaptureStart(input::MappedKey),
@@ -167,6 +218,7 @@ pub enum ConfigChange {
     Volume(f32),
     DisableBgmInPvp(bool),
     Theme(config::ThemeMode),
+    ThemeColor(config::ThemeColor),
     AddInputBinding(input::MappedKey, input::PhysicalInput),
     RemoveInputBinding(input::MappedKey, usize),
     ResetInputBindings,
@@ -198,6 +250,14 @@ impl State {
             Message::NicknameChanged(s) => Some(ConfigChange::Nickname(s)),
             Message::ToggleStreamerMode(b) => Some(ConfigChange::StreamerMode(b)),
             Message::MatchmakingEndpointChanged(s) => Some(ConfigChange::MatchmakingEndpoint(s)),
+            Message::EndpointPresetChanged(s) => {
+                // When a preset is selected, update the matchmaking endpoint
+                if let Some(preset) = EndpointPreset::from_id(&s) {
+                    Some(ConfigChange::MatchmakingEndpoint(preset.url().to_string()))
+                } else {
+                    None
+                }
+            }
             Message::FrameDelayChanged(v) => Some(ConfigChange::FrameDelay(v)),
             Message::RelayModeChanged(m) => Some(ConfigChange::RelayMode(m)),
             Message::PatchRepoChanged(s) => Some(ConfigChange::PatchRepo(s)),
@@ -223,6 +283,7 @@ impl State {
             // process on success. Nothing to fold into config.
             Message::UpdateNow => None,
             Message::ThemeChanged(t) => Some(ConfigChange::Theme(t)),
+            Message::ThemeColorChanged(c) => Some(ConfigChange::ThemeColor(c)),
             Message::BindingCaptureStart(k) => {
                 self.capture_target = Some(k);
                 None
@@ -399,6 +460,18 @@ fn settings_general<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config
             let selected = options.iter().find(|c| c.value == config.theme).cloned();
             pick_list(options, selected, |c: Choice<config::ThemeMode>| {
                 Message::ThemeChanged(c.value)
+            })
+            .padding(STANDARD_PADDING)
+            .style(widgets::chunky_pick_list)
+        }),
+        labeled::<Message>(t!(lang, "settings-theme-color"), {
+            let options: Vec<_> = config::ThemeColor::ALL
+                .into_iter()
+                .map(|c| theme_color_choice(lang, c))
+                .collect();
+            let selected = options.iter().find(|c| c.value == config.theme_color).cloned();
+            pick_list(options, selected, |c: Choice<config::ThemeColor>| {
+                Message::ThemeColorChanged(c.value)
             })
             .padding(STANDARD_PADDING)
             .style(widgets::chunky_pick_list)
@@ -602,6 +675,15 @@ fn settings_netplay<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config
     let frame_delay = config
         .frame_delay
         .clamp(tango_pvp::battle::MIN_FRAME_DELAY, tango_pvp::battle::MAX_FRAME_DELAY);
+    
+    // Build endpoint preset options
+    let preset_options: Vec<Choice<String>> = vec![
+        Choice::new("default".to_string(), t!(lang, "settings-netplay-endpoint-default")),
+        Choice::new("cnserver".to_string(), t!(lang, "settings-netplay-endpoint-cnserver")),
+        Choice::new("tango".to_string(), t!(lang, "settings-netplay-endpoint-tango")),
+    ];
+    let selected_preset: Option<Choice<String>> = None; // No preset selected by default, showing placeholder
+    
     column![
         labeled::<Message>(
             t!(lang, "settings-matchmaking-endpoint"),
@@ -611,6 +693,14 @@ fn settings_netplay<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config
                 .width(Length::Fixed(480.0))
                 .style(widgets::chunky_text_input),
         ),
+        labeled::<Message>(t!(lang, "settings-netplay-endpoint-preset"), {
+            pick_list(preset_options, selected_preset, |c: Choice<String>| {
+                Message::EndpointPresetChanged(c.value)
+            })
+            .placeholder(t!(lang, "settings-netplay-endpoint-preset"))
+            .padding(STANDARD_PADDING)
+            .style(widgets::chunky_pick_list)
+        }),
         labeled::<Message>(
             t!(lang, "settings-netplay-frame-delay"),
             row![
@@ -810,7 +900,7 @@ impl AboutMarkdown {
     fn content(&self) -> &iced::widget::markdown::Content {
         self.0.get_or_init(|| {
             iced::widget::markdown::Content::parse(&format!(
-                "# Tango {}\n{}",
+                "# Trill {}\n{}",
                 env!("CARGO_PKG_VERSION"),
                 include_str!("../../../CREDITS.md")
             ))
@@ -841,7 +931,7 @@ fn settings_about<'a>(
 
     // Pull the live Theme from the same `crate::theme::theme_for` the
     // App's theme callback uses — keeps link color in sync with
-    // the rest of the app instead of pinning to DARK + TANGO_GREEN
+    // the rest of the app instead of pinning to DARK + TRILL_YELLOW_LIGHT
     // by hand. `Settings::from(&Theme)` defaults to text-size 16,
     // so wrap to also pin the app's body text size.
     let theme = crate::theme::theme_for(config);

@@ -1,6 +1,6 @@
 [package]
 name = "tango"
-version = "5.0.32"
+version = "5.0.1-prerelease-3"
 edition = "2021"
 license = "AGPL-3.0-or-later"
 publish = false
@@ -101,7 +101,7 @@ anyhow = "1"
 # Linux, a Mach exception server on macOS (needed for
 # EXC_BAD_ACCESS), SetUnhandledExceptionFilter + a vectored
 # handler on Windows. We install this in the child UI process so
-# segfaults coming from mgba / datachannel C code land in the
+# segfaults coming from mgba C code land in the
 # same log file as Rust panics.
 #
 # Note: crash-handler's Windows code path imports `_invoke_watson`

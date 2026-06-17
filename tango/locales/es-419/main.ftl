@@ -2,19 +2,19 @@
 LANGUAGE = Español (Latinoamérica)
 
 crash =
-    ¡Oops, Tango ha encontrado un error y se ha estrellado!
+    ¡Oops, Trill ha encontrado un error y se ha estrellado!
 
     Cuando informe de este fallo, incluya el siguiente archivo de registro:
 
     { $path }
 crash-no-log =
-    ¡Oops, Tango ha encontrado un error y se ha estrellado!
+    ¡Oops, Trill ha encontrado un error y se ha estrellado!
 
     { $error }
-window-title = Tango
-    .running = Tango (en ejecución)
+window-title = Trill
+    .running = Trill (en ejecución)
 # Tooltip on the top bar's close button (fullscreen only).
-window-quit = Salir de Tango
+window-quit = Salir de Trill
 play-play = Jugar
 play-fight = ¡Netbattle!
 play-link-code = Código de conexión (déjalo vacío para generar uno aleatorio)
@@ -45,6 +45,16 @@ settings-theme-light = Claro
     .light = Claro
     .dark = Oscuro
     .system = Seguir la configuración del sistema
+settings-theme-color = Color del tema
+settings-theme-color-trill-yellow = Amarillo Trill
+settings-theme-color-pegasus-blue = Azul Pegasus
+settings-theme-color-sonia-pink = Rosa Sonia
+settings-theme-color-zerker-grey = Gris Zerker
+settings-theme-color-ninja-green = Verde Ninja
+settings-theme-color-saurian-orange = Naranja Saurian
+settings-theme-color-rogue-purple = Púrpura Rogue
+settings-theme-color-ace-black = Negro Ace
+settings-theme-color-joker-red = Rojo Joker
 settings-video-filter = Filtro de vídeo
     .null = Ninguno
     .hq2x = hq2x
@@ -59,11 +69,17 @@ settings-enable-save-editor = Habilitar editor de guardados
 settings-experimental-warning = Las funciones experimentales pueden dañar o corromper tus guardados, pueden cambiar o eliminarse en cualquier momento y pueden carecer de comprobaciones que mantengan tus guardados válidos para el juego en línea. Úsalas bajo tu propio riesgo.
     .tooltip = Si activas este modo, se añadirá una pestaña adicional de "Cubierta" al visor de guardado que oculta toda la información sobre tu archivo de guardado actual.
 settings-matchmaking-endpoint = Salida de emparejamiento
+settings-netplay-endpoint-preset = Preset de endpoint
+settings-netplay-endpoint-default = Trill (Por defecto)
+settings-netplay-endpoint-cnserver = Trill (Servidor CN)
+settings-netplay-endpoint-tango = Tango
 settings-patch-repo = Repositorio de parches
 settings-enable-patch-autoupdate = Auto actualización
 settings-data-path = Ruta de datos
     .open = Abrir
     .change = Cambiar
+settings-data-folder = Carpeta de datos
+settings-data-folder-change = Cambiar…
 settings-window-size = Tamaño de ventana
 settings-fullscreen = Pantalla completa
 settings-ui-scale = Escala de interfaz
@@ -128,8 +144,8 @@ play-status-negotiating = Negociando…
 play-status-failed = Conexión fallida: { $error }
 play-status-peer-disconnected = El otro jugador se fue.
 play-status-negotiate-expected-hello = El otro jugador no envió el saludo esperado.
-play-status-negotiate-version-too-old = El otro jugador está usando una versión más antigua de Tango.
-play-status-negotiate-version-too-new = El otro jugador está usando una versión más nueva de Tango.
+play-status-negotiate-version-too-old = El otro jugador está usando una versión más antigua de Trill.
+play-status-negotiate-version-too-new = El otro jugador está usando una versión más nueva de Trill.
 play-status-negotiate-failed = Ocurrió un error durante la negociación: { $error }
 lobby-waiting = Esperando…
 lobby-no-game = (sin juego seleccionado)
@@ -166,6 +182,7 @@ session-back-to-session = Volver a la sesión
 # PvP telemetry deck cell tooltips
 session-stat-tps = Tick/s (actual/máx.)
 session-stat-skew = Desfase
+session-stat-lead = Adelanto
 session-stat-depth = Profundidad de predicción errónea
 session-stat-ping = Latencia de red
 navi-style = Estilo
@@ -329,7 +346,7 @@ updater-up-to-date = v{ $version } (al día)
 updater-downloading = Descargando: { $pct }%
 updater-ready-to-update = Actualización descargada y lista para instalar.
 updater-update-now = Actualizar ahora
-welcome-title = ¡Bienvenido a Tango!
+welcome-title = ¡Bienvenido a Trill!
 welcome-subtitle = Solo faltan unos pasos para que puedas empezar a jugar.
 welcome-step-roms = Agrega tus ROMs
 welcome-step-roms-description = Coloca tus archivos .gba de Battle Network / Rockman EXE en:

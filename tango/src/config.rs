@@ -4,14 +4,14 @@
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 
-const DATA_DIR_NAME: &str = "Tango";
+const DATA_DIR_NAME: &str = "Trill";
 
-const QUALIFIER: &str = "net";
-const ORGANIZATION: &str = "n1gp";
-const APPLICATION: &str = "tango";
+const QUALIFIER: &str = "com";
+const ORGANIZATION: &str = "hikaricalyx";
+const APPLICATION: &str = "trill";
 
-pub const DEFAULT_MATCHMAKING_ENDPOINT: &str = "wss://matchmaking.tango.n1gp.net";
-pub const DEFAULT_PATCH_REPO: &str = "https://patches.tango.n1gp.net";
+pub const DEFAULT_MATCHMAKING_ENDPOINT: &str = "wss://matchmaking.trill.hikaricalyx.com";
+pub const DEFAULT_PATCH_REPO: &str = "https://patches.trill.hikaricalyx.com";
 
 fn default_matchmaking_endpoint() -> String {
     DEFAULT_MATCHMAKING_ENDPOINT.to_string()
@@ -57,6 +57,54 @@ pub enum ThemeMode {
     Dark,
 }
 
+/// The accent color the theme is built around. Each variant maps to a
+/// light/dark accent pair in [`crate::theme`]; the active [`ThemeMode`]
+/// picks which half of the pair drives the palette's `primary`/`success`.
+/// Defaults to [`ThemeColor::TrillYellow`] — the app's signature accent.
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Default, Debug)]
+pub enum ThemeColor {
+    #[default]
+    TrillYellow,
+    PegasusBlue,
+    SoniaPink,
+    ZerkerGrey,
+    NinjaGreen,
+    SaurianOrange,
+    RoguePurple,
+    AceBlack,
+    JokerRed,
+}
+
+impl ThemeColor {
+    /// Every accent color, in pick-list display order.
+    pub const ALL: [ThemeColor; 9] = [
+        ThemeColor::TrillYellow,
+        ThemeColor::PegasusBlue,
+        ThemeColor::SoniaPink,
+        ThemeColor::ZerkerGrey,
+        ThemeColor::NinjaGreen,
+        ThemeColor::SaurianOrange,
+        ThemeColor::RoguePurple,
+        ThemeColor::AceBlack,
+        ThemeColor::JokerRed,
+    ];
+
+    /// The Fluent message id for this color's localized label.
+    pub fn i18n_key(self) -> &'static str {
+        match self {
+            ThemeColor::TrillYellow => "settings-theme-color-trill-yellow",
+            ThemeColor::PegasusBlue => "settings-theme-color-pegasus-blue",
+            ThemeColor::SoniaPink => "settings-theme-color-sonia-pink",
+            ThemeColor::ZerkerGrey => "settings-theme-color-zerker-grey",
+            ThemeColor::NinjaGreen => "settings-theme-color-ninja-green",
+            ThemeColor::SaurianOrange => "settings-theme-color-saurian-orange",
+            ThemeColor::RoguePurple => "settings-theme-color-rogue-purple",
+            ThemeColor::AceBlack => "settings-theme-color-ace-black",
+            ThemeColor::JokerRed => "settings-theme-color-joker-red",
+        }
+    }
+}
+
 /// Whether matchmaking connections may/must go through the TURN
 /// relay. `Auto` lets ICE pick the best route (direct when possible,
 /// relay as fallback); `Always` forces every candidate through the
@@ -99,6 +147,10 @@ pub struct Config {
     pub language: unic_langid::LanguageIdentifier,
     pub streamer_mode: bool,
     pub theme: ThemeMode,
+    /// Accent color the theme is built around. Defaults to
+    /// [`ThemeColor::TrillYellow`].
+    #[serde(default)]
+    pub theme_color: ThemeColor,
     pub data_path: std::path::PathBuf,
     pub matchmaking_endpoint: String,
     pub patch_repo: String,
@@ -266,6 +318,7 @@ impl Default for Config {
             language: default_language(),
             streamer_mode: false,
             theme: ThemeMode::default(),
+            theme_color: ThemeColor::default(),
             data_path,
             matchmaking_endpoint: default_matchmaking_endpoint(),
             patch_repo: default_patch_repo(),

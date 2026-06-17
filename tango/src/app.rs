@@ -929,7 +929,7 @@ impl App {
                 } else {
                     iced::Task::none()
                 };
-                // PvP sessions write a `.tangoreplay` next to
+                // PvP sessions write a `.t5replay` next to
                 // the saves dir on match end; once the session
                 // clears we want the new file to show up in the
                 // Replays tab without a manual rescan. The
@@ -1967,6 +1967,7 @@ impl App {
             // Sampled by spawn_pvp at match start; nothing live to poke.
             C::DisableBgmInPvp(b) => self.config.disable_bgm_in_pvp = b,
             C::Theme(t) => self.config.theme = t,
+            C::ThemeColor(c) => self.config.theme_color = c,
             C::AddInputBinding(slot, binding) => {
                 let bindings = self.config.input_mapping.slot_mut(slot);
                 // Avoid dupes — a single binding could be added
@@ -2252,7 +2253,7 @@ impl App {
         // open lobby isn't forgotten behind a tab switch.
         let lobby_badge = self.lobby_on_screen() && self.tab != Tab::Play;
         let root: Element<'_, Message> = column![
-            top_bar(lang, self.tab, lobby_badge, self.config.fullscreen),
+            top_bar(lang, self.tab, lobby_badge, self.config.fullscreen, self.config.theme_color),
             widgets::hud_scanline_top(),
             body_surface,
         ]
@@ -2292,27 +2293,58 @@ fn entered(el: Element<'_, Message>, progress: Option<f32>, dy: f32) -> Element<
     }
 }
 
-fn top_bar(lang: &LanguageIdentifier, active: Tab, lobby_badge: bool, fullscreen: bool) -> Element<'_, Message> {
-    use iced::widget::image::{Handle, Image};
-    use lucide_icons::Icon;
+/// The nav-strip logo mark for the given accent color. TrillYellow
+/// uses the base `icon.png`; every other color ships its own
+/// recolored PNG. Each is embedded + decoded once via LazyLock, so
+/// repeated calls (and theme switches) just clone a cached handle.
+fn logo_handle(color: config::ThemeColor) -> iced::widget::image::Handle {
+    use iced::widget::image::Handle;
     use std::sync::LazyLock;
+    macro_rules! logo {
+        ($name:literal) => {{
+            static H: LazyLock<Handle> = LazyLock::new(|| {
+                let raw: &'static [u8] = include_bytes!($name);
+                Handle::from_bytes(raw)
+            });
+            H.clone()
+        }};
+    }
+    match color {
+        config::ThemeColor::TrillYellow => logo!("icon.png"),
+        config::ThemeColor::PegasusBlue => logo!("pegasus_blue.png"),
+        config::ThemeColor::SoniaPink => logo!("sonia_pink.png"),
+        config::ThemeColor::ZerkerGrey => logo!("zerker_grey.png"),
+        config::ThemeColor::NinjaGreen => logo!("ninja_green.png"),
+        config::ThemeColor::SaurianOrange => logo!("saurian_orange.png"),
+        config::ThemeColor::RoguePurple => logo!("rogue_purple.png"),
+        config::ThemeColor::AceBlack => logo!("ace_black.png"),
+        config::ThemeColor::JokerRed => logo!("joker_red.png"),
+    }
+}
 
-    // Small Tango logo at the left edge of the nav strip.
-    // Uses `icon.png` (the standalone logo mark) — the emblem
-    // image is the long About-page banner, not what we want
-    // next to a button-sized tab strip. Parsed once via
-    // LazyLock so the image bytes aren't re-decoded every
-    // render.
-    static LOGO: LazyLock<Handle> = LazyLock::new(|| {
-        let raw: &'static [u8] = include_bytes!("icon.png");
-        Handle::from_bytes(raw)
-    });
+fn top_bar(
+    lang: &LanguageIdentifier,
+    active: Tab,
+    lobby_badge: bool,
+    fullscreen: bool,
+    theme_color: config::ThemeColor,
+) -> Element<'_, Message> {
+    use iced::widget::image::Image;
+    use lucide_icons::Icon;
+
+    // Small Tango logo at the left edge of the nav strip. The
+    // standalone logo mark (not the long About-page emblem
+    // banner) recolored to match the active accent — TrillYellow
+    // uses the base `icon.png`, every other color ships its own
+    // PNG. `logo_handle` embeds + decodes each once via LazyLock,
+    // so switching themes just clones a cached handle.
+    let logo = logo_handle(theme_color);
 
     let tab =
         |icon, label, target: Tab| widgets::nav_tab_button(icon, label, Message::TabSelected(target), target == active);
     let mut bar = row![
         iced::widget::container(
-            Image::new(LOGO.clone())
+            Image::new(logo)
                 .width(iced::Length::Fixed(28.0))
                 .height(iced::Length::Fixed(28.0))
                 .content_fit(iced::ContentFit::Contain),

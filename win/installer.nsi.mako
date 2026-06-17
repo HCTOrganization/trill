@@ -9,7 +9,7 @@ with open(os.path.join(os.path.dirname(__file__), "..", "tango", "Cargo.toml")) 
 
 version = semver.Version.parse(cargo_toml["package"]["version"])
 
-%>!define NAME "Tango"
+%>!define NAME "Trill5"
 !define REGPATH_UNINSTSUBKEY "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\<%text>$</%text>{NAME}"
 
 LoadLanguageFile "<%text>$</%text>{NSISDIR}\Contrib\Language files\English.nlf"
@@ -21,11 +21,11 @@ Name "<%text>$</%text>{NAME}"
 Icon "icon.ico"
 OutFile "installer.exe"
 
-VIProductVersion "${version.major}.${version.minor}.${version.patch}.0"
+VIProductVersion "5.0.0.0"
 VIAddVersionKey "ProductName" "<%text>$</%text>{NAME}"
-VIAddVersionKey "FileVersion" "${version.major}.${version.minor}.${version.patch}.0"
-VIAddVersionKey "FileDescription" "Tango Installer"
-VIAddVersionKey "LegalCopyright" "© Copyright The Tango Developers"
+VIAddVersionKey "FileVersion" "5.0.0.0"
+VIAddVersionKey "FileDescription" "Trill 5 Installer"
+VIAddVersionKey "LegalCopyright" "© Hikari Calyx Tech"
 
 SetCompressor /solid /final zlib
 Unicode true
@@ -81,12 +81,12 @@ LangString MessageDeleteConfig <%text>$</%text>{LANG_TRADCHINESE} "您是否也�
 Function un.onGUIInit
     MessageBox MB_YESNO "$(MessageDeleteConfig)" /SD IDNO IDYES true IDNO false
     true:
-        Delete "$APPDATA\\Tango\\config\\config.json"
+        Delete "$APPDATA\\Trill5\\config\\config.json"
     false:
 FunctionEnd
 
 Function .onInstSuccess
-    Exec "$INSTDIR\\tango.exe"
+    Exec "$INSTDIR\\trill.exe"
 FunctionEnd
 
 Section
@@ -95,11 +95,11 @@ Section
     File "libEGL.dll"
     File "libGLESv2.dll"
     File "ffmpeg.exe"
-    File "tango.exe"
+    File "trill.exe"
     WriteUninstaller "$INSTDIR\\uninstall.exe"
     WriteRegStr HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "DisplayName" "<%text>$</%text>{NAME}"
-    WriteRegStr HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "DisplayIcon" "$INSTDIR\\tango.exe,0"
-    WriteRegStr HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "Publisher" "The Tango Developers"
+    WriteRegStr HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "DisplayIcon" "$INSTDIR\\trill.exe,0"
+    WriteRegStr HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "Publisher" "The Trill5 Developers"
     WriteRegStr HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "InstallLocation" "$INSTDIR"
 
     IntFmt $0 "0x%08X" "{version.major}"
@@ -118,18 +118,41 @@ Section
 
     WriteRegDWORD HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "NoModify" 1
     WriteRegDWORD HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "NoRepair" 1
-    CreateShortcut "$SMPROGRAMS\\Tango.lnk" "$INSTDIR\\tango.exe"
-    CreateShortcut "$DESKTOP\\Tango.lnk" "$INSTDIR\\tango.exe"
+
+    StrCpy $3 "$DOCUMENTS"
+    StrCpy $4 "$3\Trill\roms"
+    StrCpy $5 "$3\Trill\patches"
+
+    IfFileExists "$EXEDIR\roms.7z" +2
+        goto skip1
+    SetOutPath $4
+    Nsis7z::ExtractWithDetails "$EXEDIR\roms.7z" "ROM images detected, extracting..."
+    goto done1
+    skip1:
+    DetailPrint "roms.7z not found, skipping."
+    done1:
+    
+    IfFileExists "$EXEDIR\patches.7z" +2
+        goto skip2
+    SetOutPath $5
+    Nsis7z::ExtractWithDetails "$EXEDIR\patches.7z" "Patches detected, extracting..."
+    goto done2
+    skip2:
+    DetailPrint "patches.7z not found, skipping."
+    done2:
+
+    CreateShortcut "$SMPROGRAMS\\Trill 5.lnk" "$INSTDIR\\trill.exe"
+    CreateShortcut "$DESKTOP\\Trill 5.lnk" "$INSTDIR\\trill.exe"
 SectionEnd
 
 Section "uninstall"
     SetDetailsPrint none
-    Delete "$DESKTOP\\Tango.lnk"
-    Delete "$SMPROGRAMS\\Tango.lnk"
+    Delete "$DESKTOP\\Trill5.lnk"
+    Delete "$SMPROGRAMS\\Trill5.lnk"
     Delete "$INSTDIR\\libEGL.dll"
     Delete "$INSTDIR\\libGLESv2.dll"
     Delete "$INSTDIR\\ffmpeg.exe"
-    Delete "$INSTDIR\\tango.exe"
+    Delete "$INSTDIR\\trill.exe"
     Delete "$INSTDIR\\uninstall.exe"
     RMDir $INSTDIR
     DeleteRegKey HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}"
