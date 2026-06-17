@@ -17,7 +17,7 @@ use iced::Theme;
 /// Collection restyle briefly ran the PET cyan here; the
 /// structure stayed, the color came back home.)
 pub const TRILL_YELLOW_LIGHT: iced::Color =
-    iced::Color::from_rgb(0xdc as f32 / 255.0, 0xb2 as f32 / 255.0, 0x7a as f32 / 255.0);
+    iced::Color::from_rgb(0xab as f32 / 255.0, 0x8a as f32 / 255.0, 0x5f as f32 / 255.0);
 
 pub const TRILL_YELLOW_DARK: iced::Color =
     iced::Color::from_rgb(0xff as f32 / 255.0, 0xf2 as f32 / 255.0, 0xa7 as f32 / 255.0);
@@ -53,10 +53,10 @@ pub const SAURIAN_ORANGE_DARK: iced::Color =
     iced::Color::from_rgb(0xff as f32 / 255.0, 0x5a as f32 / 255.0, 0x00 as f32 / 255.0);
 
 pub const ROGUE_PURPLE_LIGHT: iced::Color =
-    iced::Color::from_rgb(0x39 as f32 / 255.0, 0x21 as f32 / 255.0, 0x42 as f32 / 255.0);
+    iced::Color::from_rgb(0x42 as f32 / 255.0, 0x21 as f32 / 255.0, 0x8c as f32 / 255.0);
 
 pub const ROGUE_PURPLE_DARK: iced::Color =
-    iced::Color::from_rgb(0x42 as f32 / 255.0, 0x21 as f32 / 255.0, 0x8c as f32 / 255.0);
+    iced::Color::from_rgb(0x60 as f32 / 255.0, 0x60 as f32 / 255.0, 0xa8 as f32 / 255.0);
 
 pub const ACE_BLACK_LIGHT: iced::Color =
     iced::Color::from_rgb(0x21 as f32 / 255.0, 0x39 as f32 / 255.0, 0x4a as f32 / 255.0);
