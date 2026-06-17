@@ -1885,13 +1885,7 @@ impl App {
                 async move {
                     rfd::AsyncFileDialog::new()
                         .set_directory(&initial)
-                        .add_filter(
-                            "Border media",
-                            &[
-                                "png", "jpg", "jpeg", "bmp", "gif", "webp", "mp4", "webm", "mkv",
-                                "mov", "m4v",
-                            ],
-                        )
+                        .add_filter("Image", &["png", "jpg", "jpeg", "bmp", "gif", "webp"])
                         .pick_file()
                         .await
                         .map(|h| h.path().to_path_buf())
@@ -2385,6 +2379,7 @@ fn logo_handle(color: config::ThemeColor) -> iced::widget::image::Handle {
         config::ThemeColor::RoguePurple => logo!("rogue_purple.png"),
         config::ThemeColor::AceBlack => logo!("ace_black.png"),
         config::ThemeColor::JokerRed => logo!("joker_red.png"),
+        config::ThemeColor::SpeakiBrown => logo!("speaki_brown.png"),
     }
 }
 

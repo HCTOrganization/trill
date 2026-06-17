@@ -73,6 +73,7 @@ pub enum ThemeColor {
     RoguePurple,
     AceBlack,
     JokerRed,
+    SpeakiBrown,
 }
 
 impl ThemeColor {
@@ -87,6 +88,7 @@ impl ThemeColor {
         ThemeColor::RoguePurple,
         ThemeColor::AceBlack,
         ThemeColor::JokerRed,
+        ThemeColor::SpeakiBrown,
     ];
 
     /// The Fluent message id for this color's localized label.
@@ -101,6 +103,7 @@ impl ThemeColor {
             ThemeColor::RoguePurple => "settings-theme-color-rogue-purple",
             ThemeColor::AceBlack => "settings-theme-color-ace-black",
             ThemeColor::JokerRed => "settings-theme-color-joker-red",
+            ThemeColor::SpeakiBrown => "settings-theme-color-speaki-brown",
         }
     }
 }

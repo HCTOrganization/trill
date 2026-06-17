@@ -55,6 +55,7 @@ settings-theme-color-saurian-orange = 恐龍橙
 settings-theme-color-rogue-purple = 無賴紫
 settings-theme-color-ace-black = 王牌黑
 settings-theme-color-joker-red = 鬼牌紅
+settings-theme-color-speaki-brown = 斯嗶奇棕
 settings-video-filter = 圖形過濾器
     .null = 無
     .hq2x = hq2x

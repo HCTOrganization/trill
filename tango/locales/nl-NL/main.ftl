@@ -55,6 +55,7 @@ settings-theme-color-saurian-orange = Saurian Oranje
 settings-theme-color-rogue-purple = Rogue Paars
 settings-theme-color-ace-black = Ace Zwart
 settings-theme-color-joker-red = Joker Rood
+settings-theme-color-speaki-brown = Speaki Bruin
 settings-video-filter = Videofilter
     .null = Geen
     .hq2x = hq2x

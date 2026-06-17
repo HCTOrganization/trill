@@ -55,6 +55,7 @@ settings-theme-color-saurian-orange = Сауриан Оранжевая
 settings-theme-color-rogue-purple = Рогу Фиолетовая
 settings-theme-color-ace-black = Туз Чёрная
 settings-theme-color-joker-red = Джокер Красная
+settings-theme-color-speaki-brown = Спики Коричневая
 settings-video-filter = Видео фильтр
     .null = Ничего
     .hq2x = hq2x

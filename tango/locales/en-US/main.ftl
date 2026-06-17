@@ -330,6 +330,7 @@ settings-theme-color-saurian-orange = Saurian Orange
 settings-theme-color-rogue-purple = Rogue Purple
 settings-theme-color-ace-black = Ace Black
 settings-theme-color-joker-red = Joker Red
+settings-theme-color-speaki-brown = Speaki Brown
 settings-matchmaking-endpoint = Matchmaking endpoint
 settings-netplay-endpoint-preset = Endpoint preset
 settings-netplay-endpoint-default = Trill (Default)

@@ -70,6 +70,12 @@ pub const JOKER_RED_LIGHT: iced::Color =
 pub const JOKER_RED_DARK: iced::Color =
     iced::Color::from_rgb(0xde as f32 / 255.0, 0x18 as f32 / 255.0, 0x00 as f32 / 255.0);
 
+pub const SPEAKI_BROWN_LIGHT: iced::Color =
+    iced::Color::from_rgb(0x5f as f32 / 255.0, 0x3f as f32 / 255.0, 0x51 as f32 / 255.0);
+
+pub const SPEAKI_BROWN_DARK: iced::Color =
+    iced::Color::from_rgb(0x71 as f32 / 255.0, 0x57 as f32 / 255.0, 0x69 as f32 / 255.0);
+
 /// The Legacy Collection's selection gold — BNLC paints the picked
 /// list row / focused thumbnail in this yellow with dark ink text.
 /// Used by `widgets::list_item` for selected rows so "what you've
@@ -92,6 +98,7 @@ pub fn accent_pair(color: config::ThemeColor) -> (iced::Color, iced::Color) {
         config::ThemeColor::RoguePurple => (ROGUE_PURPLE_LIGHT, ROGUE_PURPLE_DARK),
         config::ThemeColor::AceBlack => (ACE_BLACK_LIGHT, ACE_BLACK_DARK),
         config::ThemeColor::JokerRed => (JOKER_RED_LIGHT, JOKER_RED_DARK),
+        config::ThemeColor::SpeakiBrown => (SPEAKI_BROWN_LIGHT, SPEAKI_BROWN_DARK),
     }
 }
 

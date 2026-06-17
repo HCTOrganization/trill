@@ -55,6 +55,7 @@ settings-theme-color-saurian-orange = Saurian Cam
 settings-theme-color-rogue-purple = Rogue Tím
 settings-theme-color-ace-black = Ace Đen
 settings-theme-color-joker-red = Joker Đỏ
+settings-theme-color-speaki-brown = Speaki Nâu
 settings-video-filter = Bộ lọc ảnh
     .null = Không
     .hq2x = hq2x

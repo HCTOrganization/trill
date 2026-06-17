@@ -55,6 +55,7 @@ settings-theme-color-saurian-orange = Laranja Saurian
 settings-theme-color-rogue-purple = Roxo Rogue
 settings-theme-color-ace-black = Preto Ace
 settings-theme-color-joker-red = Vermelho Joker
+settings-theme-color-speaki-brown = Marrom Speaki
 settings-video-filter = Filtro de vídeo
     .null = Nenhum
     .hq2x = hq2x

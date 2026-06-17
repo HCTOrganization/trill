@@ -322,6 +322,7 @@ settings-theme-color-saurian-orange = 다이나소 오렌지
 settings-theme-color-rogue-purple = 브라이 퍼플
 settings-theme-color-ace-black = 에이스 블랙
 settings-theme-color-joker-red = 조커 레드
+settings-theme-color-speaki-brown = 스핔이 브라운
 settings-matchmaking-endpoint = 매치메이킹 엔드포인트
 settings-netplay-endpoint-preset = 엔드포인트 프리셋
 settings-netplay-endpoint-default = Trill (기본값)
