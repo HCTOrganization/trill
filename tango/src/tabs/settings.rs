@@ -23,9 +23,11 @@ fn theme_choice(lang: &LanguageIdentifier, mode: config::ThemeMode) -> Choice<co
 }
 
 /// A [`config::ThemeColor`] as a pick_list [`Choice`], labeled in the
-/// UI language.
+/// UI language. Uses [`crate::i18n::t`] directly rather than the `t!`
+/// macro since the Fluent key is computed (the macro only takes a
+/// string literal).
 fn theme_color_choice(lang: &LanguageIdentifier, color: config::ThemeColor) -> Choice<config::ThemeColor> {
-    Choice::new(color, t!(lang, color.i18n_key()))
+    Choice::new(color, crate::i18n::t(lang, color.i18n_key()))
 }
 
 /// A [`config::RelayMode`] as a pick_list [`Choice`], labeled in the
