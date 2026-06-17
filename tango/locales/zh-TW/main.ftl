@@ -284,6 +284,7 @@ settings-section-netplay = 連線
 settings-section-audio = 音訊
 settings-volume = 音量
 settings-disable-bgm-in-pvp = 連線時禁用BGM
+settings-audio-enable-startup-voice = 啟用啟動語音
 settings-section-about = 關於
 settings-section-input = 輸入
 settings-input-press-key = 請按一個按鍵或按鈕…

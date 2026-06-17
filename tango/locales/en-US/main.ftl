@@ -262,6 +262,7 @@ settings-section-netplay = Netplay
 settings-section-audio = Audio
 settings-volume = Volume
 settings-disable-bgm-in-pvp = Mute music in netplay
+settings-audio-enable-startup-voice = Enable Startup Voice
 settings-nickname = Nickname
 settings-language = Language
 settings-data-path = Data path

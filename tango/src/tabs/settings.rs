@@ -176,6 +176,9 @@ pub enum Message {
     /// "Mute music in netplay" checkbox toggled. Persisted to
     /// `config.disable_bgm_in_pvp`; sampled at the next match start.
     ToggleDisableBgmInPvp(bool),
+    /// "Enable Startup Voice" checkbox toggled. Persisted to
+    /// `config.enable_startup_voice`; sampled once at next launch.
+    ToggleEnableStartupVoice(bool),
     /// User clicked "Update Now" on the About panel. App's
     /// settings handler calls `updater.finish_update()` which
     /// hands off to the installer + exits the process.
@@ -235,6 +238,7 @@ pub enum ConfigChange {
     AllowPrereleaseUpgrades(bool),
     Volume(f32),
     DisableBgmInPvp(bool),
+    EnableStartupVoice(bool),
     Theme(config::ThemeMode),
     ThemeColor(config::ThemeColor),
     AddInputBinding(input::MappedKey, input::PhysicalInput),
@@ -300,6 +304,7 @@ impl State {
             Message::ToggleAllowPrereleaseUpgrades(b) => Some(ConfigChange::AllowPrereleaseUpgrades(b)),
             Message::VolumeChanged(v) => Some(ConfigChange::Volume(v)),
             Message::ToggleDisableBgmInPvp(b) => Some(ConfigChange::DisableBgmInPvp(b)),
+            Message::ToggleEnableStartupVoice(b) => Some(ConfigChange::EnableStartupVoice(b)),
             // App handles UpdateNow as a top-level effect — it
             // calls `updater.finish_update()` which exits the
             // process on success. Nothing to fold into config.
@@ -570,6 +575,10 @@ fn settings_audio<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config) 
         iced::widget::checkbox(config.disable_bgm_in_pvp)
             .label(t!(lang, "settings-disable-bgm-in-pvp"))
             .on_toggle(Message::ToggleDisableBgmInPvp)
+            .style(widgets::chunky_checkbox),
+        iced::widget::checkbox(config.enable_startup_voice)
+            .label(t!(lang, "settings-audio-enable-startup-voice"))
+            .on_toggle(Message::ToggleEnableStartupVoice)
             .style(widgets::chunky_checkbox),
     ]
     .spacing(14)

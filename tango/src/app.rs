@@ -307,13 +307,17 @@ impl App {
         // plays depends on the configured accent color. Embedded at
         // build time so it ships in the binary. Failure is non-fatal —
         // a missing audio device just means no jingle.
-        let startup_voice = audio::oneshot::voice_for_theme(config.theme_color);
-        let voice_player = match audio::oneshot::play(startup_voice) {
-            Ok(p) => Some(p),
-            Err(e) => {
-                log::warn!("audio: startup voice clip failed: {e:?}");
-                None
+        let voice_player = if config.enable_startup_voice {
+            let startup_voice = audio::oneshot::voice_for_theme(config.theme_color);
+            match audio::oneshot::play(startup_voice) {
+                Ok(p) => Some(p),
+                Err(e) => {
+                    log::warn!("audio: startup voice clip failed: {e:?}");
+                    None
+                }
             }
+        } else {
+            None
         };
 
         let mut patch_autoupdater = patch::Autoupdater::new(
@@ -2018,8 +2022,27 @@ impl App {
             }
             // Sampled by spawn_pvp at match start; nothing live to poke.
             C::DisableBgmInPvp(b) => self.config.disable_bgm_in_pvp = b,
+            // Sampled once at next launch; nothing live to poke.
+            C::EnableStartupVoice(b) => self.config.enable_startup_voice = b,
             C::Theme(t) => self.config.theme = t,
-            C::ThemeColor(c) => self.config.theme_color = c,
+            C::ThemeColor(c) => {
+                self.config.theme_color = c;
+                // Preview the new accent's clip immediately. Reassigning
+                // drops the previous player (stopping any clip still
+                // playing) and starts the new one on its own SDL stream.
+                // Respects the startup-voice toggle so a user who turned
+                // it off doesn't get surprised on every color switch.
+                if self.config.enable_startup_voice {
+                    let voice = audio::oneshot::voice_for_theme(c);
+                    self._voice_player = match audio::oneshot::play(voice) {
+                        Ok(p) => Some(p),
+                        Err(e) => {
+                            log::warn!("audio: accent-switch voice clip failed: {e:?}");
+                            None
+                        }
+                    };
+                }
+            }
             C::AddInputBinding(slot, binding) => {
                 let bindings = self.config.input_mapping.slot_mut(slot);
                 // Avoid dupes — a single binding could be added

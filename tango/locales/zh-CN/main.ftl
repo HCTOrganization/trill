@@ -284,6 +284,7 @@ settings-section-netplay = 联机
 settings-section-audio = 音频
 settings-volume = 音量
 settings-disable-bgm-in-pvp = 联机时禁用BGM
+settings-audio-enable-startup-voice = 启用启动语音
 settings-section-about = 关于
 settings-section-input = 按键
 settings-input-press-key = 请按一个按键或按钮…
