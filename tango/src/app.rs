@@ -2260,7 +2260,6 @@ impl App {
         let lobby_badge = self.lobby_on_screen() && self.tab != Tab::Play;
         let root: Element<'_, Message> = column![
             top_bar(lang, self.tab, lobby_badge, self.config.fullscreen, self.config.theme_color),
-            widgets::hud_scanline_top(),
             body_surface,
         ]
         .spacing(0)

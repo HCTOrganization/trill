@@ -897,8 +897,8 @@ impl State {
         // Selector strip + save-view body live inside a single
         // PANE_GAP-padded column so every pane in that area shares
         // the same inset from the window edges and gap from one
-        // another. The hud_scanline_bottom + bottom band sit OUTSIDE
-        // that padding so they remain edge-to-edge bottom bars.
+        // another. The bottom band sits OUTSIDE
+        // that padding so it remains an edge-to-edge bottom bar.
         // The strip goes inert during the handoff window: the PvP
         // session is being built from the committed state and
         // selection changes would only confuse.
@@ -927,9 +927,7 @@ impl State {
         // while dissolving into the page surface, then the incoming
         // one rises out of it — so the code strip reads as turning
         // into the lobby and back, rather than one vanishing and the
-        // other arriving. The bottom HUD scanline is grouped into the
-        // moving band so it rides the motion instead of staying
-        // pinned above it.
+        // other arriving.
         let (render_lobby, swap) = crate::anim::swap_phase(bottom_swap, now);
         let bottom: Element<'a, Message> = if render_lobby {
             // While the band is on its way OUT, the live phase has
@@ -967,7 +965,7 @@ impl State {
         } else {
             self.bottom_strip(lang, streamer_mode)
         };
-        let mut group: Element<'a, Message> = column![widgets::hud_scanline_bottom(), bottom].width(Fill).into();
+        let mut group: Element<'a, Message> = column![bottom].width(Fill).into();
         if let Some(phase) = swap {
             let dist = if render_lobby { 48.0 } else { 24.0 };
             group = crate::anim::swap_transform(group, phase, iced::Vector::new(0.0, dist), |theme: &iced::Theme| {
