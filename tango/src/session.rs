@@ -896,6 +896,12 @@ struct VideoBorder {
 /// rendered before it tears ffmpeg down.
 const VIDEO_BORDER_IDLE: std::time::Duration = std::time::Duration::from_secs(2);
 
+/// Memory budget for caching a border clip's decoded RGBA frames. A clip
+/// whose frames fit under this is looped seamlessly from memory (no ffmpeg
+/// restart); a larger one falls back to respawn-streaming (a brief gap at
+/// the loop point).
+const VIDEO_BORDER_CACHE_BUDGET: usize = 512 * 1024 * 1024;
+
 /// Returns the latest decoded frame of the looping border video at
 /// `path`, lazily (re)starting the single shared ffmpeg decoder when
 /// the requested path changes or the previous one exited.
@@ -981,25 +987,25 @@ fn start_video_border(path: &std::path::Path) -> Option<VideoBorder> {
     Some(vb)
 }
 
-/// Decoder thread body: probe the dimensions once, then keep an ffmpeg
-/// pass feeding fixed-size raw RGBA frames into `latest`. If a pass
-/// ends (EOF — only when `-stream_loop -1` doesn't hold on a given
-/// input/build), it's respawned *without* clearing `latest`, so the
-/// loop point never blinks. Exits when stopped (path changed) or after
-/// the border has gone unrendered for `VIDEO_BORDER_IDLE` (session
-/// closed). Bails out if ffmpeg can't produce frames, to avoid a
-/// tight respawn storm.
+/// Decoder thread body: probe the dimensions once, play the first pass
+/// straight from ffmpeg while caching its frames, then loop. If the whole
+/// clip fits in [`VIDEO_BORDER_CACHE_BUDGET`], the loop replays the cached
+/// frames in memory at the source frame rate — seamless, with no ffmpeg
+/// restart and so no gap at the loop point. Oversized clips fall back to
+/// respawning the ffmpeg pass each time it ends (a brief gap). Exits when
+/// stopped (path changed) or after the border has gone unrendered for
+/// `VIDEO_BORDER_IDLE` (session closed).
 fn run_video_border(
     path: &std::path::Path,
     latest: &std::sync::Mutex<Option<crate::video::border::Frame>>,
     stop: &std::sync::atomic::AtomicBool,
     last_access: &std::sync::Mutex<std::time::Instant>,
 ) {
-    use std::io::Read;
     use std::sync::atomic::Ordering;
-    // Globally monotonic so every emitted frame (across decoder restarts and
-    // different videos) has a unique revision — the shader pipeline skips
-    // re-uploading a revision it already holds.
+    use std::time::{Duration, Instant};
+    // Globally monotonic so every emitted frame (across loops and different
+    // videos) has a unique revision — the shader pipeline skips re-uploading
+    // a revision it already holds.
     static NEXT_REVISION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
     let (width, height) = match probe_video_dimensions(path) {
@@ -1014,66 +1020,133 @@ fn run_video_border(
         return;
     }
 
-    let stopped = |la: &std::sync::Mutex<std::time::Instant>| {
-        stop.load(Ordering::Relaxed) || la.lock().unwrap().elapsed() > VIDEO_BORDER_IDLE
+    let stopped =
+        || stop.load(Ordering::Relaxed) || last_access.lock().unwrap().elapsed() > VIDEO_BORDER_IDLE;
+    let publish = |pixels: std::sync::Arc<Vec<u8>>| {
+        *latest.lock().unwrap() = Some(crate::video::border::Frame {
+            pixels,
+            width,
+            height,
+            revision: NEXT_REVISION.fetch_add(1, Ordering::Relaxed),
+        });
     };
 
-    let mut dry_passes = 0u32;
-    while !stopped(last_access) {
-        let mut child = match spawn_border_stream(path) {
-            Ok(c) => c,
-            Err(e) => {
-                log::warn!("custom border video {}: ffmpeg spawn: {e}", path.display());
-                break;
+    // Phase 1: first pass — play straight from ffmpeg (paced by `-re`),
+    // caching frames + their timing until the budget is hit.
+    let mut cache: Vec<std::sync::Arc<Vec<u8>>> = Vec::new();
+    let mut cache_ok = true;
+    let mut cache_bytes = 0usize;
+    let mut first_frame: Option<Instant> = None;
+    let mut last_frame = Instant::now();
+    let (_, eof) = border_stream_pass(path, frame_len, stop, last_access, |px| {
+        let now = Instant::now();
+        first_frame.get_or_insert(now);
+        last_frame = now;
+        publish(px.clone());
+        if cache_ok {
+            cache_bytes += frame_len;
+            if cache_bytes > VIDEO_BORDER_CACHE_BUDGET {
+                cache_ok = false;
+                cache = Vec::new(); // too big — drop and stream instead
+            } else {
+                cache.push(px);
             }
-        };
-        let Some(stdout) = child.stdout.take() else {
-            let _ = child.kill();
-            break;
-        };
-        let mut reader = std::io::BufReader::new(stdout);
-        let mut buf = vec![0u8; frame_len];
-        let mut got_frame = false;
-        loop {
-            if stopped(last_access) {
-                break;
-            }
-            // Fixed-size read keeps frame boundaries aligned; an error
-            // here is EOF/short read, which ends this pass.
-            if reader.read_exact(&mut buf).is_err() {
-                break;
-            }
-            let frame = crate::video::border::Frame {
-                pixels: std::sync::Arc::new(buf.clone()),
-                width,
-                height,
-                revision: NEXT_REVISION.fetch_add(1, Ordering::Relaxed),
-            };
-            *latest.lock().unwrap() = Some(frame);
-            got_frame = true;
         }
-        let _ = child.kill();
-        let _ = child.wait();
+    });
 
-        // A pass that produced nothing twice running means ffmpeg can't
-        // decode this file — stop rather than respawn-spin forever.
+    if stopped() {
+        return;
+    }
+
+    // Phase 2a: the whole clip fits — loop it from memory, seamlessly.
+    if cache_ok && eof && cache.len() > 1 {
+        let span = last_frame.saturating_duration_since(first_frame.unwrap_or(last_frame));
+        let interval = span
+            .checked_div(cache.len() as u32 - 1)
+            .filter(|d| !d.is_zero())
+            .unwrap_or(Duration::from_millis(33));
+        loop {
+            for px in &cache {
+                if stopped() {
+                    return;
+                }
+                publish(px.clone());
+                std::thread::sleep(interval);
+            }
+        }
+    }
+
+    // Phase 2b: too large to cache — respawn the pass each time it ends.
+    let mut dry_passes = 0u32;
+    while !stopped() {
+        let (got_frame, _) = border_stream_pass(path, frame_len, stop, last_access, |px| publish(px));
         if got_frame {
             dry_passes = 0;
         } else {
+            // Two empty passes running means ffmpeg can't decode the file;
+            // stop rather than respawn-spin forever.
             dry_passes += 1;
             if dry_passes >= 2 {
                 break;
             }
-            std::thread::sleep(std::time::Duration::from_millis(200));
+            std::thread::sleep(Duration::from_millis(200));
         }
     }
 }
 
-/// Spawns one looping, muted, native-rate ffmpeg pass that writes
-/// fixed-size raw RGBA frames to stdout.
+/// Runs one ffmpeg decode pass for `path`, invoking `on_frame` with each
+/// fixed-size raw RGBA frame. Returns `(got_any_frame, reached_eof)`. Ends
+/// early (without `eof`) when stopped or idle.
+fn border_stream_pass(
+    path: &std::path::Path,
+    frame_len: usize,
+    stop: &std::sync::atomic::AtomicBool,
+    last_access: &std::sync::Mutex<std::time::Instant>,
+    mut on_frame: impl FnMut(std::sync::Arc<Vec<u8>>),
+) -> (bool, bool) {
+    use std::io::Read;
+    use std::sync::atomic::Ordering;
+
+    let mut child = match spawn_border_stream(path) {
+        Ok(c) => c,
+        Err(e) => {
+            log::warn!("custom border video {}: ffmpeg spawn: {e}", path.display());
+            return (false, false);
+        }
+    };
+    let Some(stdout) = child.stdout.take() else {
+        let _ = child.kill();
+        return (false, false);
+    };
+    let mut reader = std::io::BufReader::new(stdout);
+    let mut buf = vec![0u8; frame_len];
+    let mut got = false;
+    let mut eof = false;
+    loop {
+        if stop.load(Ordering::Relaxed) || last_access.lock().unwrap().elapsed() > VIDEO_BORDER_IDLE {
+            break;
+        }
+        // Fixed-size read keeps frame boundaries aligned; an error here is
+        // EOF/short read, which ends this pass.
+        if reader.read_exact(&mut buf).is_err() {
+            eof = true;
+            break;
+        }
+        on_frame(std::sync::Arc::new(buf.clone()));
+        got = true;
+    }
+    let _ = child.kill();
+    let _ = child.wait();
+    (got, eof)
+}
+
+/// Spawns one muted, native-rate ffmpeg pass that decodes `path` once and
+/// writes fixed-size raw RGBA frames to stdout. No `-stream_loop`: looping
+/// is handled by the caller (from the in-memory cache, or by respawning),
+/// which makes it independent of ffmpeg's loop behaviour.
 fn spawn_border_stream(path: &std::path::Path) -> std::io::Result<std::process::Child> {
     let mut cmd = std::process::Command::new(resolve_ffmpeg_path());
-    cmd.args(["-hide_banner", "-loglevel", "error", "-stream_loop", "-1", "-re"])
+    cmd.args(["-hide_banner", "-loglevel", "error", "-re"])
         .arg("-i")
         .arg(path)
         // `-an`: never decode/route audio — the border is silent.
