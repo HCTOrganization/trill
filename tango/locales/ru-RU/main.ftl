@@ -301,6 +301,7 @@ settings-section-audio = Звук
 settings-volume = Громкость
 settings-disable-bgm-in-pvp = Отключить музыку в сетевой игре
 settings-audio-enable-startup-voice = Включить голос при запуске
+settings-audio-enable-prebattle-voice = Включить голос перед боем в PvP
 settings-section-about = О программе
 settings-section-input = Управление
 settings-input-press-key = Нажмите клавишу или кнопку…

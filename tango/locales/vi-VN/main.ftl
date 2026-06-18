@@ -285,6 +285,7 @@ settings-section-audio = Âm thanh
 settings-volume = Âm lượng
 settings-disable-bgm-in-pvp = Tắt nhạc nền trong netplay
 settings-audio-enable-startup-voice = Bật giọng nói khi khởi động
+settings-audio-enable-prebattle-voice = Bật giọng nói trước trận đấu trong PvP
 settings-section-about = Giới thiệu
 settings-section-input = Đầu vào
 settings-input-press-key = Nhấn phím hoặc nút…

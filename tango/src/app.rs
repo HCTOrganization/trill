@@ -1040,9 +1040,11 @@ impl App {
                         // SDL stream. Reassigning drops any prior
                         // one-shot (e.g. a startup/accent clip still
                         // tailing off) and starts this one.
-                        match audio::oneshot::play(audio::oneshot::match_start_voice(&self.config.language)) {
-                            Ok(p) => self._voice_player = Some(p),
-                            Err(e) => log::warn!("audio: match-start voice clip failed: {e:?}"),
+                        if self.config.enable_prebattle_voice {
+                            match audio::oneshot::play(audio::oneshot::match_start_voice(&self.config.language)) {
+                                Ok(p) => self._voice_player = Some(p),
+                                Err(e) => log::warn!("audio: match-start voice clip failed: {e:?}"),
+                            }
                         }
                         // Both setup drawers start closed — the edge
                         // handles are the invitation; a pane that
@@ -2032,6 +2034,8 @@ impl App {
             C::DisableBgmInPvp(b) => self.config.disable_bgm_in_pvp = b,
             // Sampled once at next launch; nothing live to poke.
             C::EnableStartupVoice(b) => self.config.enable_startup_voice = b,
+            // Sampled at the next match handoff; nothing live to poke.
+            C::EnablePrebattleVoice(b) => self.config.enable_prebattle_voice = b,
             C::Theme(t) => self.config.theme = t,
             C::ThemeColor(c) => {
                 self.config.theme_color = c;

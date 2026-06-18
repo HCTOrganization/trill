@@ -263,6 +263,7 @@ settings-section-audio = Audio
 settings-volume = Volume
 settings-disable-bgm-in-pvp = Mute music in netplay
 settings-audio-enable-startup-voice = Enable Startup Voice
+settings-audio-enable-prebattle-voice = Enable Pre-Battle Voice during PvP
 settings-nickname = Nickname
 settings-language = Language
 settings-data-path = Data path

@@ -297,6 +297,7 @@ settings-section-audio = Audio
 settings-volume = Volumen
 settings-disable-bgm-in-pvp = Deshabilitar música en netplay
 settings-audio-enable-startup-voice = Activar voz de inicio
+settings-audio-enable-prebattle-voice = Activar voz de pre-batalla durante PvP
 settings-section-about = Acerca de
 settings-section-input = Entrada
 settings-input-press-key = Presiona una tecla o botón…

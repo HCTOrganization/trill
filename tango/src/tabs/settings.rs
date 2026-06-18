@@ -179,6 +179,9 @@ pub enum Message {
     /// "Enable Startup Voice" checkbox toggled. Persisted to
     /// `config.enable_startup_voice`; sampled once at next launch.
     ToggleEnableStartupVoice(bool),
+    /// "Enable Pre-Battle Voice during PvP" checkbox toggled. Persisted
+    /// to `config.enable_prebattle_voice`; sampled at match handoff.
+    ToggleEnablePrebattleVoice(bool),
     /// User clicked "Update Now" on the About panel. App's
     /// settings handler calls `updater.finish_update()` which
     /// hands off to the installer + exits the process.
@@ -239,6 +242,7 @@ pub enum ConfigChange {
     Volume(f32),
     DisableBgmInPvp(bool),
     EnableStartupVoice(bool),
+    EnablePrebattleVoice(bool),
     Theme(config::ThemeMode),
     ThemeColor(config::ThemeColor),
     AddInputBinding(input::MappedKey, input::PhysicalInput),
@@ -305,6 +309,7 @@ impl State {
             Message::VolumeChanged(v) => Some(ConfigChange::Volume(v)),
             Message::ToggleDisableBgmInPvp(b) => Some(ConfigChange::DisableBgmInPvp(b)),
             Message::ToggleEnableStartupVoice(b) => Some(ConfigChange::EnableStartupVoice(b)),
+            Message::ToggleEnablePrebattleVoice(b) => Some(ConfigChange::EnablePrebattleVoice(b)),
             // App handles UpdateNow as a top-level effect — it
             // calls `updater.finish_update()` which exits the
             // process on success. Nothing to fold into config.
@@ -579,6 +584,10 @@ fn settings_audio<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config) 
         iced::widget::checkbox(config.enable_startup_voice)
             .label(t!(lang, "settings-audio-enable-startup-voice"))
             .on_toggle(Message::ToggleEnableStartupVoice)
+            .style(widgets::chunky_checkbox),
+        iced::widget::checkbox(config.enable_prebattle_voice)
+            .label(t!(lang, "settings-audio-enable-prebattle-voice"))
+            .on_toggle(Message::ToggleEnablePrebattleVoice)
             .style(widgets::chunky_checkbox),
     ]
     .spacing(14)

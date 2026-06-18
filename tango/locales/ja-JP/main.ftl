@@ -257,6 +257,7 @@ settings-section-audio = オーディオ
 settings-volume = 音量
 settings-disable-bgm-in-pvp = ネットプレイで音楽を消す
 settings-audio-enable-startup-voice = 起動時のボイスを有効にする
+settings-audio-enable-prebattle-voice = 対戦時のバトル前ボイスを有効にする
 settings-nickname = ニックネーム
 settings-language = 言語
 settings-data-path = データパス
