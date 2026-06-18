@@ -73,7 +73,9 @@ impl SdpType {
     }
 }
 
-fn get_string(f: impl Fn(*mut i8, i32) -> i32) -> Result<std::ffi::CString, Error> {
+fn get_string(
+    f: impl Fn(*mut std::os::raw::c_char, i32) -> i32,
+) -> Result<std::ffi::CString, Error> {
     let n = check_error(f(std::ptr::null_mut(), 0))? as usize;
     let mut buf = vec![0u8; n as usize];
     assert_eq!(f(buf.as_mut_ptr() as *mut _, buf.len() as i32), buf.len() as i32);

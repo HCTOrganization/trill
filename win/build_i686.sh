@@ -77,7 +77,7 @@ cp ../tango/icon.ico .
 cp ../target/i686-pc-windows-msvc/release-dist/tango.exe trill.exe
 
 chrome_109_url="https://dl.google.com/release2/chrome/acihtkcueyye3ymoj2afvv7ulzxa_109.0.5414.120/109.0.5414.120_chrome_installer.exe"
-wget "${chrome_109_url}"
+curl -L -O "${chrome_109_url}"
 7z x 109.0.5414.120_chrome_installer.exe
 7z e -aoa chrome.7z {Chrome-bin/109.0.5414.120/libEGL.dll,Chrome-bin/109.0.5414.120/libGLESv2.dll}
 rm 109.0.5414.120_chrome_installer.exe

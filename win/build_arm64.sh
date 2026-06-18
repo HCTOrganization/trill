@@ -79,7 +79,7 @@ cp ../tango/icon.ico .
 cp ../target/aarch64-pc-windows-msvc/release-dist/tango.exe trill.exe
 
 chrome_149_url="https://dl.google.com/tag/s/appguid%3D%7B8A69D345-D564-463C-AFF1-A69D9E530F96%7D%26iid%3D%7B9B029E50-463F-4D00-B622-FE96D0D82E97%7D%26browser%3D4%26usagestats%3D0%26appname%3DGoogle%2520Chrome%26needsadmin%3Dtrue%26ap%3Darm64-stable-statsdef_0%26brand%3DGCEA/dl/chrome/install/GoogleChromeStandaloneEnterprise_Arm64.msi"
-wget "${chrome_149_url}"
+curl -L -O "${chrome_149_url}"
 7z e -aoa GoogleChromeStandaloneEnterprise_Arm64.msi Binary.GoogleChromeInstaller
 7z x -aoa Binary.GoogleChromeInstaller
 7z e -aoa updater.7z bin/Offline/{a582ca8d-c961-4de4-8491-0d7d2977d020}/{8A69D345-D564-463c-AFF1-A69D9E530F96}/149.0.7827.115_chrome_installer.exe

@@ -190,7 +190,6 @@ jobs:
           files: ./dist/trill-x86_64-linux.AppImage
 
   release-linux-arm64:
-    if: false # temporarily disabled
     runs-on: ubuntu-22.04-arm
     needs: create-release
     env:
@@ -238,7 +237,6 @@ jobs:
           files: ./dist/trill-aarch64-linux.AppImage
 
   release-win32-i686:
-    if: false # temporarily disabled
     runs-on: windows-2022
     needs: create-release
     env:
@@ -290,7 +288,7 @@ jobs:
             ./dist/trill-i686-windows.exe
 
   release-win32-arm64:
-    if: false # temporarily disabled
+    if: false
     runs-on: windows-11-arm
     needs: create-release
     env:
