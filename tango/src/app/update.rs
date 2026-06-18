@@ -809,7 +809,12 @@ impl App {
             }
             // Sampled by spawn_pvp at match start; nothing live to poke.
             C::DisableBgmInPvp(b) => self.config.disable_bgm_in_pvp = b,
+            // Sampled once at next launch; nothing live to poke.
+            C::EnableStartupVoice(b) => self.config.enable_startup_voice = b,
+            // Sampled at match handoff; nothing live to poke.
+            C::EnablePrebattleVoice(b) => self.config.enable_prebattle_voice = b,
             C::Theme(t) => self.config.theme = t,
+            C::ThemeColor(c) => self.config.theme_color = c,
             C::AddInputBinding(slot, binding) => {
                 let bindings = self.config.input_mapping.slot_mut(slot);
                 // Avoid dupes — a single binding could be added
