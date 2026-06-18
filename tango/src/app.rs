@@ -220,6 +220,16 @@ enum ScreenKey {
     Tabs(Tab),
 }
 
+/// Open a path in the OS file manager / default handler, logging on failure.
+/// Shared by the per-tab `OpenPath` effects.
+fn open_path(path: impl AsRef<std::path::Path>) -> iced::Task<Message> {
+    let path = path.as_ref();
+    if let Err(e) = open::that(path) {
+        log::error!("open {}: {e}", path.display());
+    }
+    iced::Task::none()
+}
+
 impl App {
     pub fn new() -> (Self, iced::Task<Message>) {
         let config = config::Config::load_or_create();
@@ -1310,12 +1320,7 @@ impl App {
                     .update(netplay::Message::Commit { save_sram })
                     .map(Message::Netplay)
             }
-            E::OpenPath(p) => {
-                if let Err(e) = open::that(&p) {
-                    log::error!("open {}: {e}", p.display());
-                }
-                iced::Task::none()
-            }
+            E::OpenPath(p) => open_path(p),
             E::CopyText(s) => iced::clipboard::write(s),
             E::CopyImage(img) => {
                 copy_image_to_clipboard(img);
@@ -1538,12 +1543,7 @@ impl App {
         };
         use tabs::patches::Effect as E;
         match effect {
-            E::OpenPath(s) => {
-                if let Err(e) = open::that(&s) {
-                    log::error!("open {s}: {e}");
-                }
-                iced::Task::none()
-            }
+            E::OpenPath(s) => open_path(s),
             E::Rescan => self.rescan_off_thread(RescanFollowup::Refresh),
             E::UpdateRescan => self.rescan_off_thread(RescanFollowup::Refresh),
             E::StartUpdate { url, root } => iced::Task::perform(
@@ -1571,12 +1571,7 @@ impl App {
         };
         use tabs::replays::Effect as E;
         match effect {
-            E::OpenPath(p) => {
-                if let Err(e) = open::that(&p) {
-                    log::error!("open {}: {e}", p.display());
-                }
-                iced::Task::none()
-            }
+            E::OpenPath(p) => open_path(p),
             E::Watch(p) => {
                 match session::build_playback(
                     &self.scanners,
