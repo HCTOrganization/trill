@@ -13,8 +13,8 @@
 ## Translation
 
 - Japanese: weenie, [Nonstopmop](https://x.com/seventhfonist42), [dhenva](https://twitch.tv/dhenva)
-- Mandarin (mainland China): weenie, [Hikari Calyx Tech](https://hikaricalyx.com)
-- Mandarin (Taiwan): weenie, [Hikari Calyx Tech](https://hikaricalyx.com)
+- Chinese (Simplified): weenie, [Hikari Calyx Tech](https://hikaricalyx.com)
+- Chinese (Traditional): weenie, [Hikari Calyx Tech](https://hikaricalyx.com)
 - Korean: [Hikari Calyx Tech](https://hikaricalyx.com)
 - Spanish (Latin America): [Karate_Bugman](https://x.com/Karate_Bugman)
 - Portuguese (Brazil): [Darkgaia](https://ayo.so/darkgaiagames), [mushiguchi](https://x.com/mushiguchi)
@@ -35,4 +35,4 @@
 
 And, of course, a huge thank you to [CAPCOM](https://www.capcom.com) for making Mega Man Battle Network!
 
-Trill is licensed under the terms of the [GNU Affero General Public License v3](https://tldrlegal.com/license/gnu-affero-general-public-license-v3-%28agpl-3.0%29). That means you're free to modify the [source code](https://github.com/HCTOrganization/trill), as long as you contribute your changes back!
+Trill is licensed under the terms of the [GNU Affero General Public License v3](https://tldrlegal.com/license/gnu-affero-general-public-license-v3-%28agpl-3.0%29). That means you're free to modify the [source code](https://github.com/HCTOrganization/trill), as long as you contribute your changes back!
