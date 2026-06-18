@@ -140,7 +140,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            ./dist/trill-macos.dmg
+            ./dist/trill-macos_unsigned.dmg
 
   release-linux-x86_64:
     runs-on: ubuntu-22.04 # Ubuntu 22.04 is used for higher glibc compatibility across users

@@ -44,5 +44,5 @@ chmod a+x Trill\ 5.app/Contents/MacOS/ffmpeg
 
 # Build zip.
 mkdir -p dist
-python3 -m dmgbuild -s "$(dirname "${BASH_SOURCE[0]}")/dmgbuild.settings.py" Trill dist/trill-macos.dmg
+python3 -m dmgbuild -s "$(dirname "${BASH_SOURCE[0]}")/dmgbuild.settings.py" Trill dist/trill-macos_unsigned.dmg
 rm -rf trill_macos_workdir
