@@ -10,6 +10,7 @@ on:
 
 jobs:
   create-release:
+    if: false
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -42,6 +43,7 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-') }}
 
   release-win32-x64:
+    if: false
     runs-on: windows-2022
     needs: create-release
     env:
@@ -98,6 +100,7 @@ jobs:
             ./dist/trill-x86_64-windows.exe
 
   release-mac-universal:
+    if: false
     runs-on: macos-14
     needs: create-release
     env:
@@ -143,6 +146,7 @@ jobs:
             ./dist/trill-macos_unsigned.dmg
 
   release-linux-x86_64:
+    if: false
     runs-on: ubuntu-22.04 # Ubuntu 22.04 is used for higher glibc compatibility across users
     needs: create-release
     env:
@@ -192,8 +196,6 @@ jobs:
   release-linux-arm64:
     runs-on: ubuntu-22.04-arm
     needs: create-release
-    env:
-      CMAKE_POLICY_VERSION_MINIMUM: 3.5
 
     steps:
       - uses: actions/checkout@v2
@@ -202,34 +204,23 @@ jobs:
 
       - run: git fetch --tags --force --no-recurse-submodules
 
+      # Persist crate downloads and compile output across runs. The container
+      # build mounts the runner's ~/.cargo as its CARGO_HOME and writes target/
+      # under the checked-out repo, so caching these host paths speeds up rebuilds.
       - uses: pat-s/always-upload-cache@v2
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            core/target
-          key: linux-arm64-cargo-${{ hashFiles('**/Cargo.lock') }}
+            target
+          key: linux-arm64-1804docker-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - run: |
-          sudo pip3 install semver==3.0.0-dev3 toml mako
-
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          targets: aarch64-unknown-linux-gnu
-
+      # The build runs inside an Ubuntu 18.04 container (see the script) for
+      # glibc compatibility. The toolchain (Rust, cmake, protoc) and system
+      # libraries are all installed inside that container, so there are no
+      # host-side setup steps here. Docker is preinstalled on the arm runner.
       - name: Build
-        run: |
-          sudo apt-get update -y
-          sudo apt-get upgrade -y
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y alsa build-essential clang cmake curl fuse git libnss3 librust-atk-dev librust-gdk-pixbuf-dev librust-gdk-sys-dev librust-pango-dev libsdl2-dev pkgconf sudo wget
-
-      - run: ./linux/build_arm64.sh
+        run: ./linux/build_arm64_1804docker.sh
 
       - uses: softprops/action-gh-release@v2
         with:
@@ -237,6 +228,7 @@ jobs:
           files: ./dist/trill-aarch64-linux.AppImage
 
   release-win32-i686:
+    if: false
     runs-on: windows-2022
     needs: create-release
     env:
