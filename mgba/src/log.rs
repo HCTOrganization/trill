@@ -1,24 +1,21 @@
 use std::mem::MaybeUninit;
 
-// On targets where the C ABI defines `va_list` as a single-element array,
-// C decays it to a pointer when used as a function parameter, and bindgen
-// reflects that decay in function-pointer signatures (the `mLogger.log`
-// field ends up `*mut <element>`). Using the raw `va_list` typedef both
-// fails to match that signature and would pass the wrong thing to
-// `vsnprintf` by ABI. Two such ABIs are in play:
-//   - SysV AMD64 (x86_64 Linux/macOS/BSD): `va_list = [__va_list_tag; 1]`
-//   - AAPCS64    (aarch64 Linux/Android):  `va_list = [__va_list; 1]`
-// Everywhere else — Windows, arm64 macOS (Apple's ABI uses `char*`),
-// 32-bit Unix — `va_list` is already a pointer typedef and the alias is
-// fine as-is.
+// On SysV AMD64 (x86_64 Linux/macOS/BSD) the C ABI defines
+// `va_list = [__va_list_tag; 1]`, which C decays to a pointer when used as
+// a function parameter; bindgen reflects that decay in function-pointer
+// signatures (the `mLogger.log` field ends up `*mut __va_list_tag`). Using
+// the raw `va_list` typedef there both fails to match that signature and
+// would pass the wrong thing to `vsnprintf` by ABI.
+//
+// Everywhere else — AAPCS64 (aarch64 Linux/Android), Windows, arm64 macOS
+// (Apple's ABI uses `char*`), 32-bit Unix — current bindgen emits a
+// `va_list` alias that already matches the `mLogger.log` signature and the
+// `vsnprintf` ABI (on aarch64 it is a by-value opaque struct,
+// `__BindgenOpaqueArray<u64, 4>`; elsewhere a pointer typedef), so the
+// alias is correct as-is.
 #[cfg(all(unix, target_arch = "x86_64"))]
 type VaListArg = *mut mgba_sys::__va_list_tag;
-#[cfg(all(any(target_os = "linux", target_os = "android"), target_arch = "aarch64"))]
-type VaListArg = *mut mgba_sys::__va_list;
-#[cfg(not(any(
-    all(unix, target_arch = "x86_64"),
-    all(any(target_os = "linux", target_os = "android"), target_arch = "aarch64"),
-)))]
+#[cfg(not(all(unix, target_arch = "x86_64")))]
 type VaListArg = mgba_sys::va_list;
 
 extern "C" {
