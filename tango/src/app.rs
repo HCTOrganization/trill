@@ -1036,6 +1036,14 @@ impl App {
                 match result {
                     Ok(session) => {
                         self.session.active = Some(ActiveSession::PvP(session));
+                        // Play the match-start voice clip on its own
+                        // SDL stream. Reassigning drops any prior
+                        // one-shot (e.g. a startup/accent clip still
+                        // tailing off) and starts this one.
+                        match audio::oneshot::play(audio::oneshot::match_start_voice(&self.config.language)) {
+                            Ok(p) => self._voice_player = Some(p),
+                            Err(e) => log::warn!("audio: match-start voice clip failed: {e:?}"),
+                        }
                         // Both setup drawers start closed — the edge
                         // handles are the invitation; a pane that
                         // barges in over the match start isn't.

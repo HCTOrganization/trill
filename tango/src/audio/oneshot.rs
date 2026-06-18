@@ -19,7 +19,7 @@ use crate::config::ThemeColor;
 /// in the binary.
 pub fn voice_for_theme(color: ThemeColor) -> &'static [u8] {
     // Placeholder shared by every color until per-theme clips exist.
-    const PLACEHOLDER: &[u8] = include_bytes!("../voice/ja/00.wav");
+    const PLACEHOLDER: &[u8] = include_bytes!("../voice/ja/trill_yellow.wav");
     match color {
         ThemeColor::TrillYellow => PLACEHOLDER,
         ThemeColor::PegasusBlue => PLACEHOLDER,
@@ -31,6 +31,21 @@ pub fn voice_for_theme(color: ThemeColor) -> &'static [u8] {
         ThemeColor::AceBlack => PLACEHOLDER,
         ThemeColor::JokerRed => PLACEHOLDER,
         ThemeColor::SpeakiBrown => PLACEHOLDER,
+    }
+}
+
+/// The voice clip played when a netplay match starts. Fixed (not
+/// accent-dependent), but localized: Japanese, Korean, and Chinese
+/// (both scripts) get the Japanese clip; every other language gets
+/// the English one. Embedded at build time.
+pub fn match_start_voice(lang: &unic_langid::LanguageIdentifier) -> &'static [u8] {
+    const JA: &[u8] = include_bytes!("../voice/ja/00.wav");
+    const EN: &[u8] = include_bytes!("../voice/en/00.wav");
+    // Region/script don't matter here — zh-CN and zh-TW both take JA —
+    // so we only look at the primary language subtag.
+    match lang.language.as_str() {
+        "ja" | "ko" | "zh" => JA,
+        _ => EN,
     }
 }
 
