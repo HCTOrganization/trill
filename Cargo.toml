@@ -31,6 +31,17 @@ inherits = "release"
 lto = "thin"
 codegen-units = 1
 
+# ring 0.16.20 has no pre-generated assembly for aarch64-pc-windows-msvc and
+# its build script falls back to compiling C that uses x86 intrinsics (BN_ULLONG,
+# _addcarry_u64, ...) the ARM64 MSVC compiler doesn't have, so the build fails.
+# See https://github.com/briansmith/ring/issues/1514. ring never backported a
+# fix to the 0.16 line (Windows ARM64 support landed in 0.17), so we override
+# 0.16.20 with the community fork that ships the missing win-arm64 pregenerated
+# objects. The change is additive for that target; other platforms keep using
+# their existing pregenerated files and build unchanged.
+[patch.crates-io]
+ring = { git = "https://github.com/awakecoding/ring", branch = "0.16.20_alpha" }
+
 [workspace.lints.clippy]
 new_without_default = "allow"
 type_complexity = "allow"
