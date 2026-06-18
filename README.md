@@ -1,5 +1,5 @@
 > If you have anything new and useful to every players that you'd like to implement, please let us know, instead of sending feedback to upstream.
-> Community sourced updates are welcome.
+> Hikari Calyx Tech remains steadfast in its commitment to keeping the Trill fork project open source and embracing community contributions.
 
 # Trill
 
@@ -39,6 +39,12 @@ Trill is rollback netcode emulator for Mega Man Battle Network.
 - Trill provides prebuilt matchmaking server binary, to allow you host yourself easily.
 - Unlike upstream, Trill accepts cosmetical-only patches for entertainment purpose, like Doronetwork / Doroexe.
 - [It can coexist with v4.x version released before](https://github.com/HikariCalyx/trill).
+
+## Roadmap
+- [x] Sync upstream changes
+- [x] Restore ARM64 and x86 support (WIP)
+- [ ] Add NX Homebrew support
+- [ ] Mobile port, instead of Winlator wrapper
 
 ## Building
 Details will be added later as soon as Trill v5.x finishes its major roadmap.
