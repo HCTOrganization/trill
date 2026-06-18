@@ -1530,7 +1530,10 @@ fn logo_handle(color: config::ThemeColor) -> iced::widget::image::Handle {
     macro_rules! logo {
         ($name:literal) => {{
             static H: LazyLock<Handle> = LazyLock::new(|| {
-                let raw: &'static [u8] = include_bytes!($name);
+                // `include_bytes!` resolves relative to this source file. The
+                // logo PNGs live in `tango/src/`, one level up from this
+                // `tango/src/app/` module, so prefix with `../`.
+                let raw: &'static [u8] = include_bytes!(concat!("../", $name));
                 downsample(raw)
             });
             H.clone()

@@ -682,6 +682,31 @@ impl App {
                 tabs::settings::Message::DataFolderPicked,
             );
         }
+        // The "Locate" button for a custom emulator border opens a native
+        // image picker. Async, so intercept here and surface the result as
+        // BorderImagePicked.
+        if matches!(msg, tabs::settings::Message::OpenBorderImagePicker) {
+            let initial = self
+                .config
+                .border_image_path
+                .as_ref()
+                .and_then(|p| p.parent().map(|d| d.to_path_buf()))
+                .unwrap_or_else(|| self.config.data_path.clone());
+            return iced::Task::perform(
+                async move {
+                    rfd::AsyncFileDialog::new()
+                        .set_directory(&initial)
+                        .add_filter(
+                            "Border media",
+                            &["png", "jpg", "jpeg", "bmp", "gif", "webp", "mp4"],
+                        )
+                        .pick_file()
+                        .await
+                        .map(|h| h.path().to_path_buf())
+                },
+                tabs::settings::Message::BorderImagePicked,
+            );
+        }
         use tabs::settings::ConfigChange as C;
         let Some(change) = self.settings.update(msg) else {
             return iced::Task::none();
@@ -734,7 +759,8 @@ impl App {
             }
             C::VideoFilter(s) => self.config.video_filter = s,
             C::FractionalScaling(b) => self.config.fractional_scaling = b,
-            C::HideEmulatorBorder(b) => self.config.hide_emulator_border = b,
+            C::BorderPreference(p) => self.config.border_preference = p,
+            C::BorderImagePath(p) => self.config.border_image_path = p,
             C::Fullscreen(b) => {
                 self.config.fullscreen = b;
                 self.persist_config();
