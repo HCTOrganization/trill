@@ -7,5 +7,4 @@
 //! are no longer used here.
 
 pub mod effects;
-pub mod border;
 pub mod framebuffer;

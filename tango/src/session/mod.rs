@@ -12,8 +12,6 @@ pub mod replay;
 pub mod singleplayer;
 pub mod view;
 
-mod border;
-
 use crate::anim;
 use crate::app::Scanners;
 use crate::audio;
@@ -680,6 +678,77 @@ fn build_frame_stream(tag: &FrameTag) -> impl futures::Stream<Item = Message> {
         notify.notified().await;
         Some((Message::UpdateFramebuffer, notify))
     })
+}
+
+/// Optional iced texture handle for a Game's background art. Pulls
+/// the TGA out of the appropriate BNLC volume's shared `exe.dat` and
+/// caches the decoded iced `Handle` per game. `None` whenever Steam
+/// / BNLC / the target entry can't be read — caller drops the
+/// background widget instead of degrading to a placeholder.
+fn background_handle(game: &'static crate::game::Game) -> Option<iced::widget::image::Handle> {
+    use std::collections::HashMap;
+    use std::sync::LazyLock;
+    static CACHE: LazyLock<std::sync::Mutex<HashMap<usize, Option<iced::widget::image::Handle>>>> =
+        LazyLock::new(Default::default);
+    let key = game as *const _ as usize;
+    if let Some(cached) = CACHE.lock().unwrap().get(&key).cloned() {
+        return cached;
+    }
+    let bg = game.background;
+    let path = format!("exe/data/bg/{}", bg.tga);
+    let handle = crate::bnlc::get(bg.volume)
+        .and_then(|b| b.read_shared_file(&path))
+        .and_then(|bytes| {
+            // TGA has no magic prefix, so the image crate's
+            // auto-detect refuses to guess it. Pass the format
+            // explicitly — every shared-archive background is TGA.
+            image::load_from_memory_with_format(&bytes, image::ImageFormat::Tga)
+                .inspect_err(|e| log::warn!("bnlc bg {:?}/{}: decode: {e}", bg.volume, bg.tga))
+                .ok()
+        })
+        .map(|img| {
+            let rgba = img.into_rgba8();
+            let (w, h) = rgba.dimensions();
+            iced::widget::image::Handle::from_rgba(w, h, rgba.into_raw())
+        });
+    CACHE.lock().unwrap().insert(key, handle.clone());
+    handle
+}
+
+/// Decodes the user's custom emulator-border image into an iced
+/// `Handle`, caching the result per file path (the path rarely
+/// changes, so re-decoding on every frame would be wasteful). The
+/// cache keys on the path and tracks the last-modified time, so
+/// replacing the file at the same path picks up the new image.
+/// `None` whenever the path can't be read or decoded — the caller
+/// then falls back to the plain black backdrop. This is a plain still
+/// image: no video / ffmpeg decode, so it costs no more than the BNLC
+/// background and is safe to render during a live PvP match.
+fn custom_border_handle(path: &std::path::Path) -> Option<iced::widget::image::Handle> {
+    use std::collections::HashMap;
+    use std::sync::LazyLock;
+    type Stamp = Option<std::time::SystemTime>;
+    static CACHE: LazyLock<std::sync::Mutex<HashMap<std::path::PathBuf, (Stamp, Option<iced::widget::image::Handle>)>>> =
+        LazyLock::new(Default::default);
+    let modified: Stamp = std::fs::metadata(path).and_then(|m| m.modified()).ok();
+    if let Some((stamp, cached)) = CACHE.lock().unwrap().get(path).cloned() {
+        if stamp == modified {
+            return cached;
+        }
+    }
+    let handle = image::open(path)
+        .inspect_err(|e| log::warn!("custom border {}: decode: {e}", path.display()))
+        .ok()
+        .map(|img| {
+            let rgba = img.into_rgba8();
+            let (w, h) = rgba.dimensions();
+            iced::widget::image::Handle::from_rgba(w, h, rgba.into_raw())
+        });
+    CACHE
+        .lock()
+        .unwrap()
+        .insert(path.to_path_buf(), (modified, handle.clone()));
+    handle
 }
 
 /// How long the cursor has to sit still before the floating
