@@ -13,7 +13,12 @@ use std::mem::MaybeUninit;
 // fine as-is.
 #[cfg(all(unix, target_arch = "x86_64"))]
 type VaListArg = *mut mgba_sys::__va_list_tag;
-#[cfg(not(all(unix, target_arch = "x86_64")))]
+#[cfg(all(any(target_os = "linux", target_os = "android"), target_arch = "aarch64"))]
+type VaListArg = *mut mgba_sys::__va_list;
+#[cfg(not(any(
+    all(unix, target_arch = "x86_64"),
+    all(any(target_os = "linux", target_os = "android"), target_arch = "aarch64"),
+)))]
 type VaListArg = mgba_sys::va_list;
 
 extern "C" {
