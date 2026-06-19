@@ -715,42 +715,6 @@ fn background_handle(game: &'static crate::game::Game) -> Option<iced::widget::i
     handle
 }
 
-/// Decodes the user's custom emulator-border image into an iced
-/// `Handle`, caching the result per file path (the path rarely
-/// changes, so re-decoding on every frame would be wasteful). The
-/// cache keys on the path and tracks the last-modified time, so
-/// replacing the file at the same path picks up the new image.
-/// `None` whenever the path can't be read or decoded — the caller
-/// then falls back to the plain black backdrop. This is a plain still
-/// image: no video / ffmpeg decode, so it costs no more than the BNLC
-/// background and is safe to render during a live PvP match.
-fn custom_border_handle(path: &std::path::Path) -> Option<iced::widget::image::Handle> {
-    use std::collections::HashMap;
-    use std::sync::LazyLock;
-    type Stamp = Option<std::time::SystemTime>;
-    static CACHE: LazyLock<std::sync::Mutex<HashMap<std::path::PathBuf, (Stamp, Option<iced::widget::image::Handle>)>>> =
-        LazyLock::new(Default::default);
-    let modified: Stamp = std::fs::metadata(path).and_then(|m| m.modified()).ok();
-    if let Some((stamp, cached)) = CACHE.lock().unwrap().get(path).cloned() {
-        if stamp == modified {
-            return cached;
-        }
-    }
-    let handle = image::open(path)
-        .inspect_err(|e| log::warn!("custom border {}: decode: {e}", path.display()))
-        .ok()
-        .map(|img| {
-            let rgba = img.into_rgba8();
-            let (w, h) = rgba.dimensions();
-            iced::widget::image::Handle::from_rgba(w, h, rgba.into_raw())
-        });
-    CACHE
-        .lock()
-        .unwrap()
-        .insert(path.to_path_buf(), (modified, handle.clone()));
-    handle
-}
-
 /// How long the cursor has to sit still before the floating
 /// controls slide away.
 const CONTROLS_HIDE_AFTER: std::time::Duration = std::time::Duration::from_millis(2500);
@@ -768,7 +732,7 @@ fn thumbnail_handle(framebuffer: &[u8]) -> iced::widget::image::Handle {
     iced::widget::image::Handle::from_rgba(replay::SCREEN_WIDTH, replay::SCREEN_HEIGHT, rgba)
 }
 
-/// Decode a `.t5replay`, resolve both sides' ROM (+ optional
+/// Decode a `.tangoreplay`, resolve both sides' ROM (+ optional
 /// patch) from the scanners, and spin up a playback session bound to
 /// the shared audio binder. Ready to drop straight into the app's
 /// `session` slot.

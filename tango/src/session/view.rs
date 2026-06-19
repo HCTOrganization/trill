@@ -357,16 +357,12 @@ fn emulator_body<'a>(
     border_image_path: Option<&std::path::Path>,
 ) -> Element<'a, Message> {
     let frame_container = container(frame).center(Fill);
-    // Backdrop behind the framebuffer, per the user's border preference:
-    // `0` = BNLC per-game art, `1` = a custom still image (falls back to
-    // black if unset / undecodable), anything else = plain black. All
-    // paths are cheap still images, so this is safe to render in PvP.
-    let handle = match border_preference {
+    let bnlc_bg = match border_preference {
         0 => background_handle(session.local_game()),
-        1 => border_image_path.and_then(custom_border_handle),
+        // 1 => border_image_path.and_then(custom_border_handle),
         _ => None,
     };
-    let backdrop: Element<'a, Message> = match handle {
+    let backdrop: Element<'a, Message> = match bnlc_bg {
         Some(bg_handle) => iced::widget::image(bg_handle)
             .width(Fill)
             .height(Fill)
