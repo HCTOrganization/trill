@@ -63,7 +63,6 @@ impl EndpointPreset {
             EndpointPreset::Default => "wss://matchmaking.trill.hikaricalyx.com",
             EndpointPreset::CnServer => "wss://matchmakingcn.trill.hikaricalyx.cn",
             EndpointPreset::EasServer => "wss://matchmakingeas.trill.hikaricalyx.com",
-            EndpointPreset::Tango => "wss://matchmaking.tango.n1gp.net",
         }
     }
 
@@ -72,7 +71,6 @@ impl EndpointPreset {
             EndpointPreset::Default => "default",
             EndpointPreset::CnServer => "cnserver",
             EndpointPreset::EasServer => "easserver",
-            EndpointPreset::Tango => "tango",
         }
     }
 
@@ -81,7 +79,6 @@ impl EndpointPreset {
             "default" => Some(EndpointPreset::Default),
             "cnserver" => Some(EndpointPreset::CnServer),
             "easserver" => Some(EndpointPreset::EasServer),
-            "tango" => Some(EndpointPreset::Tango),
             _ => None,
         }
     }
@@ -776,7 +773,6 @@ fn settings_netplay<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config
         Choice::new("default".to_string(), t!(lang, "settings-netplay-endpoint-default")),
         Choice::new("cnserver".to_string(), t!(lang, "settings-netplay-endpoint-cnserver")),
         Choice::new("easserver".to_string(), t!(lang, "settings-netplay-endpoint-easserver")),
-        Choice::new("tango".to_string(), t!(lang, "settings-netplay-endpoint-tango")),
     ];
     let selected_preset: Option<Choice<String>> = None; // No preset selected by default, showing placeholder
     
