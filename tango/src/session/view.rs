@@ -357,24 +357,7 @@ fn emulator_body<'a>(
     border_image_path: Option<&std::path::Path>,
 ) -> Element<'a, Message> {
     let frame_container = container(frame).center(Fill);
-    let bnlc_bg = match border_preference {
-        0 => background_handle(session.local_game()),
-        // 1 => border_image_path.and_then(custom_border_handle),
-        _ => None,
-    };
-    let backdrop: Element<'a, Message> = match bnlc_bg {
-        Some(bg_handle) => iced::widget::image(bg_handle)
-            .width(Fill)
-            .height(Fill)
-            .content_fit(iced::ContentFit::Cover)
-            .into(),
-        None => container(iced::widget::Space::new().width(Fill).height(Fill))
-            .style(|_: &iced::Theme| iced::widget::container::Style {
-                background: Some(iced::Background::Color(iced::Color::BLACK)),
-                ..Default::default()
-            })
-            .into(),
-    };
+    let backdrop: Element<'a, Message> = border_backdrop(session, border_preference, border_image_path);
 
     // Left/right drawer SLOTS for PvP. The panes themselves render
     // as overlay layers in [`view`] (`setup_drawers_overlay`) so
