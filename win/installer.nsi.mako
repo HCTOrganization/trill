@@ -75,14 +75,8 @@ Function un.onInit
 FunctionEnd
 
 LangString MessageDeleteConfig <%text>$</%text>{LANG_ENGLISH} "Would you also like to delete configuration settings?"
-LangString MessageDeleteConfig <%text>$</%text>{LANG_JAPANESE} "コンフィギュレーション設定も削除しますか？"
-LangString MessageDeleteConfig <%text>$</%text>{LANG_SIMPCHINESE} "您是否也想删除配置设置？"
-LangString MessageDeleteConfig <%text>$</%text>{LANG_TRADCHINESE} "您是否也想刪除配置設置？"
 
 LangString MessageNoNT61Support <%text>$</%text>{LANG_ENGLISH} "This version of Trill no longer supports Windows 7 or older OS.\r\nConsider to use Trill v4.2.6 instead."
-LangString MessageNoNT61Support <%text>$</%text>{LANG_JAPANESE} "このバージョンのTrillは、Windows 7以前のOSをサポートしていません。\r\n代わりにTrill v4.2.6をご利用ください。"
-LangString MessageNoNT61Support <%text>$</%text>{LANG_SIMPCHINESE} "此版本的Trill不再支援Windows 7和以前版本的OS。\r\n請使用Trill v4.2.6。"
-LangString MessageNoNT61Support <%text>$</%text>{LANG_TRADCHINESE} "此版本的Trill不再支持Windows 7和以前版本。\r\n请使用Trill v4.2.6"
 
 Function un.onGUIInit
     MessageBox MB_YESNO "$(MessageDeleteConfig)" /SD IDNO IDYES true IDNO false
