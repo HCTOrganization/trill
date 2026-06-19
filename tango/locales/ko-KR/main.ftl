@@ -254,6 +254,7 @@ settings-volume = 볼륨
 settings-disable-bgm-in-pvp = 네트플레이에서 음악 끄기
 settings-audio-enable-startup-voice = 시작 음성 활성화
 settings-audio-enable-prebattle-voice = PvP 중 전투 전 음성 활성화
+settings-audio-prebattle-voice-volume = 음성 볼륨
 settings-nickname = 닉네임
 settings-language = 언어
 settings-data-path = 데이터 경로

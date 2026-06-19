@@ -707,6 +707,19 @@ impl App {
                 tabs::settings::Message::BorderImagePicked,
             );
         }
+        // Releasing the pre-battle voice volume slider plays the clip
+        // once at the current volume so the user can confirm the level.
+        // Side effect only — no config change to fold in.
+        if matches!(msg, tabs::settings::Message::PreviewPrebattleVoice) {
+            match crate::audio::oneshot::play_with_volume(
+                crate::audio::oneshot::match_start_voice(&self.config.language),
+                self.config.prebattle_voice_volume,
+            ) {
+                Ok(p) => self._voice_player = Some(p),
+                Err(e) => log::warn!("audio: prebattle voice preview failed: {e:?}"),
+            }
+            return iced::Task::none();
+        }
         use tabs::settings::ConfigChange as C;
         let Some(change) = self.settings.update(msg) else {
             return iced::Task::none();
@@ -813,6 +826,8 @@ impl App {
             C::EnableStartupVoice(b) => self.config.enable_startup_voice = b,
             // Sampled at match handoff; nothing live to poke.
             C::EnablePrebattleVoice(b) => self.config.enable_prebattle_voice = b,
+            // Sampled at match handoff; nothing live to poke.
+            C::PrebattleVoiceVolume(v) => self.config.prebattle_voice_volume = v,
             C::Theme(t) => self.config.theme = t,
             C::ThemeColor(c) => self.config.theme_color = c,
             C::AddInputBinding(slot, binding) => {
