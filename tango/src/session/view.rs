@@ -357,7 +357,7 @@ fn emulator_body<'a>(
     border_image_path: Option<&std::path::Path>,
 ) -> Element<'a, Message> {
     let frame_container = container(frame).center(Fill);
-    let backdrop: Element<'a, Message> = border_backdrop(session, border_preference, border_image_path);
+    let backdrop: Element<'a, Message> = border::border_backdrop(session, border_preference, border_image_path);
 
     // Left/right drawer SLOTS for PvP. The panes themselves render
     // as overlay layers in [`view`] (`setup_drawers_overlay`) so
