@@ -286,6 +286,7 @@ settings-volume = 音量
 settings-disable-bgm-in-pvp = 連線時禁用BGM
 settings-audio-enable-startup-voice = 啟用啟動語音
 settings-audio-enable-prebattle-voice = 啟用對戰前語音
+settings-audio-prebattle-voice-volume = 語音音量
 settings-section-about = 關於
 settings-section-input = 輸入
 settings-input-press-key = 請按一個按鍵或按鈕…

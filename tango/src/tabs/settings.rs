@@ -182,6 +182,13 @@ pub enum Message {
     /// "Enable Pre-Battle Voice during PvP" checkbox toggled. Persisted
     /// to `config.enable_prebattle_voice`; sampled at match handoff.
     ToggleEnablePrebattleVoice(bool),
+    /// Pre-battle voice volume slider moved. Persisted to
+    /// `config.prebattle_voice_volume`; sampled at match handoff.
+    PrebattleVoiceVolumeChanged(f32),
+    /// Pre-battle voice volume slider released. Intercepted by the App
+    /// (before `State::update`) to play the clip once at the current
+    /// volume so the user can confirm the level. Not a config change.
+    PreviewPrebattleVoice,
     /// User clicked "Update Now" on the About panel. App's
     /// settings handler calls `updater.finish_update()` which
     /// hands off to the installer + exits the process.
@@ -239,6 +246,7 @@ pub enum ConfigChange {
     DisableBgmInPvp(bool),
     EnableStartupVoice(bool),
     EnablePrebattleVoice(bool),
+    PrebattleVoiceVolume(f32),
     Theme(config::ThemeMode),
     ThemeColor(config::ThemeColor),
     AddInputBinding(input::MappedKey, input::PhysicalInput),
@@ -306,6 +314,11 @@ impl State {
             Message::ToggleDisableBgmInPvp(b) => Some(ConfigChange::DisableBgmInPvp(b)),
             Message::ToggleEnableStartupVoice(b) => Some(ConfigChange::EnableStartupVoice(b)),
             Message::ToggleEnablePrebattleVoice(b) => Some(ConfigChange::EnablePrebattleVoice(b)),
+            Message::PrebattleVoiceVolumeChanged(v) => Some(ConfigChange::PrebattleVoiceVolume(v)),
+            // Handled by the App as a side effect (plays the clip);
+            // intercepted before reaching here. Arm exists for
+            // exhaustiveness.
+            Message::PreviewPrebattleVoice => None,
             // App handles UpdateNow as a top-level effect — it
             // calls `updater.finish_update()` which exits the
             // process on success. Nothing to fold into config.
@@ -578,6 +591,25 @@ fn settings_audio<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config) 
             .label(t!(lang, "settings-audio-enable-prebattle-voice"))
             .on_toggle(Message::ToggleEnablePrebattleVoice)
             .style(widgets::chunky_checkbox),
+        labeled::<Message>(
+            t!(lang, "settings-audio-prebattle-voice-volume"),
+            row![
+                container(
+                    iced::widget::slider(
+                        0.0..=1.0,
+                        config.prebattle_voice_volume,
+                        Message::PrebattleVoiceVolumeChanged
+                    )
+                    .step(0.01)
+                    .on_release(Message::PreviewPrebattleVoice)
+                    .style(widgets::chunky_slider)
+                )
+                .width(Length::Fixed(220.0)),
+                text(format!("{:.0}%", config.prebattle_voice_volume * 100.0)).size(TEXT_CAPTION),
+            ]
+            .spacing(12)
+            .align_y(Alignment::Center),
+        ),
     ]
     .spacing(14)
     .padding(style::PANE_PADDING)

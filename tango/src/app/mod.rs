@@ -1055,7 +1055,10 @@ impl App {
                         // one-shot (e.g. a startup/accent clip still
                         // tailing off) and starts this one.
                         if self.config.enable_prebattle_voice {
-                            match audio::oneshot::play(audio::oneshot::match_start_voice(&self.config.language)) {
+                            match audio::oneshot::play_with_volume(
+                                audio::oneshot::match_start_voice(&self.config.language),
+                                self.config.prebattle_voice_volume,
+                            ) {
                                 Ok(p) => self._voice_player = Some(p),
                                 Err(e) => log::warn!("audio: match-start voice clip failed: {e:?}"),
                             }
