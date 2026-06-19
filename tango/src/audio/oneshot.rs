@@ -54,6 +54,9 @@ struct WavStream {
     /// Interleaved stereo frames at the wav's native sample rate.
     samples: Vec<[i16; NUM_CHANNELS]>,
     pos: usize,
+    /// Linear gain in `[0.0, 1.0]` applied to every sample as it's
+    /// emitted. 1.0 is a straight passthrough.
+    volume: f32,
 }
 
 impl Stream for WavStream {
@@ -61,7 +64,19 @@ impl Stream for WavStream {
         let remaining = self.samples.len().saturating_sub(self.pos);
         let n = remaining.min(buf.len());
         if n > 0 {
-            buf[..n].copy_from_slice(&self.samples[self.pos..self.pos + n]);
+            let src = &self.samples[self.pos..self.pos + n];
+            if self.volume >= 1.0 {
+                buf[..n].copy_from_slice(src);
+            } else {
+                // Scale each channel by the gain, rounding to the
+                // nearest i16 and clamping for safety.
+                for (dst, frame) in buf[..n].iter_mut().zip(src) {
+                    for ch in 0..NUM_CHANNELS {
+                        let scaled = (frame[ch] as f32 * self.volume).round();
+                        dst[ch] = scaled.clamp(i16::MIN as f32, i16::MAX as f32) as i16;
+                    }
+                }
+            }
             self.pos += n;
         }
         // After exhaustion `n` is 0 — the SDL callback pads with
@@ -149,8 +164,19 @@ pub struct Player {
 /// stream. The clip plays at its native sample rate (SDL resamples
 /// to the device); keep the returned [`Player`] alive for playback.
 pub fn play(wav_bytes: &[u8]) -> anyhow::Result<Player> {
+    play_with_volume(wav_bytes, 1.0)
+}
+
+/// Like [`play`], but scales the clip by `volume` (linear gain,
+/// clamped to `[0.0, 1.0]`) as it streams. Used for clips whose
+/// loudness is user-configurable independently of the master volume.
+pub fn play_with_volume(wav_bytes: &[u8], volume: f32) -> anyhow::Result<Player> {
     let (sample_rate, samples) = decode_wav(wav_bytes)?;
-    let stream = WavStream { samples, pos: 0 };
+    let stream = WavStream {
+        samples,
+        pos: 0,
+        volume: volume.clamp(0.0, 1.0),
+    };
     let backend = audio::sdl::Backend::new_at(stream, sample_rate as i32)?;
     log::info!("audio: playing one-shot voice clip at {sample_rate} Hz");
     Ok(Player { _backend: backend })

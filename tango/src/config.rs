@@ -293,6 +293,11 @@ pub struct Config {
     /// at match handoff.
     #[serde(default = "default_true")]
     pub enable_prebattle_voice: bool,
+    /// Volume in `[0.0, 1.0]` for the pre-battle voice clip. Scales
+    /// the clip's samples when it's played at match handoff;
+    /// independent of the master `volume`. Defaults to full.
+    #[serde(default = "default_volume")]
+    pub prebattle_voice_volume: f32,
     /// Local frame delay in frames for PvP — how far behind the live
     /// netcode frontier the display core renders. Purely local (not negotiated
     /// with the peer); snapshotted into the match at start.
@@ -348,6 +353,7 @@ impl Default for Config {
             disable_bgm_in_pvp: false,
             enable_startup_voice: true,
             enable_prebattle_voice: true,
+            prebattle_voice_volume: 1.0,
             frame_delay: default_frame_delay(),
             relay_mode: RelayMode::default(),
             last_blind_setup: false,

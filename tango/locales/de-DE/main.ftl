@@ -298,6 +298,7 @@ settings-volume = Lautstärke
 settings-disable-bgm-in-pvp = Musik im Netplay deaktivieren
 settings-audio-enable-startup-voice = Startstimme aktivieren
 settings-audio-enable-prebattle-voice = Pre-Battle-Stimme im PvP aktivieren
+settings-audio-prebattle-voice-volume = Stimmlautstärke
 settings-section-about = Info
 settings-section-input = Eingabe
 settings-input-press-key = Drücke eine Taste oder einen Knopf…
