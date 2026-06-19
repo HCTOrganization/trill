@@ -75,6 +75,7 @@ settings-netplay-endpoint-default = Trill (預設)
 settings-netplay-endpoint-cnserver = Trill (中國伺服器)
 settings-netplay-endpoint-easserver = Trill (東亞伺服器)
 settings-netplay-endpoint-tango = Tango
+settings-netplay-reset-certificate = 重置憑證
 settings-patch-repo = 補丁倉庫
 settings-enable-patch-autoupdate = 自動更新
 settings-data-path = 數據路徑

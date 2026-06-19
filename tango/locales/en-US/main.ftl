@@ -340,6 +340,7 @@ settings-netplay-endpoint-default = Trill (Default)
 settings-netplay-endpoint-cnserver = Trill (CN Server)
 settings-netplay-endpoint-easserver = Trill (East-Asia Server)
 settings-netplay-endpoint-tango = Tango
+settings-netplay-reset-certificate = Reset Certificate
 settings-data-folder = Data folder
 settings-data-folder-change = Change…
 settings-patch-repo = Patches repository

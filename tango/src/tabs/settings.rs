@@ -137,6 +137,10 @@ pub enum Message {
     MatchmakingEndpointChanged(String),
     /// Netplay endpoint preset picked from combobox.
     EndpointPresetChanged(String),
+    /// "Reset Certificate" clicked. Side effect only — intercepted by the App
+    /// (before `State::update`) to delete the persisted identity files and mint
+    /// a fresh client certificate, refreshing the in-memory identity.
+    ResetCertificate,
     /// Netplay frame-delay slider moved. Persisted to `config.frame_delay`;
     /// it's this side's local presentation lag, applied at the next match start
     /// (or live via the in-match footer slider).
@@ -289,6 +293,10 @@ impl State {
                 }
             }
             Message::FrameDelayChanged(v) => Some(ConfigChange::FrameDelay(v)),
+            // Intercepted by the App before it reaches here (it deletes +
+            // regenerates the identity files); the arm exists only for
+            // exhaustiveness.
+            Message::ResetCertificate => None,
             Message::RelayModeChanged(m) => Some(ConfigChange::RelayMode(m)),
             Message::PatchRepoChanged(s) => Some(ConfigChange::PatchRepo(s)),
             // Intercepted by the App before it reaches here (it opens the
@@ -829,6 +837,13 @@ fn settings_netplay<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config
             .padding(STANDARD_PADDING)
             .style(widgets::chunky_pick_list)
         }),
+        labeled::<Message>(
+            t!(lang, "settings-netplay-reset-certificate"),
+            button(text(t!(lang, "settings-netplay-reset-certificate")))
+                .on_press(Message::ResetCertificate)
+                .padding(STANDARD_PADDING)
+                .style(widgets::neutral),
+        ),
     ]
     .spacing(14)
     .padding(style::PANE_PADDING)

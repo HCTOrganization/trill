@@ -332,6 +332,7 @@ settings-netplay-endpoint-default = Trill (기본값)
 settings-netplay-endpoint-cnserver = Trill (중국 서버)
 settings-netplay-endpoint-easserver = Trill (동아시아 서버)
 settings-netplay-endpoint-tango = Tango
+settings-netplay-reset-certificate = 인증서 재설정
 settings-patch-repo = 패치 리포지토리
 settings-enable-patch-autoupdate = 백그라운드에서 패치 자동 업데이트
 settings-enable-updater = 앱 업데이트 자동 확인

@@ -75,6 +75,7 @@ settings-netplay-endpoint-default = Trill (Mặc định)
 settings-netplay-endpoint-cnserver = Trill (Máy chủ CN)
 settings-netplay-endpoint-easserver = Trill (Máy chủ Đông Á)
 settings-netplay-endpoint-tango = Tango
+settings-netplay-reset-certificate = Đặt lại chứng chỉ
 settings-patch-repo = Kho lưu trữ bản vá
 settings-enable-patch-autoupdate = Bật tự động cập nhật
 settings-data-path = Đường dẫn dữ liệu

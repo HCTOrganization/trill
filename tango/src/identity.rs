@@ -38,6 +38,28 @@ pub fn load() -> Option<tango_signaling::ClientIdentity> {
     }
 }
 
+/// Delete the persisted cert + key, then mint a fresh pair. Used by the
+/// "Reset Certificate" settings action to roll this install's identity (and
+/// thus the fingerprint the matchmaking server sees). Returns the freshly
+/// minted identity, or `None` (logged) if it couldn't be deleted/recreated —
+/// matching [`load`]'s best-effort contract.
+pub fn reset() -> Option<tango_signaling::ClientIdentity> {
+    if let Some(dir) = crate::config::config_dir() {
+        // Remove both files first so `load_or_create` regenerates the pair.
+        // `NotFound` is fine — the goal is "files gone", not "files existed".
+        for name in [CERT_FILE, KEY_FILE] {
+            match std::fs::remove_file(dir.join(name)) {
+                Ok(()) => {}
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                Err(e) => log::warn!("could not delete {name} while resetting identity: {e:#}"),
+            }
+        }
+    } else {
+        log::warn!("no config dir; resetting identity from memory only");
+    }
+    load()
+}
+
 /// Load the identity from disk, minting + persisting a fresh self-signed cert
 /// when either file is missing. Returns the identity plus its lowercase-hex
 /// SHA-256 fingerprint (of the DER certificate) for logging.

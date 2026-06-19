@@ -721,6 +721,13 @@ impl App {
             }
             return iced::Task::none();
         }
+        // "Reset Certificate" deletes the persisted identity files and mints a
+        // fresh client cert, then swaps it into app state so the next connect
+        // presents the new fingerprint. Side effect only — no config change.
+        if matches!(msg, tabs::settings::Message::ResetCertificate) {
+            self.identity = crate::identity::reset();
+            return iced::Task::none();
+        }
         use tabs::settings::ConfigChange as C;
         let Some(change) = self.settings.update(msg) else {
             return iced::Task::none();

@@ -75,6 +75,7 @@ settings-netplay-endpoint-default = Trill (Por defecto)
 settings-netplay-endpoint-cnserver = Trill (Servidor CN)
 settings-netplay-endpoint-easserver = Trill (Servidor de Asia Oriental)
 settings-netplay-endpoint-tango = Tango
+settings-netplay-reset-certificate = Restablecer certificado
 settings-patch-repo = Repositorio de parches
 settings-enable-patch-autoupdate = Auto actualización
 settings-data-path = Ruta de datos
