@@ -22,6 +22,14 @@ use super::*;
 /// which flickers when fed a fresh handle every frame); BNLC art and
 /// still custom images go through `image`; everything else is plain
 /// black.
+///
+/// PvP is the exception: it runs single-core (the one live mgba thread
+/// drives the netcode, the rollback fast-forward, AND rendering on a
+/// tight real-time budget). A live MP4 decode — a continuous ffmpeg
+/// pass plus per-frame multi-MB frame clones and GPU uploads — steals
+/// enough of that budget to blow the rollback/prediction window and
+/// desync the match. So during PvP an MP4 border is shown as a static
+/// first frame (decoded once, off-thread) instead of an animated one.
 pub(super) fn border_backdrop<'a>(
     session: &'a ActiveSession,
     border_preference: u8,
@@ -30,6 +38,18 @@ pub(super) fn border_backdrop<'a>(
     if border_preference == 1 {
         if let Some(path) = border_image_path {
             if is_video_border(path) {
+                // PvP: static first frame only — never the live decoder.
+                if matches!(session, ActiveSession::PvP(_)) {
+                    return match video_still_handle(path) {
+                        Some(h) => iced::widget::image(h)
+                            .width(Fill)
+                            .height(Fill)
+                            .content_fit(iced::ContentFit::Cover)
+                            .into(),
+                        // Not decoded yet (cold start) / decode failure.
+                        None => black_backdrop(),
+                    };
+                }
                 return match video_border_handle(path) {
                     Some(frame) => iced::widget::shader::Shader::new(crate::video::border::Program::new(frame))
                         .width(Fill)
@@ -143,6 +163,77 @@ fn is_video_border(path: &std::path::Path) -> bool {
     path.extension()
         .and_then(|e| e.to_str())
         .is_some_and(|e| e.eq_ignore_ascii_case("mp4"))
+}
+
+/// A static iced `Handle` for the first frame of a border video, for the
+/// PvP path where running the live decoder would starve the single
+/// real-time core (see [`border_backdrop`]). The decode runs once on a
+/// throwaway thread so it never blocks the UI thread; the result (a
+/// successful `Handle` or `None` on failure) is cached per path. Returns
+/// `None` until the first decode lands — the caller then shows a plain
+/// black backdrop for those first frames.
+fn video_still_handle(path: &std::path::Path) -> Option<iced::widget::image::Handle> {
+    use std::collections::{HashMap, HashSet};
+    use std::sync::LazyLock;
+    // `Some(None)` is a cached decode *failure* — distinct from "not yet
+    // decoded" (absent), so we don't respawn a doomed decode every frame.
+    static CACHE: LazyLock<std::sync::Mutex<HashMap<std::path::PathBuf, Option<iced::widget::image::Handle>>>> =
+        LazyLock::new(Default::default);
+    static IN_FLIGHT: LazyLock<std::sync::Mutex<HashSet<std::path::PathBuf>>> = LazyLock::new(Default::default);
+
+    if let Some(cached) = CACHE.lock().unwrap().get(path).cloned() {
+        return cached;
+    }
+    // First sighting of this path — kick off a one-shot decode. The
+    // in-flight guard keeps later frames from spawning duplicates while
+    // it runs.
+    if IN_FLIGHT.lock().unwrap().insert(path.to_path_buf()) {
+        let path_owned = path.to_path_buf();
+        let spawned = std::thread::Builder::new()
+            .name("border-still".into())
+            .spawn(move || {
+                let handle = decode_video_first_frame(&path_owned);
+                CACHE.lock().unwrap().insert(path_owned.clone(), handle);
+                IN_FLIGHT.lock().unwrap().remove(&path_owned);
+            });
+        if spawned.is_err() {
+            IN_FLIGHT.lock().unwrap().remove(path);
+        }
+    }
+    None
+}
+
+/// Decodes a video's first frame to an iced `Handle` via a one-shot
+/// ffmpeg pass (first frame → BMP → RGBA). `None` on any spawn / decode
+/// failure. Used by [`video_still_handle`].
+fn decode_video_first_frame(path: &std::path::Path) -> Option<iced::widget::image::Handle> {
+    let mut cmd = std::process::Command::new(resolve_ffmpeg_path());
+    cmd.args(["-hide_banner", "-loglevel", "error"])
+        .arg("-i")
+        .arg(path)
+        .args(["-an", "-frames:v", "1", "-f", "image2pipe", "-vcodec", "bmp", "pipe:1"])
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+    let out = cmd
+        .output()
+        .inspect_err(|e| log::warn!("custom border video {}: still ffmpeg spawn: {e}", path.display()))
+        .ok()?;
+    if !out.status.success() {
+        log::warn!("custom border video {}: still ffmpeg exited {:?}", path.display(), out.status);
+        return None;
+    }
+    let img = image::load_from_memory_with_format(&out.stdout, image::ImageFormat::Bmp)
+        .inspect_err(|e| log::warn!("custom border video {}: still decode: {e}", path.display()))
+        .ok()?;
+    let rgba = img.into_rgba8();
+    let (w, h) = rgba.dimensions();
+    Some(iced::widget::image::Handle::from_rgba(w, h, rgba.into_raw()))
 }
 
 /// Locates the bundled `ffmpeg`/`ffmpeg.exe` (sitting next to our own
