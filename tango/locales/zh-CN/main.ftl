@@ -175,7 +175,7 @@ lobby-compat-missing-rom = 游戏或补丁未在双方安装。
 lobby-compat-version-mismatch = 游戏版本不一致（补丁 / ROM 不同）。
 lobby-compat-match-mismatch = 对战类型不一致。
 lobby-ready = 准备
-lobby-unready = 取消准备
+lobby-unready = 取消
 lobby-match-starting = 开始中…
 lobby-blind-mine = 隐藏配置
 lobby-blind-peer-on = 对手正在隐藏配置。
@@ -224,7 +224,7 @@ folder-sort-element = 属性
 folder-sort-mb = MB
 
 # Navicust editor
-navicust-edit-grid = 领航员改造
+navicust-edit-grid = 领航员个人化装置
 navicust-edit-count = { $count } 个零件
 navicust-edit-rotate = 旋转
 navicust-edit-compress = 压缩
