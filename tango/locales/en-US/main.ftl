@@ -165,6 +165,8 @@ navicust-edit-search = Search parts…
 navicust-sort-id = ID
 navicust-sort-name = ABCDE
 navicust-sort-color = Color
+navicust-edit-tips-rightclick = Right-Click: Remove Part
+navicust-edit-tips-wheel = Scroll Wheel: Clockwise Rotate
 
 # Patch card editor
 patch-card-edit-search = Search cards…

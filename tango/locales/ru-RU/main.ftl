@@ -241,6 +241,8 @@ navicust-edit-search = Поиск деталей…
 navicust-sort-id = ID
 navicust-sort-name = Название
 navicust-sort-color = Цвет
+navicust-edit-tips-rightclick = Правый клик: Удалить деталь
+navicust-edit-tips-wheel = Колесо мыши: Вращение по часовой стрелке
 
 # Patch card editor
 patch-card-edit-search = Поиск карт…

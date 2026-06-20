@@ -239,6 +239,8 @@ navicust-edit-search = Onderdelen zoeken…
 navicust-sort-id = ID
 navicust-sort-name = Naam
 navicust-sort-color = Kleur
+navicust-edit-tips-rightclick = Rechtermuisknop: Onderdeel verwijderen
+navicust-edit-tips-wheel = Scroll wheel: Rechtsom draaien
 
 # Patch card editor
 patch-card-edit-search = Kaarten zoeken…

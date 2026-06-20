@@ -239,6 +239,8 @@ navicust-edit-search = Rechercher des pièces…
 navicust-sort-id = ID
 navicust-sort-name = Nom
 navicust-sort-color = Couleur
+navicust-edit-tips-rightclick = Clic droit : Supprimer la pièce
+navicust-edit-tips-wheel = Roulette de la souris : Rotation dans le sens des aiguilles d'une montre
 
 # Patch card editor
 patch-card-edit-search = Rechercher des cartes…

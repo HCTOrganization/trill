@@ -233,6 +233,8 @@ navicust-edit-search = Tìm bộ phận…
 navicust-sort-id = ID
 navicust-sort-name = Tên
 navicust-sort-color = Màu
+navicust-edit-tips-rightclick = Nhấn chuột phải: Loại bỏ bộ phận
+navicust-edit-tips-wheel = Bánh xe chuột: Xoay theo chiều kim đồng hồ
 
 # Patch card editor
 patch-card-edit-search = Tìm thẻ…

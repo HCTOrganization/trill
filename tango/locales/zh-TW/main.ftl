@@ -233,6 +233,8 @@ navicust-edit-search = 搜尋零件…
 navicust-sort-id = ID
 navicust-sort-name = 名稱
 navicust-sort-color = 顏色
+navicust-edit-tips-rightclick = 滑鼠右鍵：刪除零件
+navicust-edit-tips-wheel = 滑鼠滾輪：順時針旋轉
 
 # Patch card editor
 patch-card-edit-search = 搜尋改造卡…

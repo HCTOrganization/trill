@@ -164,6 +164,8 @@ navicust-edit-search = 부품 검색…
 navicust-sort-id = ID
 navicust-sort-name = 이름
 navicust-sort-color = 색상
+navicust-edit-tips-rightclick = 우클릭: 부품 제거
+navicust-edit-tips-wheel = 스크롤 휠: 시계 방향 회전
 
 # Patch card editor
 patch-card-edit-search = 카드 검색…

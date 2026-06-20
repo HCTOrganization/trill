@@ -315,6 +315,19 @@ pub(super) fn render_navicust_edit<'a>(
         grid_inner = grid_inner.push(parts);
     }
 
+    // Interaction hints, greyed out, shown below the grid.
+    let tips = column![
+        text(t!(lang, "navicust-edit-tips-rightclick"))
+            .size(TEXT_CAPTION)
+            .style(muted_text_style),
+        text(t!(lang, "navicust-edit-tips-wheel"))
+            .size(TEXT_CAPTION)
+            .style(muted_text_style),
+    ]
+    .spacing(2)
+    .align_x(Alignment::Center);
+    grid_inner = grid_inner.push(tips);
+
     // Grid on the left, the editing palette filling the remaining width.
     editor_panes(editor_pane(grid_header, grid_inner), editor_pane(parts_header, palette))
 }

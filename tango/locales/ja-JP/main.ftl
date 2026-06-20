@@ -168,6 +168,8 @@ navicust-edit-search = パーツを検索…
 navicust-sort-id = ID
 navicust-sort-name = 名前
 navicust-sort-color = 色
+navicust-edit-tips-rightclick = 右クリック: パーツをもどす
+navicust-edit-tips-wheel = スクロールホイール: 時計方向に回転
 
 # Patch card editor
 patch-card-edit-search = カードを検索…
