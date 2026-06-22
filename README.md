@@ -1,3 +1,4 @@
+> [Since June 19, 2026, the upstream maintainer decided to add closed-source component into Tango](https://github.com/tangobattle/tango/commit/d112667637649316cfbf9e81ac50e73934477642), [and removed the source code of signaling server](https://github.com/tangobattle/tango/commit/d72d409f33328aad648c4bcdbdb4ba018c195318), making it no longer AGPL-compliant. Therefore, the compatibility of Trill with Tango can no longer be guaranteed. Use Tango with caution.
 > If you have anything new and useful to every players that you'd like to implement, please let us know, instead of sending feedback to upstream.
 > Hikari Calyx Tech remains steadfast in its commitment to keeping the Trill fork project open source and embracing community contributions.
 
@@ -45,6 +46,9 @@ Trill is rollback netcode emulator for Mega Man Battle Network.
 - [x] Restore ARM64 and x86 support (WIP)
 - [ ] Add NX Homebrew support
 - [ ] Mobile port, instead of Winlator wrapper
+
+## Signaling Server for Trill
+You can find the source code and prebuilt binary from this repository: https://github.com/HikariCalyx/trill-matchmaking-server
 
 ## Building
 Details will be added later as soon as Trill v5.x finishes its major roadmap.
