@@ -340,6 +340,7 @@ settings-netplay-endpoint-default = Trill (デフォルト)
 settings-netplay-endpoint-cnserver = Trill (中国サーバー)
 settings-netplay-endpoint-easserver = Trill (東アジアサーバー)
 settings-netplay-endpoint-tango = Tango
+settings-netplay-endpoint-tango-warning = メンテナーは、マッチメイキングエンドポイントで使用されていたサーバー側のソースコードを削除し、AGPLに違反した。したがって、このサーバーの使用は推奨されなくなりました。
 settings-patch-repo = パッチリポジトリ
 settings-enable-patch-autoupdate = パッチを自動更新する
 settings-enable-updater = アプリの更新を自動チェック

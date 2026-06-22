@@ -75,6 +75,7 @@ settings-netplay-endpoint-default = Trill (Mặc định)
 settings-netplay-endpoint-cnserver = Trill (Máy chủ CN)
 settings-netplay-endpoint-easserver = Trill (Máy chủ Đông Á)
 settings-netplay-endpoint-tango = Tango
+settings-netplay-endpoint-tango-warning = Người bảo trì đã vi phạm AGPL bằng cách xóa mã nguồn máy chủ tín hiệu được sử dụng bởi máy chủ này. Do đó, việc sử dụng máy chủ này không còn được khuyến khích.
 settings-patch-repo = Kho lưu trữ bản vá
 settings-enable-patch-autoupdate = Bật tự động cập nhật
 settings-data-path = Đường dẫn dữ liệu

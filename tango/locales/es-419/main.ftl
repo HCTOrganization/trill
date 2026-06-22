@@ -75,6 +75,7 @@ settings-netplay-endpoint-default = Trill (Por defecto)
 settings-netplay-endpoint-cnserver = Trill (Servidor CN)
 settings-netplay-endpoint-easserver = Trill (Servidor de Asia Oriental)
 settings-netplay-endpoint-tango = Tango
+settings-netplay-endpoint-tango-warning = El mantenedor ha violado la AGPL al eliminar el código fuente del servidor de señalización utilizado por este servidor. Por lo tanto, ya no se recomienda usar este servidor.
 settings-patch-repo = Repositorio de parches
 settings-enable-patch-autoupdate = Auto actualización
 settings-data-path = Ruta de datos

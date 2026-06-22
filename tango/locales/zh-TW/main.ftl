@@ -75,6 +75,7 @@ settings-netplay-endpoint-default = Trill (預設)
 settings-netplay-endpoint-cnserver = Trill (中國伺服器)
 settings-netplay-endpoint-easserver = Trill (東亞伺服器)
 settings-netplay-endpoint-tango = Tango
+settings-netplay-endpoint-tango-warning = 維護者移除了該端點的伺服器端原始碼，違反了AGPL協定。因此，不再建議使用此伺服器。
 settings-patch-repo = 補丁倉庫
 settings-enable-patch-autoupdate = 自動更新
 settings-data-path = 數據路徑

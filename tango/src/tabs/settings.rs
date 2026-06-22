@@ -779,7 +779,19 @@ fn settings_netplay<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config
         Choice::new("tango".to_string(), t!(lang, "settings-netplay-endpoint-tango")),
     ];
     let selected_preset: Option<Choice<String>> = None; // No preset selected by default, showing placeholder
-    
+
+    // Warn when the currently configured endpoint is the Tango server,
+    // whose maintainer removed the AGPL-licensed signaling server source.
+    let tango_endpoint_warning: Element<Message> = if config.matchmaking_endpoint == EndpointPreset::Tango.url() {
+        text(t!(lang, "settings-netplay-endpoint-tango-warning"))
+            .size(TEXT_CAPTION)
+            .width(Length::Fixed(480.0))
+            .style(widgets::danger_text_style)
+            .into()
+    } else {
+        Space::new(0, 0).into()
+    };
+
     column![
         labeled::<Message>(
             t!(lang, "settings-matchmaking-endpoint"),
@@ -797,6 +809,7 @@ fn settings_netplay<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config
             .padding(STANDARD_PADDING)
             .style(widgets::chunky_pick_list)
         }),
+        tango_endpoint_warning,
         labeled::<Message>(
             t!(lang, "settings-netplay-frame-delay"),
             row![
