@@ -789,7 +789,7 @@ fn settings_netplay<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config
             .style(widgets::danger_text_style)
             .into()
     } else {
-        Space::new(0, 0).into()
+        Space::new().into()
     };
 
     column![
