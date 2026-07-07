@@ -1,7 +1,7 @@
 //! A small async/Tokio-friendly facade over [`libdatachannel`].
 //!
 //! `libdatachannel` exposes a synchronous, callback-based API. The rest of
-//! Tango is written against an async, channel-based shape (peer-connection
+//! Trill is written against an async, channel-based shape (peer-connection
 //! events arrive on an `mpsc::Receiver`, data-channel sends/receives are
 //! `await`-able). This crate keeps that shape: native callbacks fire on
 //! libdatachannel's own threads and we forward them onto Tokio channels.
@@ -11,7 +11,7 @@ pub use libdatachannel::{
     GatheringState, LocalDescriptionInit, Reliability, SdpType, State as ConnectionState, TransportPolicy,
 };
 
-/// An ICE candidate string emitted by the local agent. Tango does non-trickle
+/// An ICE candidate string emitted by the local agent. Trill does non-trickle
 /// ICE (it waits for gathering to complete and ships the full SDP), so nothing
 /// consumes these today, but they're surfaced for API completeness.
 #[derive(Debug, Clone)]
@@ -28,7 +28,7 @@ pub struct SessionDescription {
 }
 
 /// Peer connection configuration. A thin stand-in for the old `RtcConfig`,
-/// carrying only what Tango sets.
+/// carrying only what Trill sets.
 #[derive(Debug, Clone, Default)]
 pub struct RtcConfig {
     pub ice_servers: Vec<String>,

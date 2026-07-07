@@ -1,0 +1,16 @@
+[package]
+name = "trill-replaytool"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+indicatif = "0.17"
+serde_json = "1"
+trill-gamedb = { path = "../trill-gamedb" }
+trill-pvp = { path = "../trill-pvp" }
+tokio = { version = "1", features = ["full"] }
+
+[lints]
+workspace = true

@@ -6,13 +6,13 @@ members = [
     "libdatachannel",
     "mgba",
     "getgud",
-    "tango",
-    "tango-dataview",
-    "tango-filesync",
-    "tango-gamedb",
-    "tango-pvp",
-    "tango-replaytool",
-    "tango-signaling",
+    "trill",
+    "trill-dataview",
+    "trill-filesync",
+    "trill-gamedb",
+    "trill-pvp",
+    "trill-replaytool",
+    "trill-signaling",
 ]
 
 # `release` keeps Cargo's defaults (lto = false, codegen-units = 16) so

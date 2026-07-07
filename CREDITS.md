@@ -1,4 +1,4 @@
-[Trill](https://trill.hikaricalyx.com), as well as it's parent project Tango would not be a reality without the work of the many people who have helped make this possible.
+[Trill](https://trill.hikaricalyx.com) would not be a reality without the work of the many people who have helped make this possible.
 
 ## Development
 
@@ -8,13 +8,13 @@
 - Porting: [ubergeek77](https://github.com/ubergeek77) (Linux), [Akatsuki](https://github.com/Akatsuki) (macOS)
 - Game support: weenie (BN1-6), [GreigaMaster](https://x.com/GreigaMaster) (EXE4.5)
 - Odds and ends: [zachristmas](https://github.com/zachristmas), [Akatsuki](https://github.com/Akatsuki), [sailormoon](https://github.com/sailormoon), [Shiz](https://x.com/dev_console), [Karate_Bugman](https://x.com/Karate_Bugman)
-- [Countless open source projects](https://tango.n1gp.net/licenses)
+- [Countless open source projects](https://trill.hikaricalyx.com/licenses)
 
 ## Translation
 
-- Japanese: weenie, [Nonstopmop](https://x.com/seventhfonist42), [dhenva](https://twitch.tv/dhenva)
-- Chinese (Simplified): weenie, [Hikari Calyx Tech](https://hikaricalyx.com)
-- Chinese (Traditional): weenie, [Hikari Calyx Tech](https://hikaricalyx.com)
+- Japanese: [Nonstopmop](https://x.com/seventhfonist42), [dhenva](https://twitch.tv/dhenva)
+- Chinese (Simplified): [Hikari Calyx Tech](https://hikaricalyx.com)
+- Chinese (Traditional): [Hikari Calyx Tech](https://hikaricalyx.com)
 - Korean: [Hikari Calyx Tech](https://hikaricalyx.com)
 - Spanish (Latin America): [Karate_Bugman](https://x.com/Karate_Bugman)
 - Portuguese (Brazil): [Darkgaia](https://ayo.so/darkgaiagames), [mushiguchi](https://x.com/mushiguchi)
@@ -35,4 +35,4 @@
 
 And, of course, a huge thank you to [CAPCOM](https://www.capcom.com) for making Mega Man Battle Network!
 
-Trill is licensed under the terms of the [GNU Affero General Public License v3](https://tldrlegal.com/license/gnu-affero-general-public-license-v3-%28agpl-3.0%29). That means you're free to modify the [source code](https://github.com/HCTOrganization/trill), as long as you contribute your changes back!
+Trill is licensed under the terms of the [GNU Affero General Public License v3](https://tldrlegal.com/license/gnu-affero-general-public-license-v3-%28agpl-3.0%29). That means you're free to modify the [source code](https://github.com/HCTOrganization/trill), as long as you contribute your changes back!

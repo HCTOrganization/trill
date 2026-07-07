@@ -70,7 +70,7 @@ fn extract_from_vcxproj(path: &Path) -> Option<Vec<String>> {
 ///
 /// `COLOR_16_BIT` switches mgba's `mColor` from 32-bit XBGR8 to the GBA-native
 /// 15-bit BGR555 (no `COLOR_5_6_5`, so it stays BGR5, not RGB565), letting
-/// tango do its own color conversion off the raw framebuffer.
+/// Trill do its own color conversion off the raw framebuffer.
 ///
 /// These must reach BOTH the C compile (via cmake CFLAGS) and the bindgen pass
 /// (via clang args) — if only one side sees them, `mColor`'s width disagrees

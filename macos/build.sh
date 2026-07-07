@@ -16,23 +16,23 @@ tools/mako_generate.py "$(dirname "${BASH_SOURCE[0]}")/Info.plist.mako" >Trill\ 
 
 # Create icon.
 mkdir Trill.iconset
-sips -z 16 16 tango/src/icon.png --out Trill.iconset/icon_16x16.png
-sips -z 32 32 tango/src/icon.png --out Trill.iconset/icon_16x16@2x.png
-sips -z 32 32 tango/src/icon.png --out Trill.iconset/icon_32x32.png
-sips -z 64 64 tango/src/icon.png --out Trill.iconset/icon_32x32@2x.png
-sips -z 128 128 tango/src/icon.png --out Trill.iconset/icon_128x128.png
-sips -z 256 256 tango/src/icon.png --out Trill.iconset/icon_128x128@2x.png
-sips -z 256 256 tango/src/icon.png --out Trill.iconset/icon_256x256.png
-sips -z 512 512 tango/src/icon.png --out Trill.iconset/icon_256x256@2x.png
-sips -z 512 512 tango/src/icon.png --out Trill.iconset/icon_512x512.png
-sips -z 1024 1024 tango/src/icon.png --out Trill.iconset/icon_512x512@2x.png
+sips -z 16 16 trill/src/icon.png --out Trill.iconset/icon_16x16.png
+sips -z 32 32 trill/src/icon.png --out Trill.iconset/icon_16x16@2x.png
+sips -z 32 32 trill/src/icon.png --out Trill.iconset/icon_32x32.png
+sips -z 64 64 trill/src/icon.png --out Trill.iconset/icon_32x32@2x.png
+sips -z 128 128 trill/src/icon.png --out Trill.iconset/icon_128x128.png
+sips -z 256 256 trill/src/icon.png --out Trill.iconset/icon_128x128@2x.png
+sips -z 256 256 trill/src/icon.png --out Trill.iconset/icon_256x256.png
+sips -z 512 512 trill/src/icon.png --out Trill.iconset/icon_256x256@2x.png
+sips -z 512 512 trill/src/icon.png --out Trill.iconset/icon_512x512.png
+sips -z 1024 1024 trill/src/icon.png --out Trill.iconset/icon_512x512@2x.png
 iconutil -c icns Trill.iconset --output Trill\ 5.app/Contents/Resources/Trill.icns
 rm -rf Trill.iconset
 
 # Build macOS binaries.
-cargo build --bin tango --target=aarch64-apple-darwin --profile release-dist
-cargo build --bin tango --target=x86_64-apple-darwin --profile release-dist
-lipo -create target/{aarch64-apple-darwin,x86_64-apple-darwin}/release-dist/tango -output Trill\ 5.app/Contents/MacOS/trill
+cargo build --bin trill --target=aarch64-apple-darwin --profile release-dist
+cargo build --bin trill --target=x86_64-apple-darwin --profile release-dist
+lipo -create target/{aarch64-apple-darwin,x86_64-apple-darwin}/release-dist/trill -output Trill\ 5.app/Contents/MacOS/trill
 
 ffmpeg_version="8.1.2"
 

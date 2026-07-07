@@ -1,0 +1,383 @@
+# Window
+# Endonym for this locale; shown in the language picker.
+LANGUAGE = 日本語
+
+window-title = トリル
+# Tooltip on the top bar's close button (fullscreen only).
+window-quit = トリルを終了
+
+# Crash handler dialogs (parent process)
+crash = トリルがエラーで終了しました。
+
+    報告の際は次のログファイルを添付してください：
+
+    { $path }
+crash-no-log = トリルがエラーで終了しました。
+
+    { $error }
+
+# Discord rich presence
+discord-presence-looking = 募集中
+discord-presence-in-single-player = 一人用モード中
+discord-presence-in-lobby = ロビー待機中
+discord-presence-in-progress = 対戦中
+
+# Top-bar tabs
+tab-play = 対戦
+tab-replays = リプレイ
+tab-patches = パッチ
+tab-settings = 設定
+
+# Play selectors
+play-no-game = ゲーム未選択
+play-no-save = セーブを選択
+
+# Save management
+save-open-folder = フォルダを開く
+save-duplicate = 複製
+save-rename = 名前変更
+save-delete = デリート
+save-rename-confirm = 名前変更
+save-delete-confirm = デリート
+save-action-cancel = キャンセル
+save-delete-prompt = { $name } をデリートしますか？
+save-name-placeholder = 新しい名前
+save-new = 新規セーブ
+save-new-confirm = 作成
+save-template-default = （デフォルト）
+save-template-pick = テンプレートを選択…
+
+# Empty-state hints
+empty-no-roms-title = ROMが見つかりません
+empty-no-roms-body = バトルネットワーク／ロックマンエグゼの .gba ファイルを次の場所に置いてください：
+empty-no-saves-title = このゲームのセーブがありません
+empty-no-saves-body = このゲームの .sav ファイルを次の場所に置いてください：
+play-no-patch = パッチなし
+play-patch-toggle = パッチを使用…
+play-version-placeholder = —
+
+# Play bottom strip
+play-link-code = リンクコード（空欄でランダム生成）
+play-link-code-random = ランダムリンクコード
+play-play = プレイ
+play-fight = 対戦
+play-cancel = キャンセル
+play-status-idle = ネットプレイするにはリンクコードを入力、空欄で一人用モードになります。
+play-status-connecting = マッチメイキングサーバーに接続中…
+play-status-direct-connecting = 対戦相手に接続中…
+play-status-waiting-opponent = 対戦相手を待っています…
+play-status-negotiating = ネゴシエーション中…
+play-status-failed = 接続失敗: { $error }
+play-status-peer-disconnected = 相手が退出しました。
+play-status-negotiate-expected-hello = 相手から想定したハンドシェイクが届きませんでした。
+play-status-negotiate-version-too-old = 相手は古いバージョンのトリルを使用しています。
+play-status-negotiate-version-too-new = 相手は新しいバージョンのトリルを使用しています。
+play-status-negotiate-failed = ネゴシエーション中にエラーが発生しました: { $error }
+lobby-waiting = 待機中…
+lobby-no-game = （ゲーム未選択）
+lobby-latency = Ping: { $ms } ms
+lobby-latency-direct = Ping（直接）: { $ms } ms
+lobby-latency-relayed = Ping（中継）: { $ms } ms
+lobby-link-code = リンクコード: { $code }
+lobby-direct-host = UDP ポート { $port } でホスト中
+lobby-direct-connect = UDP で { $target } に接続中
+lobby-handshake = 設定交換中…
+lobby-match-type = マッチタイプ
+settings-netplay-frame-delay = フレーム遅延
+settings-use-relay = リレーサーバーを使用
+settings-use-relay-auto = 自動
+settings-use-relay-always = 常に使用
+settings-use-relay-never = 使用しない
+lobby-frame-delay-suggest = Pingから推奨
+lobby-no-match-types = （このゲームには対戦モードがありません）
+lobby-pick-game-first = まずゲームを選んでください
+lobby-compat-ok = 互換あり — 対戦できます。
+lobby-compat-missing-game = ゲームが選択されていない側があります。
+lobby-compat-missing-rom = どちらかにゲームまたはパッチがインストールされていません。
+lobby-compat-version-mismatch = ゲームのバージョンが一致しません（パッチ／ROM が異なる）。
+lobby-compat-match-mismatch = 対戦モードが一致しません。
+lobby-ready = 準備完了
+lobby-unready = 取消
+lobby-match-starting = 開始中…
+lobby-blind-mine = 構築を隠す
+lobby-blind-peer-on = 相手は構築を隠しています。
+lobby-blind-self-on = 自分の構築を隠しています。
+session-opponent = 相手の構築
+session-self = 自分の構築
+session-back-to-session = 対戦に戻る
+# PvP telemetry deck cell tooltips
+session-stat-tps = 毎秒ティック数（現在/上限）
+session-stat-skew = ずれ
+session-stat-lead = リード
+session-stat-depth = 予測ミス深度
+session-stat-ping = ネットワーク遅延
+
+# Save view sub-tabs
+save-tab-cover = カバー
+save-tab-navi = ナビ
+save-tab-folder = フォルダ
+save-tab-patch-cards = パッチカード
+save-tab-auto-battle-data = オートバトルデータ
+
+# Navi pane
+navi-style = スタイル
+
+# Folder pane
+folder-group = チップでまとめる
+save-copy = コピー
+copied = コピーしました！
+save-copy-image = 画像をコピー
+
+# Navi pane
+navi-id = ナビID
+navi-link-navi = リンクナビ
+navi-style-unset = （スタイルなし）
+navicust-grid-size = グリッド: { $cols } × { $rows }
+navicust-parts = 設定済みパーツ
+navicust-empty = （未設定）
+
+# Folder editor
+save-edit = 編集
+save-edit-save = 保存
+save-edit-cancel = キャンセル
+folder-edit-search = チップを検索…
+folder-edit-folder = フォルダ
+folder-edit-count = { $count } / { $limit }
+folder-edit-navi = ナビ { $used } / { $limit }
+folder-edit-mega = メガ { $used } / { $limit }
+folder-edit-giga = ギガ { $used } / { $limit }
+folder-edit-dark = ダーク { $used } / { $limit }
+folder-edit-reg-memory = レギュラー { $mb }MB
+folder-edit-tag-memory = タッグ { $mb }MB
+save-edit-sort = 並べ替え
+save-edit-clear = すべてクリア
+folder-sort-id = ID
+folder-sort-name = 名前
+folder-sort-code = コード
+folder-sort-attack = 攻撃力
+folder-sort-element = 属性
+folder-sort-mb = MB
+
+# Navicust editor
+navicust-edit-grid = ナビカスタマイザー
+navicust-edit-count = { $count } パーツ
+navicust-edit-rotate = 回転
+navicust-edit-compress = 圧縮
+navicust-edit-uncompress = 解凍
+navicust-edit-search = パーツを検索…
+navicust-sort-id = ID
+navicust-sort-name = 名前
+navicust-sort-color = 色
+navicust-edit-tips-rightclick = 右クリック: パーツをもどす
+navicust-edit-tips-wheel = スクロールホイール: 時計方向に回転
+
+# Patch card editor
+patch-card-edit-search = カードを検索…
+patch-card-edit-count = { $count } 枚
+patch-card-edit-mb = { $mb }MB / { $limit }MB
+patch-card-sort-id = ID
+patch-card-sort-name = 名前
+patch-card-sort-mb = MB
+patch-card4-none = なし
+
+# Auto Battle Data pane
+auto-battle-data-secondary-standard-chips = スタンダードチップ（補助）
+auto-battle-data-standard-chips = スタンダードチップ
+auto-battle-data-mega-chips = メガチップ
+auto-battle-data-giga-chip = ギガチップ
+auto-battle-data-combos = コンボ
+auto-battle-data-program-advance = プログラムアドバンス
+
+# Auto Battle Data editor
+auto-battle-data-edit-used = 使用回数
+auto-battle-data-edit-secondary = 補助
+auto-battle-data-edit-count = { $count } 枚
+
+# Common
+save-empty = このセーブにはこのビューのデータがありません。
+play-no-selection = 検査するゲームとセーブを選択してください。
+
+# Replays
+replays-filter-all-games = すべて
+replays-filter-opponent-placeholder = 検索
+replays-show-incomplete = 未完了も表示
+replays-direct-marker = （ダイレクト）
+replays-watch = 再生
+replays-watch-missing-rom = 再生（このゲームのROMが未スキャン）
+replays-export = 録画
+replays-export-progress = 録画中…
+replays-export-cancel = キャンセル
+replays-export-cancelling = キャンセル中…
+replays-export-success = 録画が完了しました。
+replays-export-error = 録画に失敗しました: { $error }
+replays-export-open = 動画を開く
+replays-export-reset = リセット
+replays-export-scale = 拡大率
+replays-export-scale-lossless = ロスレス
+replays-export-disable-bgm = 音楽を消す
+replays-export-twosided = 両面表示
+replays-export-rounds = ラウンド:
+replays-export-save-as = 名前を付けて保存…
+playback-close = 閉じる
+playback-options = オプション
+playback-speed = 速度
+playback-play = 再生
+playback-pause = 一時停止
+playback-disconnect = 切断
+playback-disconnect-prompt = この試合から切断しますか？
+playback-disconnect-detail = 相手との試合を終了します。
+playback-cancel = キャンセル
+replays-select-prompt = リプレイを選択してください。
+play-opponent = 相手
+replays-match-type = マッチタイプ:
+replays-duration = 再生時間:
+replays-round-count = { $count }ラウンド
+replays-incomplete = 未完了
+play-you = 自分
+
+# Patches
+patches-update = 更新
+patches-updating = 更新中…
+patches-update-failed = 更新に失敗しました: { $error }
+patches-open-folder = フォルダを開く
+patches-favorite = お気に入り
+patches-unfavorite = お気に入り解除
+patches-search-placeholder = パッチを検索…
+patches-select-prompt = パッチを選択してください。
+patches-readme-placeholder = このパッチにはREADMEがありません。
+patches-details-authors = 作者:
+patches-details-license = ライセンス:
+patches-details-source = ソース:
+patches-details-games = 対応ゲーム:
+patches-netplay-compatibility = ネットプレイ互換性:
+
+# Settings panel
+settings-section-general = 一般
+settings-section-graphics = グラフィック
+settings-section-netplay = ネットプレイ
+settings-section-audio = オーディオ
+settings-volume = 音量
+settings-disable-bgm-in-pvp = ネットプレイで音楽を消す
+settings-audio-enable-startup-voice = 起動時のボイスを有効にする
+settings-audio-enable-prebattle-voice = 対戦時のバトル前ボイスを有効にする
+settings-audio-prebattle-voice-volume = ボイスの音量
+settings-nickname = ニックネーム
+settings-language = 言語
+settings-data-path = データパス
+    .open = 開く
+    .change = 変更
+settings-data-folder = データフォルダ
+settings-data-folder-change = 変更…
+settings-streamer-mode = 配信プライバシーモード
+settings-section-experimental = 実験的機能
+settings-enable-save-editor = セーブエディターを有効にする
+settings-experimental-warning = 実験的機能はセーブデータを破損させたり使用できなくする可能性があり、予告なく変更・デリートされることがあります。また、オンライン対戦でセーブを正規の状態に保つためのチェックが省かれている場合があります。自己責任でご利用ください。
+settings-section-about = アプリ情報
+settings-section-input = 入力
+settings-input-press-key = キーまたはボタンを押してください…
+settings-input-add = 割り当てを追加
+settings-input-reset = 初期設定に戻す
+input-key-up = 上
+input-key-down = 下
+input-key-left = 左
+input-key-right = 右
+input-key-a = A
+input-key-b = B
+input-key-l = L
+input-key-r = R
+input-key-start = スタート
+input-key-select = セレクト
+input-key-speed-up = 早送り
+input-gamepad-south = Aボタン
+input-gamepad-east = Bボタン
+input-gamepad-west = Xボタン
+input-gamepad-north = Yボタン
+input-gamepad-select = セレクト
+input-gamepad-start = スタート
+input-gamepad-mode = ガイド
+input-gamepad-left-thumb = 左スティック
+input-gamepad-right-thumb = 右スティック
+input-gamepad-left-shoulder = LB
+input-gamepad-right-shoulder = RB
+input-gamepad-dpad-up = 十字キー 上
+input-gamepad-dpad-down = 十字キー 下
+input-gamepad-dpad-left = 十字キー 左
+input-gamepad-dpad-right = 十字キー 右
+input-gamepad-misc1 = その他 1
+input-gamepad-misc2 = その他 2
+input-gamepad-misc3 = その他 3
+input-gamepad-misc4 = その他 4
+input-gamepad-misc5 = その他 5
+input-gamepad-misc6 = その他 6
+input-gamepad-right-paddle1 = 右パドル 1
+input-gamepad-left-paddle1 = 左パドル 1
+input-gamepad-right-paddle2 = 右パドル 2
+input-gamepad-left-paddle2 = 左パドル 2
+input-gamepad-touchpad = タッチパッド
+input-gamepad-axis-left-stick-x = 左スティック X
+input-gamepad-axis-left-stick-y = 左スティック Y
+input-gamepad-axis-right-stick-x = 右スティック X
+input-gamepad-axis-right-stick-y = 右スティック Y
+input-gamepad-axis-trigger-left = 左トリガー
+input-gamepad-axis-trigger-right = 右トリガー
+settings-theme = テーマ
+settings-theme-dark = ダーク
+settings-theme-light = ライト
+settings-theme-color = テーマカラー
+settings-theme-color-trill-yellow = トリルイエロー
+settings-theme-color-pegasus-blue = ペガサスブルー
+settings-theme-color-sonia-pink = ミソラピンク
+settings-theme-color-zerker-grey = ベルセルクグレー
+settings-theme-color-ninja-green = シノビグリーン
+settings-theme-color-saurian-orange = ダイナソーオレンジ
+settings-theme-color-rogue-purple = ブライパープル
+settings-theme-color-ace-black = エースブラック
+settings-theme-color-joker-red = ジョーカーレッド
+settings-theme-color-speaki-brown = スピキブラウン
+settings-matchmaking-endpoint = マッチメイキングエンドポイント
+settings-netplay-endpoint-preset = エンドポイントプリセット
+settings-netplay-endpoint-default = Trill (デフォルト)
+settings-netplay-endpoint-cnserver = Trill (中国サーバー)
+settings-netplay-endpoint-easserver = Trill (東アジアサーバー)
+settings-netplay-endpoint-trill = Trill
+settings-netplay-endpoint-trill-warning = メンテナーは、マッチメイキングエンドポイントで使用されていたサーバー側のソースコードを削除し、AGPLに違反した。したがって、このサーバーの使用は推奨されなくなりました。
+settings-patch-repo = パッチリポジトリ
+settings-enable-patch-autoupdate = パッチを自動更新する
+settings-enable-updater = アプリの更新を自動チェック
+settings-allow-prerelease-upgrades = プレリリースも対象にする
+settings-window-size = ウィンドウサイズ
+settings-fullscreen = フルスクリーン
+settings-ui-scale = UI拡大率
+settings-fractional-scaling = フラクショナルスケーリング
+settings-hide-emulator-border = エミュレーターの枠を非表示
+settings-border-preference = エミュレーターの枠設定
+settings-border-preference-bnlc = アドコレ
+settings-border-preference-custom = カスタム
+settings-border-preference-locate = 検索
+settings-border-preference-disable = 枠を表示しない
+settings-video-filter = ビデオフィルター
+updater-current-version = 現在のバージョン: { $version }
+updater-latest-version = 最新バージョン: { $version }
+updater-loading = 確認中…
+updater-up-to-date = v{ $version } (最新)
+updater-downloading = ダウンロード中: { $pct }%
+updater-ready-to-update = 更新の準備が完了しました。
+updater-update-now = 今すぐ更新
+
+# Welcome screen
+welcome-title = トリル へようこそ！
+welcome-subtitle = 対戦できる前にいくつかの初期設定をしてください。
+welcome-continue = 続ける
+welcome-step-roms = ROM を追加
+welcome-step-roms-description = ロックマンエグゼ／Battle Network の .gba ファイルを次の場所に置いてください：
+welcome-step-roms-detected = { $count } 個の ROM を検出しました。
+welcome-step-nickname = ニックネームを設定
+welcome-step-nickname-description = 設定からいつでも変更できます。
+welcome-open-folder = ROM フォルダを開く
+welcome-roms-needed = 続行するには ROM を 1 つ以上追加してください。
+
+# Common actions
+rescan = 再スキャン
+
+# Game names live in games.ftl (Fluent attribute scheme shared with
+# the legacy app: game-<family>.variant-N, .short, .match-type-X-Y).

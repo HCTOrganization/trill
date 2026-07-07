@@ -27,19 +27,19 @@ trap cleanup EXIT
 cleanup
 
 # Create icon. `resource.rc` (which references icon.ico) is rendered by
-# tango's build.rs, which only embeds the resource when icon.ico exists,
+# trill's build.rs, which only embeds the resource when icon.ico exists,
 # so the icon must be in place before `cargo build` below.
 mkdir Trill.iconset
-magick tango/src/icon_16.png -resize 16x16 -depth 32 Trill.iconset/icon_16x16.png
-magick tango/src/icon.png -resize 32x32 -depth 32 Trill.iconset/icon_32x32.png
-magick tango/src/icon.png -resize 128x128 -depth 32 Trill.iconset/icon_128x128.png
-magick tango/src/icon.png -resize 256x256 -depth 32 Trill.iconset/icon_256x256.png
-magick Trill.iconset/*.png tango/icon.ico
+magick trill/src/icon_16.png -resize 16x16 -depth 32 Trill.iconset/icon_16x16.png
+magick trill/src/icon.png -resize 32x32 -depth 32 Trill.iconset/icon_32x32.png
+magick trill/src/icon.png -resize 128x128 -depth 32 Trill.iconset/icon_128x128.png
+magick trill/src/icon.png -resize 256x256 -depth 32 Trill.iconset/icon_256x256.png
+magick Trill.iconset/*.png trill/icon.ico
 rm -rf Trill.iconset
 
 # Build Windows binaries. MSVC target — statically links the MSVC
 # runtime so no mingw DLL bundling is needed.
-cargo build --bin tango --profile release-dist --target i686-pc-windows-msvc
+cargo build --bin trill --profile release-dist --target i686-pc-windows-msvc
 
 # Download and install Nsis7z plugin before building installer
 nsis7z_archive_url="https://nsis.sourceforge.io/mediawiki/images/6/69/Nsis7z_19.00.7z"
@@ -73,8 +73,8 @@ tools/mako_generate.py "$(dirname "${BASH_SOURCE[0]}")/installer.nsi.mako" >tril
 
 pushd trill_win_workdir
 
-cp ../tango/icon.ico .
-cp ../target/i686-pc-windows-msvc/release-dist/tango.exe trill.exe
+cp ../trill/icon.ico .
+cp ../target/i686-pc-windows-msvc/release-dist/trill.exe trill.exe
 
 chrome_109_url="https://dl.google.com/release2/chrome/acihtkcueyye3ymoj2afvv7ulzxa_109.0.5414.120/109.0.5414.120_chrome_installer.exe"
 curl -L -O "${chrome_109_url}"

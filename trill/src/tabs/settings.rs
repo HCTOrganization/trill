@@ -1,0 +1,1145 @@
+use crate::i18n::{t, SUPPORTED_LANGS};
+use crate::style::{self, STANDARD_PADDING, TEXT_BODY, TEXT_CAPTION};
+use crate::widgets;
+use crate::widgets::{labeled, Choice};
+use crate::{config, input};
+use iced::widget::space::horizontal as horizontal_space;
+use iced::widget::{button, container, scrollable, text, Space};
+use iced::{Alignment, Element, Fill, Length};
+use lucide_icons::Icon;
+use sweeten::widget::{column, pick_list, row, text_input};
+use unic_langid::LanguageIdentifier;
+
+/// A [`config::ThemeMode`] as a pick_list [`Choice`], labeled in the
+/// UI language (mirrors [`crate::i18n::LanguageChoice`]).
+fn theme_choice(lang: &LanguageIdentifier, mode: config::ThemeMode) -> Choice<config::ThemeMode> {
+    Choice::new(
+        mode,
+        match mode {
+            config::ThemeMode::Dark => t!(lang, "settings-theme-dark"),
+            config::ThemeMode::Light => t!(lang, "settings-theme-light"),
+        },
+    )
+}
+
+/// A [`config::ThemeColor`] as a pick_list [`Choice`], labeled in the
+/// UI language. Uses [`crate::i18n::t`] directly rather than the `t!`
+/// macro since the Fluent key is computed (the macro only takes a
+/// string literal).
+fn theme_color_choice(lang: &LanguageIdentifier, color: config::ThemeColor) -> Choice<config::ThemeColor> {
+    Choice::new(color, crate::i18n::t(lang, color.i18n_key()))
+}
+
+/// A [`config::RelayMode`] as a pick_list [`Choice`], labeled in the
+/// UI language.
+fn relay_mode_choice(lang: &LanguageIdentifier, mode: config::RelayMode) -> Choice<config::RelayMode> {
+    Choice::new(
+        mode,
+        match mode {
+            config::RelayMode::Auto => t!(lang, "settings-use-relay-auto"),
+            config::RelayMode::Always => t!(lang, "settings-use-relay-always"),
+            config::RelayMode::Never => t!(lang, "settings-use-relay-never"),
+        },
+    )
+}
+
+/// Endpoint presets for the netplay settings combobox.
+fn endpoint_preset_choice(preset: &str) -> Choice<String> {
+    Choice::new(preset.to_string(), preset.to_string())
+}
+
+/// Endpoint preset definitions with their corresponding URLs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EndpointPreset {
+    Default,
+    CnServer,
+    EasServer,
+    Trill,
+}
+
+impl EndpointPreset {
+    pub fn url(&self) -> &'static str {
+        match self {
+            EndpointPreset::Default => "wss://matchmaking.trill.hikaricalyx.com",
+            EndpointPreset::CnServer => "wss://matchmakingcn.trill.hikaricalyx.cn",
+            EndpointPreset::EasServer => "wss://matchmakingeas.trill.hikaricalyx.com",
+            EndpointPreset::Trill => "wss://matchmaking.trill.n1gp.net",
+        }
+    }
+
+    pub fn id(&self) -> &'static str {
+        match self {
+            EndpointPreset::Default => "default",
+            EndpointPreset::CnServer => "cnserver",
+            EndpointPreset::EasServer => "easserver",
+            EndpointPreset::Trill => "trill",
+        }
+    }
+
+    pub fn from_id(id: &str) -> Option<Self> {
+        match id {
+            "default" => Some(EndpointPreset::Default),
+            "cnserver" => Some(EndpointPreset::CnServer),
+            "easserver" => Some(EndpointPreset::EasServer),
+            "trill" => Some(EndpointPreset::Trill),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SettingsTab {
+    #[default]
+    General,
+    Graphics,
+    Audio,
+    Input,
+    Netplay,
+    About,
+}
+
+/// Settings tab UI state. Just the active sub-tab today — anything
+/// configurable lives in `config::Config`, not here, since it has to
+/// survive a restart.
+#[derive(Default)]
+pub struct State {
+    pub active_tab: SettingsTab,
+    /// When `Some(k)`, the next keyboard/gamepad event captured by
+    /// the settings subscription is appended to the bindings list
+    /// for `k`. UI displays a "press a key…" hint on the matching
+    /// row.
+    pub capture_target: Option<input::MappedKey>,
+    /// Cached parsed markdown for the About tab. Lives here
+    /// (rather than as a `static`) because `markdown::Content`
+    /// is `!Sync`.
+    pub about: AboutMarkdown,
+    /// Entrance restarted on each section switch — the section
+    /// pane slides in vertically, mirroring the sidebar's order
+    /// (moving down the list enters from below, moving up from
+    /// above) the same way the top tabs mirror their horizontal
+    /// order. Owned here (not by the App's screen-enter
+    /// machinery) so it also plays inside the in-session settings
+    /// modal.
+    pub pane_enter: crate::anim::Enter,
+    /// Starting vertical offset for `pane_enter` — sign picked
+    /// from the direction of travel along the sidebar. The
+    /// `Default` of 0.0 is never seen: a direction is always set
+    /// before the first entrance starts.
+    pub pane_enter_dy: f32,
+}
+
+#[derive(Debug, Clone)]
+pub enum Message {
+    TabSelected(SettingsTab),
+    LanguageSelected(LanguageIdentifier),
+    NicknameChanged(String),
+    ToggleStreamerMode(bool),
+    MatchmakingEndpointChanged(String),
+    /// Netplay endpoint preset picked from combobox.
+    EndpointPresetChanged(String),
+    /// Netplay frame-delay slider moved. Persisted to `config.frame_delay`;
+    /// it's this side's local presentation lag, applied at the next match start
+    /// (or live via the in-match footer slider).
+    FrameDelayChanged(u32),
+    /// Relay (TURN) usage policy picked: auto / always / never.
+    /// Sampled at the next Connect; doesn't affect an in-flight
+    /// connection.
+    RelayModeChanged(config::RelayMode),
+    PatchRepoChanged(String),
+    /// "Change…" clicked next to the data folder. The App intercepts this
+    /// (before `State::update`) to open an async folder picker, which comes
+    /// back as `DataFolderPicked`.
+    OpenDataFolderPicker,
+    /// Folder picker resolved: `Some(path)` if the user chose one, `None` if
+    /// they dismissed it.
+    DataFolderPicked(Option<std::path::PathBuf>),
+    TogglePatchAutoupdate(bool),
+    VideoFilterChanged(String),
+    ToggleFractionalScaling(bool),
+    /// Emulator border preference picked: `0` = BNLC, `1` = Custom,
+    /// `2` = Disable. See [`config::Config::border_preference`].
+    BorderPreferenceChanged(u8),
+    /// "Locate" clicked for a custom border image. Intercepted by the
+    /// App (before `State::update`) to open an async image picker,
+    /// which comes back as `BorderImagePicked`.
+    OpenBorderImagePicker,
+    /// Border image picker resolved: `Some(path)` if the user chose
+    /// one, `None` if they dismissed it.
+    BorderImagePicked(Option<std::path::PathBuf>),
+    ToggleFullscreen(bool),
+    /// New windowed size picked, as `(width, height)`.
+    ResolutionChanged((f32, f32)),
+    UiScaleChanged(f32),
+    ToggleEnableUpdater(bool),
+    ToggleAllowPrereleaseUpgrades(bool),
+    VolumeChanged(f32),
+    /// "Mute music in netplay" checkbox toggled. Persisted to
+    /// `config.disable_bgm_in_pvp`; sampled at the next match start.
+    ToggleDisableBgmInPvp(bool),
+    /// "Enable Startup Voice" checkbox toggled. Persisted to
+    /// `config.enable_startup_voice`; sampled once at next launch.
+    ToggleEnableStartupVoice(bool),
+    /// "Enable Pre-Battle Voice during PvP" checkbox toggled. Persisted
+    /// to `config.enable_prebattle_voice`; sampled at match handoff.
+    ToggleEnablePrebattleVoice(bool),
+    /// Pre-battle voice volume slider moved. Persisted to
+    /// `config.prebattle_voice_volume`; sampled at match handoff.
+    PrebattleVoiceVolumeChanged(f32),
+    /// Pre-battle voice volume slider released. Intercepted by the App
+    /// (before `State::update`) to play the clip once at the current
+    /// volume so the user can confirm the level. Not a config change.
+    PreviewPrebattleVoice,
+    /// User clicked "Update Now" on the About panel. App's
+    /// settings handler calls `updater.finish_update()` which
+    /// hands off to the installer + exits the process.
+    UpdateNow,
+    ThemeChanged(config::ThemeMode),
+    ThemeColorChanged(config::ThemeColor),
+    /// User clicked "Add binding" for `k`. The next key/button
+    /// event captured by the settings subscription is appended.
+    BindingCaptureStart(input::MappedKey),
+    /// User clicked × to abort the current capture.
+    BindingCaptureCancel,
+    /// Settings subscription saw an input event while
+    /// `capture_target.is_some()`. Append + clear the target.
+    BindingCaptured(input::PhysicalInput),
+    /// User clicked Remove on the Nth binding for `k`.
+    BindingRemove(input::MappedKey, usize),
+    /// User clicked Reset to defaults.
+    BindingsReset,
+    /// User clicked an external link in the About panel. Side
+    /// effect only — opens the URL via `open::that` and returns
+    /// `None` from update. `String` (not `&'static str`) so the
+    /// iced markdown widget can pass its parsed `Uri` straight
+    /// in via `.map(Message::OpenUrl)`.
+    OpenUrl(String),
+}
+
+/// Messages the settings panel emits that affect persisted
+/// config — used by App's update handler to apply to its
+/// `config::Config` and call `persist_config()`. The TabSelected
+/// variant is handled internally and never appears here.
+#[derive(Debug, Clone)]
+pub enum ConfigChange {
+    Language(LanguageIdentifier),
+    Nickname(String),
+    StreamerMode(bool),
+    MatchmakingEndpoint(String),
+    FrameDelay(u32),
+    RelayMode(config::RelayMode),
+    PatchRepo(String),
+    /// New root data folder picked. The App points `config.data_path` at it,
+    /// creates the standard subfolders, re-scans, and re-points the patch
+    /// autoupdater.
+    DataPath(std::path::PathBuf),
+    PatchAutoupdate(bool),
+    VideoFilter(String),
+    FractionalScaling(bool),
+    BorderPreference(u8),
+    BorderImagePath(Option<std::path::PathBuf>),
+    Fullscreen(bool),
+    Resolution(f32, f32),
+    UiScale(f32),
+    EnableUpdater(bool),
+    AllowPrereleaseUpgrades(bool),
+    Volume(f32),
+    DisableBgmInPvp(bool),
+    EnableStartupVoice(bool),
+    EnablePrebattleVoice(bool),
+    PrebattleVoiceVolume(f32),
+    Theme(config::ThemeMode),
+    ThemeColor(config::ThemeColor),
+    AddInputBinding(input::MappedKey, input::PhysicalInput),
+    RemoveInputBinding(input::MappedKey, usize),
+    ResetInputBindings,
+}
+
+impl State {
+    /// Apply a settings message to local UI state. Returns
+    /// `Some(ConfigChange)` for variants the caller needs to persist
+    /// to disk; `None` for purely-local navigation like TabSelected.
+    pub fn update(&mut self, msg: Message) -> Option<ConfigChange> {
+        match msg {
+            Message::TabSelected(t) => {
+                if self.active_tab != t {
+                    // The sidebar lists sections in declaration
+                    // order, so the discriminants double as
+                    // positions: moving down brings the pane in
+                    // from below, moving up from above.
+                    self.pane_enter_dy = if (t as u8) > (self.active_tab as u8) {
+                        32.0
+                    } else {
+                        -32.0
+                    };
+                    self.active_tab = t;
+                    self.pane_enter.start(iced::time::Instant::now());
+                }
+                None
+            }
+            Message::LanguageSelected(l) => Some(ConfigChange::Language(l)),
+            Message::NicknameChanged(s) => Some(ConfigChange::Nickname(s)),
+            Message::ToggleStreamerMode(b) => Some(ConfigChange::StreamerMode(b)),
+            Message::MatchmakingEndpointChanged(s) => Some(ConfigChange::MatchmakingEndpoint(s)),
+            Message::EndpointPresetChanged(s) => {
+                // When a preset is selected, update the matchmaking endpoint
+                if let Some(preset) = EndpointPreset::from_id(&s) {
+                    Some(ConfigChange::MatchmakingEndpoint(preset.url().to_string()))
+                } else {
+                    None
+                }
+            }
+            Message::FrameDelayChanged(v) => Some(ConfigChange::FrameDelay(v)),
+            Message::RelayModeChanged(m) => Some(ConfigChange::RelayMode(m)),
+            Message::PatchRepoChanged(s) => Some(ConfigChange::PatchRepo(s)),
+            // Intercepted by the App before it reaches here (it opens the
+            // folder picker); the arm exists only for exhaustiveness.
+            Message::OpenDataFolderPicker => None,
+            Message::DataFolderPicked(Some(path)) => Some(ConfigChange::DataPath(path)),
+            // Dialog dismissed — nothing to change.
+            Message::DataFolderPicked(None) => None,
+            Message::TogglePatchAutoupdate(b) => Some(ConfigChange::PatchAutoupdate(b)),
+            Message::VideoFilterChanged(s) => Some(ConfigChange::VideoFilter(s)),
+            Message::ToggleFractionalScaling(b) => Some(ConfigChange::FractionalScaling(b)),
+            Message::BorderPreferenceChanged(p) => Some(ConfigChange::BorderPreference(p)),
+            // Intercepted by the App before it reaches here (it opens the
+            // image picker); the arm exists only for exhaustiveness.
+            Message::OpenBorderImagePicker => None,
+            Message::BorderImagePicked(path) => Some(ConfigChange::BorderImagePath(path)),
+            Message::ToggleFullscreen(b) => Some(ConfigChange::Fullscreen(b)),
+            Message::ResolutionChanged((w, h)) => Some(ConfigChange::Resolution(w, h)),
+            Message::UiScaleChanged(s) => Some(ConfigChange::UiScale(s)),
+            Message::ToggleEnableUpdater(b) => Some(ConfigChange::EnableUpdater(b)),
+            Message::ToggleAllowPrereleaseUpgrades(b) => Some(ConfigChange::AllowPrereleaseUpgrades(b)),
+            Message::VolumeChanged(v) => Some(ConfigChange::Volume(v)),
+            Message::ToggleDisableBgmInPvp(b) => Some(ConfigChange::DisableBgmInPvp(b)),
+            Message::ToggleEnableStartupVoice(b) => Some(ConfigChange::EnableStartupVoice(b)),
+            Message::ToggleEnablePrebattleVoice(b) => Some(ConfigChange::EnablePrebattleVoice(b)),
+            Message::PrebattleVoiceVolumeChanged(v) => Some(ConfigChange::PrebattleVoiceVolume(v)),
+            // Handled by the App as a side effect (plays the clip);
+            // intercepted before reaching here. Arm exists for
+            // exhaustiveness.
+            Message::PreviewPrebattleVoice => None,
+            // App handles UpdateNow as a top-level effect — it
+            // calls `updater.finish_update()` which exits the
+            // process on success. Nothing to fold into config.
+            Message::UpdateNow => None,
+            Message::ThemeChanged(t) => Some(ConfigChange::Theme(t)),
+            Message::ThemeColorChanged(c) => Some(ConfigChange::ThemeColor(c)),
+            Message::BindingCaptureStart(k) => {
+                self.capture_target = Some(k);
+                None
+            }
+            Message::BindingCaptureCancel => {
+                self.capture_target = None;
+                None
+            }
+            Message::BindingCaptured(p) => {
+                let Some(target) = self.capture_target.take() else {
+                    return None;
+                };
+                Some(ConfigChange::AddInputBinding(target, p))
+            }
+            Message::BindingRemove(k, idx) => Some(ConfigChange::RemoveInputBinding(k, idx)),
+            Message::BindingsReset => Some(ConfigChange::ResetInputBindings),
+            Message::OpenUrl(url) => {
+                if let Err(e) = open::that(&url) {
+                    log::warn!("open url {url}: {e}");
+                }
+                None
+            }
+        }
+    }
+}
+
+pub fn view<'a>(
+    lang: &'a LanguageIdentifier,
+    config: &'a config::Config,
+    state: &'a State,
+    updater_status: crate::updater::Status,
+) -> Element<'a, Message> {
+    let active = state.active_tab;
+    // Vertical tab strip on the left; selected pane on the right.
+    // Pill style matches the global top nav + save_view sub-nav
+    // so every tab affordance in the app reads as the same
+    // widget family.
+    let side_btn = |icon: Icon, label: String, tab: SettingsTab| {
+        button(row![icon.widget(), text(label)].spacing(8).align_y(Alignment::Center))
+            .padding(STANDARD_PADDING)
+            .width(Fill)
+            .style(widgets::pill_tab_style(tab == active))
+            .on_press(Message::TabSelected(tab))
+    };
+    let sidebar = container(
+        column![
+            side_btn(
+                Icon::SlidersHorizontal,
+                t!(lang, "settings-section-general"),
+                SettingsTab::General
+            ),
+            side_btn(
+                Icon::Monitor,
+                t!(lang, "settings-section-graphics"),
+                SettingsTab::Graphics
+            ),
+            side_btn(Icon::Volume2, t!(lang, "settings-section-audio"), SettingsTab::Audio),
+            side_btn(Icon::Gamepad2, t!(lang, "settings-section-input"), SettingsTab::Input),
+            side_btn(Icon::Globe, t!(lang, "settings-section-netplay"), SettingsTab::Netplay),
+            side_btn(Icon::Info, t!(lang, "settings-section-about"), SettingsTab::About),
+        ]
+        .spacing(4)
+        .padding(8),
+    )
+    .width(Length::Fixed(160.0))
+    .height(Fill)
+    .style(widgets::pane);
+
+    let body: Element<'a, Message> = match active {
+        SettingsTab::General => settings_general(lang, config),
+        SettingsTab::Graphics => settings_graphics(lang, config),
+        SettingsTab::Audio => settings_audio(lang, config),
+        SettingsTab::Input => settings_input(lang, config, state),
+        SettingsTab::Netplay => settings_netplay(lang, config),
+        SettingsTab::About => settings_about(lang, config, &state.about, updater_status),
+        // The status arg is consumed by About's call here; iced
+        // discards the unused-on-other-tabs branches at runtime
+        // so no double-clone is needed.
+    };
+
+    // Scrollable wraps the body once at the dispatch layer —
+    // each settings_* pane returns a plain column with its own
+    // inner padding so the scrollbar hugs the right edge.
+    let body_wrap = container(
+        scrollable(body)
+            .style(widgets::chunky_scrollable)
+            .width(Fill)
+            .height(Fill),
+    )
+    .width(Fill)
+    .height(Fill)
+    .style(widgets::pane);
+    // Section-switch entrance: just this pane glides in,
+    // vertically along the direction of travel in the sidebar.
+    let body_wrap: Element<'a, Message> = match state.pane_enter.progress(iced::time::Instant::now()) {
+        Some(p) => crate::anim::slide_in(body_wrap, p, iced::Vector::new(0.0, state.pane_enter_dy)),
+        None => body_wrap.into(),
+    };
+
+    let root = row![sidebar, body_wrap]
+        .spacing(style::PANE_GAP)
+        .padding(style::PANE_GAP)
+        .width(Fill)
+        .height(Fill);
+
+    // Binding capture: while the user is rebinding a key, wrap the
+    // settings UI in `InputCapture` so both keyboard and gamepad
+    // events flow through one synchronous path. Without the wrapper
+    // we'd be idle and SDL3's pump (main-thread only) wouldn't get
+    // drained. The callback publishes a `BindingCaptured` for the
+    // first key press, button press, or axis-past-threshold event.
+    if state.capture_target.is_some() {
+        crate::input_capture::InputCapture::new(root, |input| {
+            let captured = match input {
+                crate::input_capture::Input::Keyboard(iced::keyboard::Event::KeyPressed { physical_key, .. }) => {
+                    Some(input::PhysicalInput::Key(input::KeyPhysical(*physical_key)))
+                }
+                crate::input_capture::Input::Keyboard(_) => None,
+                crate::input_capture::Input::Gamepad(ev) => match *ev {
+                    crate::gamepad::GamepadEvent::ButtonDown(b) => {
+                        Some(input::PhysicalInput::Button(input::GamepadButton::from_sdl3(b)))
+                    }
+                    crate::gamepad::GamepadEvent::AxisMotion { axis, value } => (value.abs() > input::AXIS_THRESHOLD)
+                        .then(|| input::PhysicalInput::Axis {
+                            axis,
+                            dir: if value > 0.0 {
+                                input::AxisDir::Positive
+                            } else {
+                                input::AxisDir::Negative
+                            },
+                        }),
+                    _ => None,
+                },
+            };
+            captured.map(Message::BindingCaptured)
+        })
+        .into()
+    } else {
+        root.into()
+    }
+}
+
+fn settings_general<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config) -> Element<'a, Message> {
+    column![
+        labeled::<Message>(
+            t!(lang, "settings-nickname"),
+            text_input("", config.nickname.as_deref().unwrap_or(""))
+                .on_input(Message::NicknameChanged)
+                .padding(STANDARD_PADDING)
+                .width(Length::Fixed(240.0))
+                .style(widgets::chunky_text_input),
+        ),
+        labeled::<Message>(t!(lang, "settings-language"), {
+            // Build the picker options as `LanguageChoice`
+            // wrappers — they Display the endonym from each
+            // locale's `LANGUAGE` Fluent key instead of the
+            // bare locale code.
+            let options: Vec<crate::i18n::LanguageChoice> = SUPPORTED_LANGS
+                .iter()
+                .map(|id| crate::i18n::LanguageChoice::new(id.clone()))
+                .collect();
+            let selected = options.iter().find(|c| c.id == config.language).cloned();
+            pick_list(options, selected, |c: crate::i18n::LanguageChoice| {
+                Message::LanguageSelected(c.id)
+            })
+            .padding(STANDARD_PADDING)
+            .style(widgets::chunky_pick_list)
+        },),
+        labeled::<Message>(t!(lang, "settings-theme"), {
+            let options = vec![
+                theme_choice(lang, config::ThemeMode::Dark),
+                theme_choice(lang, config::ThemeMode::Light),
+            ];
+            let selected = options.iter().find(|c| c.value == config.theme).cloned();
+            pick_list(options, selected, |c: Choice<config::ThemeMode>| {
+                Message::ThemeChanged(c.value)
+            })
+            .padding(STANDARD_PADDING)
+            .style(widgets::chunky_pick_list)
+        }),
+        labeled::<Message>(t!(lang, "settings-theme-color"), {
+            let options: Vec<_> = config::ThemeColor::ALL
+                .into_iter()
+                .map(|c| theme_color_choice(lang, c))
+                .collect();
+            let selected = options.iter().find(|c| c.value == config.theme_color).cloned();
+            pick_list(options, selected, |c: Choice<config::ThemeColor>| {
+                Message::ThemeColorChanged(c.value)
+            })
+            .padding(STANDARD_PADDING)
+            .style(widgets::chunky_pick_list)
+        }),
+        iced::widget::checkbox(config.streamer_mode)
+            .label(t!(lang, "settings-streamer-mode"))
+            .on_toggle(Message::ToggleStreamerMode)
+            .style(widgets::chunky_checkbox),
+        labeled::<Message>(
+            t!(lang, "settings-data-folder"),
+            row![
+                text(config.data_path.to_string_lossy().into_owned()),
+                button(text(t!(lang, "settings-data-folder-change")))
+                    .on_press(Message::OpenDataFolderPicker)
+                    .padding(STANDARD_PADDING)
+                    .style(widgets::neutral),
+            ]
+            .spacing(8)
+            .align_y(Alignment::Center),
+        ),
+        labeled::<Message>(
+            t!(lang, "settings-patch-repo"),
+            text_input("", &config.patch_repo)
+                .on_input(Message::PatchRepoChanged)
+                .padding(STANDARD_PADDING)
+                .width(Length::Fixed(480.0))
+                .style(widgets::chunky_text_input),
+        ),
+        iced::widget::checkbox(config.enable_patch_autoupdate)
+            .label(t!(lang, "settings-enable-patch-autoupdate"))
+            .on_toggle(Message::TogglePatchAutoupdate)
+            .style(widgets::chunky_checkbox),
+        iced::widget::checkbox(config.enable_updater)
+            .label(t!(lang, "settings-enable-updater"))
+            .on_toggle(Message::ToggleEnableUpdater)
+            .style(widgets::chunky_checkbox),
+        iced::widget::checkbox(config.allow_prerelease_upgrades)
+            .label(t!(lang, "settings-allow-prerelease-upgrades"))
+            .on_toggle(Message::ToggleAllowPrereleaseUpgrades)
+            .style(widgets::chunky_checkbox),
+    ]
+    .spacing(14)
+    .padding(style::PANE_PADDING)
+    .into()
+}
+
+fn settings_audio<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config) -> Element<'a, Message> {
+    column![
+        labeled::<Message>(
+            t!(lang, "settings-volume"),
+            row![
+                // Bounded slider width — Fill would stretch all the way
+                // across the pane, which looks silly for a volume bar.
+                container(
+                    iced::widget::slider(0.0..=1.0, config.volume, Message::VolumeChanged)
+                        .step(0.01)
+                        .style(widgets::chunky_slider)
+                )
+                .width(Length::Fixed(220.0)),
+                // Compact percent readout next to the track so the user
+                // can see exactly where the slider sits.
+                text(format!("{:.0}%", config.volume * 100.0)).size(TEXT_CAPTION),
+            ]
+            .spacing(12)
+            .align_y(Alignment::Center),
+        ),
+        iced::widget::checkbox(config.disable_bgm_in_pvp)
+            .label(t!(lang, "settings-disable-bgm-in-pvp"))
+            .on_toggle(Message::ToggleDisableBgmInPvp)
+            .style(widgets::chunky_checkbox),
+        iced::widget::checkbox(config.enable_startup_voice)
+            .label(t!(lang, "settings-audio-enable-startup-voice"))
+            .on_toggle(Message::ToggleEnableStartupVoice)
+            .style(widgets::chunky_checkbox),
+        iced::widget::checkbox(config.enable_prebattle_voice)
+            .label(t!(lang, "settings-audio-enable-prebattle-voice"))
+            .on_toggle(Message::ToggleEnablePrebattleVoice)
+            .style(widgets::chunky_checkbox),
+        labeled::<Message>(
+            t!(lang, "settings-audio-prebattle-voice-volume"),
+            row![
+                container(
+                    iced::widget::slider(
+                        0.0..=1.0,
+                        config.prebattle_voice_volume,
+                        Message::PrebattleVoiceVolumeChanged
+                    )
+                    .step(0.01)
+                    .on_release(Message::PreviewPrebattleVoice)
+                    .style(widgets::chunky_slider)
+                )
+                .width(Length::Fixed(220.0)),
+                text(format!("{:.0}%", config.prebattle_voice_volume * 100.0)).size(TEXT_CAPTION),
+            ]
+            .spacing(12)
+            .align_y(Alignment::Center),
+        ),
+    ]
+    .spacing(14)
+    .padding(style::PANE_PADDING)
+    .into()
+}
+
+/// Standard windowed resolutions surfaced in the graphics settings
+/// pick-list. Selecting one resizes the live window and updates
+/// `config.last_window_size`. Skips anything smaller than the
+/// min_size enforced in `main.rs`.
+const STANDARD_RESOLUTIONS: &[(u32, u32)] = &[
+    (720, 480),
+    (960, 720),
+    (1280, 720),
+    (1280, 800),
+    (1366, 768),
+    (1440, 900),
+    (1600, 900),
+    (1680, 1050),
+    (1920, 1080),
+    (2560, 1440),
+    (3840, 2160),
+];
+
+pub const MINIMUM_RESOLUTION: (u32, u32) = STANDARD_RESOLUTIONS[0];
+
+/// A window resolution as a pick_list [`Choice`]. PartialEq is exact
+/// f32 — fine since the values come straight from
+/// `STANDARD_RESOLUTIONS` constants and matched by equality.
+fn resolution_choice(width: f32, height: f32) -> Choice<(f32, f32)> {
+    Choice::new((width, height), format!("{}×{}", width as u32, height as u32))
+}
+
+/// UI scale presets surfaced in the graphics-settings pick-list.
+/// Multiplies on top of the OS DPI scale.
+const UI_SCALE_PRESETS: &[f32] = &[0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+
+/// A UI scale multiplier as a pick_list [`Choice`]. Integer percent —
+/// 25%-step decimals would just clutter the dropdown. `PartialEq` is
+/// exact on f32, which is fine since values come from the
+/// `UI_SCALE_PRESETS` constants and matched by equality.
+fn ui_scale_choice(scale: f32) -> Choice<f32> {
+    Choice::new(scale, format!("{}%", (scale * 100.0).round() as u32))
+}
+
+fn settings_graphics<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config) -> Element<'a, Message> {
+    let resolution_options: Vec<Choice<(f32, f32)>> = STANDARD_RESOLUTIONS
+        .iter()
+        .map(|&(w, h)| resolution_choice(w as f32, h as f32))
+        .collect();
+    // Match the current windowed size against the preset list so
+    // the picker shows a selected value when it lines up exactly.
+    // No match (custom drag-resized size) renders as blank.
+    let selected_resolution = config
+        .last_window_size
+        .and_then(|size| resolution_options.iter().find(|o| o.value == size).cloned());
+    // Disable the window-size picker while fullscreen is on:
+    // picking a sub-monitor size while fullscreen is meaningless
+    // (the live window stays at monitor resolution). Render the
+    // shared disabled-dropdown placeholder so it reads as the
+    // same control family as the live picker.
+    let window_size_picker: Element<'a, Message> = if config.fullscreen {
+        let label = selected_resolution.map(|r| r.label).unwrap_or_else(|| "—".into());
+        widgets::disabled_pick_list(label).into()
+    } else {
+        pick_list(resolution_options, selected_resolution, |c: Choice<(f32, f32)>| {
+            Message::ResolutionChanged(c.value)
+        })
+        .padding(STANDARD_PADDING)
+        .style(widgets::chunky_pick_list)
+        .into()
+    };
+    let ui_scale_options: Vec<Choice<f32>> = UI_SCALE_PRESETS.iter().copied().map(ui_scale_choice).collect();
+    let selected_ui_scale = ui_scale_options
+        .iter()
+        .find(|c| (c.value - config.ui_scale).abs() < f32::EPSILON)
+        .cloned();
+    column![
+        // Label hovers over just the dropdown; the row beneath
+        // it centers the fullscreen checkbox with the dropdown
+        // box itself (not the dropdown+label column).
+        column![
+            text(t!(lang, "settings-window-size"))
+                .size(TEXT_CAPTION)
+                .style(widgets::muted_text_style),
+            row![
+                window_size_picker,
+                iced::widget::checkbox(config.fullscreen)
+                    .label(t!(lang, "settings-fullscreen"))
+                    .on_toggle(Message::ToggleFullscreen)
+                    .style(widgets::chunky_checkbox),
+            ]
+            .spacing(14)
+            .align_y(Alignment::Center),
+        ]
+        .spacing(4),
+        labeled::<Message>(
+            t!(lang, "settings-ui-scale"),
+            pick_list(ui_scale_options, selected_ui_scale, |c: Choice<f32>| {
+                Message::UiScaleChanged(c.value)
+            })
+            .padding(STANDARD_PADDING)
+            .style(widgets::chunky_pick_list),
+        ),
+        labeled::<Message>(t!(lang, "settings-video-filter"), {
+            // `value` is the `config.video_filter` key (`""`, `"hq2x"`, …).
+            let options: Vec<Choice<String>> = crate::video::effects::EFFECTS
+                .iter()
+                .map(|effect| Choice::new(effect.id.into(), effect.name))
+                .collect();
+            let selected = options.iter().find(|c| c.value == config.video_filter).cloned();
+            pick_list(options, selected, |c: Choice<String>| {
+                Message::VideoFilterChanged(c.value)
+            })
+            .padding(STANDARD_PADDING)
+            .style(widgets::chunky_pick_list)
+        },),
+        iced::widget::checkbox(config.fractional_scaling)
+            .label(t!(lang, "settings-fractional-scaling"))
+            .on_toggle(Message::ToggleFractionalScaling)
+            .style(widgets::chunky_checkbox),
+        labeled::<Message>(t!(lang, "settings-border-preference"), {
+            let options: Vec<Choice<u8>> = vec![
+                Choice::new(0, t!(lang, "settings-border-preference-bnlc")),
+                Choice::new(1, t!(lang, "settings-border-preference-custom")),
+                Choice::new(2, t!(lang, "settings-border-preference-disable")),
+            ];
+            let selected = options.iter().find(|c| c.value == config.border_preference).cloned();
+            // The "Locate" button only does anything for the Custom
+            // preference, so leave its `on_press` off (which disables
+            // it in iced) unless Custom is selected.
+            let mut locate = button(text(t!(lang, "settings-border-preference-locate")))
+                .padding(STANDARD_PADDING)
+                .style(widgets::neutral);
+            if config.border_preference == 1 {
+                locate = locate.on_press(Message::OpenBorderImagePicker);
+            }
+            row![
+                pick_list(options, selected, |c: Choice<u8>| {
+                    Message::BorderPreferenceChanged(c.value)
+                })
+                .padding(STANDARD_PADDING)
+                .style(widgets::chunky_pick_list),
+                locate,
+            ]
+            .spacing(14)
+            .align_y(Alignment::Center)
+        }),
+    ]
+    .spacing(14)
+    .padding(style::PANE_PADDING)
+    .into()
+}
+
+fn settings_netplay<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config) -> Element<'a, Message> {
+    // Clamp the displayed value so a stale out-of-range config still lands the
+    // slider handle inside the track.
+    let frame_delay = config
+        .frame_delay
+        .clamp(trill_pvp::battle::MIN_FRAME_DELAY, trill_pvp::battle::MAX_FRAME_DELAY);
+    
+    // Build endpoint preset options
+    let preset_options: Vec<Choice<String>> = vec![
+        Choice::new("default".to_string(), t!(lang, "settings-netplay-endpoint-default")),
+        Choice::new("cnserver".to_string(), t!(lang, "settings-netplay-endpoint-cnserver")),
+        Choice::new("easserver".to_string(), t!(lang, "settings-netplay-endpoint-easserver")),
+        Choice::new("trill".to_string(), t!(lang, "settings-netplay-endpoint-trill")),
+    ];
+    let selected_preset: Option<Choice<String>> = None; // No preset selected by default, showing placeholder
+
+    // Warn when the currently configured endpoint is the Trill server,
+    // whose maintainer removed the AGPL-licensed signaling server source.
+    let trill_endpoint_warning: Element<Message> = if config.matchmaking_endpoint == EndpointPreset::Trill.url() {
+        text(t!(lang, "settings-netplay-endpoint-trill-warning"))
+            .size(TEXT_CAPTION)
+            .width(Length::Fixed(480.0))
+            .style(widgets::danger_text_style)
+            .into()
+    } else {
+        Space::new().into()
+    };
+
+    column![
+        labeled::<Message>(
+            t!(lang, "settings-matchmaking-endpoint"),
+            text_input("", &config.matchmaking_endpoint)
+                .on_input(Message::MatchmakingEndpointChanged)
+                .padding(STANDARD_PADDING)
+                .width(Length::Fixed(480.0))
+                .style(widgets::chunky_text_input),
+        ),
+        labeled::<Message>(t!(lang, "settings-netplay-endpoint-preset"), {
+            pick_list(preset_options, selected_preset, |c: Choice<String>| {
+                Message::EndpointPresetChanged(c.value)
+            })
+            .placeholder(t!(lang, "settings-netplay-endpoint-preset"))
+            .padding(STANDARD_PADDING)
+            .style(widgets::chunky_pick_list)
+        }),
+        trill_endpoint_warning,
+        labeled::<Message>(
+            t!(lang, "settings-netplay-frame-delay"),
+            row![
+                container(
+                    iced::widget::slider(
+                        trill_pvp::battle::MIN_FRAME_DELAY..=trill_pvp::battle::MAX_FRAME_DELAY,
+                        frame_delay,
+                        Message::FrameDelayChanged,
+                    )
+                    .style(widgets::chunky_slider)
+                )
+                .width(Length::Fixed(220.0)),
+                // Compact numeric readout next to the track, mirroring the
+                // volume slider's percent display.
+                text(format!("{}", frame_delay)).size(TEXT_CAPTION),
+            ]
+            .spacing(12)
+            .align_y(Alignment::Center),
+        ),
+        labeled::<Message>(t!(lang, "settings-use-relay"), {
+            let options = vec![
+                relay_mode_choice(lang, config::RelayMode::Auto),
+                relay_mode_choice(lang, config::RelayMode::Always),
+                relay_mode_choice(lang, config::RelayMode::Never),
+            ];
+            let selected = options.iter().find(|c| c.value == config.relay_mode).cloned();
+            pick_list(options, selected, |c: Choice<config::RelayMode>| {
+                Message::RelayModeChanged(c.value)
+            })
+            .padding(STANDARD_PADDING)
+            .style(widgets::chunky_pick_list)
+        }),
+    ]
+    .spacing(14)
+    .padding(style::PANE_PADDING)
+    .into()
+}
+
+fn settings_input<'a>(
+    lang: &'a LanguageIdentifier,
+    config: &'a config::Config,
+    state: &'a State,
+) -> Element<'a, Message> {
+    let mut col = column![].spacing(2);
+    let slots = config.input_mapping.slots();
+    for (idx, (k, bindings)) in slots.iter().enumerate() {
+        let k = *k;
+        let label = match k {
+            input::MappedKey::Up => t!(lang, "input-key-up"),
+            input::MappedKey::Down => t!(lang, "input-key-down"),
+            input::MappedKey::Left => t!(lang, "input-key-left"),
+            input::MappedKey::Right => t!(lang, "input-key-right"),
+            input::MappedKey::A => t!(lang, "input-key-a"),
+            input::MappedKey::B => t!(lang, "input-key-b"),
+            input::MappedKey::L => t!(lang, "input-key-l"),
+            input::MappedKey::R => t!(lang, "input-key-r"),
+            input::MappedKey::Start => t!(lang, "input-key-start"),
+            input::MappedKey::Select => t!(lang, "input-key-select"),
+            input::MappedKey::SpeedUp => t!(lang, "input-key-speed-up"),
+        };
+        let bindings: &Vec<input::PhysicalInput> = bindings;
+        // Capture-mode hint for the currently-targeted slot;
+        // matches show "press a key…" + a cancel chip instead
+        // of the usual Add button.
+        let action: Element<'a, Message> = if state.capture_target == Some(k) {
+            row![
+                text(t!(lang, "settings-input-press-key"))
+                    .size(TEXT_BODY)
+                    .style(|theme: &iced::Theme| iced::widget::text::Style {
+                        color: Some(theme.palette().primary),
+                    }),
+                widgets::icon_button(
+                    Icon::X,
+                    t!(lang, "save-action-cancel"),
+                    Message::BindingCaptureCancel,
+                    STANDARD_PADDING,
+                ),
+            ]
+            .spacing(8)
+            .align_y(iced::Alignment::Center)
+            .into()
+        } else {
+            // Icon-only + tooltip — "Add binding" text on every
+            // row was visual noise; the + glyph is universal.
+            widgets::icon_button(
+                Icon::Plus,
+                t!(lang, "settings-input-add"),
+                Message::BindingCaptureStart(k),
+                STANDARD_PADDING,
+            )
+        };
+        let mut chips = row![].spacing(6).align_y(iced::Alignment::Center);
+        for (i, b) in bindings.iter().enumerate() {
+            chips = chips.push(binding_chip(lang, b, k, i));
+        }
+        // Wrap chips onto new lines when a key has more bindings
+        // than fit on one row. The Fill container bounds the wrap
+        // width (sweeten's `Wrapping` is Shrink by default) and
+        // pushes the Add/cancel action to the right edge — same
+        // pattern as the save_view tab strip.
+        let row_inner = row![
+            container(text(label).size(TEXT_BODY)).width(Length::Fixed(140.0)),
+            container(chips.wrap()).width(Fill),
+            action,
+        ]
+        .spacing(10)
+        .align_y(iced::Alignment::Center);
+        // Zebra-stripe the rows so the eye can scan them as a
+        // table without a chunky border on every row. Same
+        // helper save_view uses for its chip table.
+        col = col.push(
+            container(row_inner)
+                .padding(style::HEADER_PADDING)
+                .width(Fill)
+                .style(widgets::zebra_row(idx)),
+        );
+    }
+    // Reset sits in a row padded identically to the table rows
+    // so its right edge aligns with the per-row Add buttons.
+    let reset = widgets::labeled_icon_button(
+        Icon::RefreshCw,
+        t!(lang, "settings-input-reset"),
+        Message::BindingsReset,
+        STANDARD_PADDING,
+        widgets::neutral,
+    );
+    col = col
+        .push(Space::new().height(12))
+        .push(container(row![horizontal_space(), reset]).padding([0, 12]).width(Fill));
+    // Table is flush left/right against the scrollable's
+    // visible edges — rows carry their own internal padding so
+    // the zebra stripes extend full width without any outer
+    // column padding. Vertical padding still applies so the
+    // first/last row don't slam the scanline above/below.
+    col.padding(iced::Padding {
+        top: 0.0,
+        right: 0.0,
+        bottom: 20.0,
+        left: 0.0,
+    })
+    .into()
+}
+
+fn binding_chip<'a>(
+    lang: &'a LanguageIdentifier,
+    binding: &input::PhysicalInput,
+    key: input::MappedKey,
+    idx: usize,
+) -> Element<'a, Message> {
+    let (kind, label) = input::describe(lang, binding);
+    let kind_glyph = match kind {
+        input::DescribeKind::Keyboard => Icon::Keyboard,
+        input::DescribeKind::Gamepad => Icon::Gamepad2,
+    };
+    // Primary-tinted rounded pill matching the rest of the
+    // app's chip + badge chrome. × button is borderless (flat
+    // chrome) so it doesn't shout against the small label.
+    container(
+        row![
+            kind_glyph.widget().size(TEXT_BODY),
+            text(label).size(TEXT_BODY),
+            button(Icon::X.widget().size(TEXT_CAPTION))
+                .padding([2, 4])
+                .style(widgets::flat)
+                .on_press(Message::BindingRemove(key, idx)),
+        ]
+        .spacing(6)
+        .align_y(iced::Alignment::Center),
+    )
+    .padding([3, 8])
+    .style(|theme: &iced::Theme| {
+        let primary = theme.palette().primary;
+        iced::widget::container::Style {
+            background: Some(iced::Background::Color(iced::Color { a: 0.12, ..primary })),
+            text_color: Some(theme.palette().text),
+            border: iced::Border {
+                radius: 999.0.into(),
+                width: 1.0,
+                color: iced::Color { a: 0.45, ..primary },
+            },
+            ..Default::default()
+        }
+    })
+    .into()
+}
+
+/// Holder for the parsed-once markdown Content. Tab state field
+/// because `markdown::Content` is `!Sync` (interior mutability
+/// for incremental parsing) and the parsed Items must outlive
+/// the `Element<'_>` that `markdown::view` borrows from.
+/// `OnceCell` so the parse only runs the first time the About
+/// tab renders.
+#[derive(Default)]
+pub struct AboutMarkdown(std::cell::OnceCell<iced::widget::markdown::Content>);
+
+impl AboutMarkdown {
+    fn content(&self) -> &iced::widget::markdown::Content {
+        self.0.get_or_init(|| {
+            iced::widget::markdown::Content::parse(&format!(
+                "# Trill {}\n{}",
+                env!("CARGO_PKG_VERSION"),
+                include_str!("../../../CREDITS.md")
+            ))
+        })
+    }
+}
+
+fn settings_about<'a>(
+    lang: &'a LanguageIdentifier,
+    config: &'a config::Config,
+    about: &'a AboutMarkdown,
+    updater_status: crate::updater::Status,
+) -> Element<'a, Message> {
+    use iced::widget::image::{Handle, Image};
+    use iced::widget::markdown;
+    use std::sync::LazyLock;
+
+    static EMBLEM: LazyLock<Handle> = LazyLock::new(|| {
+        let raw: &'static [u8] = include_bytes!("../emblem.png");
+        Handle::from_bytes(raw)
+    });
+
+    let _ = lang; // about screen is English-only, matching legacy.
+
+    let emblem = iced::widget::container(Image::new(EMBLEM.clone()).width(Length::Fixed(200.0)))
+        .width(Fill)
+        .align_x(iced::alignment::Horizontal::Center);
+
+    // Pull the live Theme from the same `crate::theme::theme_for` the
+    // App's theme callback uses — keeps link color in sync with
+    // the rest of the app instead of pinning to DARK + TRILL_YELLOW_LIGHT
+    // by hand. `Settings::from(&Theme)` defaults to text-size 16,
+    // so wrap to also pin the app's body text size.
+    let theme = crate::theme::theme_for(config);
+    let style = crate::theme::markdown_style(&theme);
+    let settings = markdown::Settings::with_text_size(TEXT_BODY, style);
+    let body: Element<'a, Message> = markdown::view(about.content().items(), settings).map(Message::OpenUrl);
+
+    column![
+        emblem,
+        body,
+        updater_section(lang, updater_status, config.enable_updater)
+    ]
+    .spacing(12)
+    // Symmetric inner padding so the emblem doesn't rub
+    // the nav scanline at the top, the updater section
+    // breathes at the page end, and link text doesn't slam
+    // the left edge.
+    .padding(style::PANE_PADDING)
+    .into()
+}
+
+/// Bottom-of-About updater status panel. Current version
+/// vs. latest, a one-line status, and an Update Now button
+/// when a download is ready. Hidden release notes/download
+/// progress until they're actually relevant.
+fn updater_section<'a>(
+    lang: &'a LanguageIdentifier,
+    status: crate::updater::Status,
+    enable_updater: bool,
+) -> Element<'a, Message> {
+    use crate::updater::Status as S;
+
+    let current = env!("CARGO_PKG_VERSION");
+    let is_ready = matches!(status, S::ReadyToUpdate { .. });
+
+    let latest_label: String = match &status {
+        S::UpToDate { release: None } | S::UpToDate { release: Some(None) } => t!(lang, "updater-loading"),
+        S::UpToDate { release: Some(Some(r)) } => t!(lang, "updater-up-to-date", version = r.version.to_string()),
+        S::UpdateAvailable { release: r } | S::Downloading { release: r, .. } | S::ReadyToUpdate { release: r } => {
+            format!("v{}", r.version)
+        }
+    };
+
+    let status_line: Option<Element<'a, Message>> = match &status {
+        S::Downloading { current, total, .. } => {
+            let pct = if *total > 0 {
+                (*current as f32 / *total as f32 * 100.0).round() as u32
+            } else {
+                0
+            };
+            Some(
+                text(t!(lang, "updater-downloading", pct = pct as i64))
+                    .size(TEXT_CAPTION)
+                    .style(widgets::muted_text_style)
+                    .into(),
+            )
+        }
+        S::ReadyToUpdate { .. } => Some(
+            text(t!(lang, "updater-ready-to-update"))
+                .size(TEXT_CAPTION)
+                .style(widgets::muted_text_style)
+                .into(),
+        ),
+        _ => None,
+    };
+
+    let action: Option<Element<'a, Message>> = is_ready.then(|| {
+        widgets::labeled_icon_button(
+            Icon::Download,
+            t!(lang, "updater-update-now"),
+            Message::UpdateNow,
+            STANDARD_PADDING,
+            widgets::primary_button,
+        )
+    });
+
+    // The "latest version" readout only makes sense when the updater is on; with
+    // it disabled we never fetch a release, so show just the current version and
+    // drop the latest-version line.
+    let mut version_row =
+        row![text(t!(lang, "updater-current-version", version = format!("v{current}"))).size(TEXT_CAPTION),]
+            .spacing(8)
+            .align_y(Alignment::Center);
+    if enable_updater {
+        version_row = version_row.push(horizontal_space());
+        version_row =
+            version_row.push(text(t!(lang, "updater-latest-version", version = latest_label)).size(TEXT_CAPTION));
+    }
+
+    let mut col = column![iced::widget::rule::horizontal(1), version_row].spacing(8);
+    match (status_line, action) {
+        // Update ready: the button sits to the right of the status message on the
+        // same row, rather than on its own row below it.
+        (Some(s), Some(a)) => {
+            col = col.push(row![s, horizontal_space(), a].spacing(8).align_y(Alignment::Center));
+        }
+        (Some(s), None) => col = col.push(s),
+        (None, Some(a)) => col = col.push(row![horizontal_space(), a].spacing(8)),
+        (None, None) => {}
+    }
+    col.into()
+}

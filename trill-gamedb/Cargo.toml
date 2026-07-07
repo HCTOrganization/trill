@@ -1,0 +1,10 @@
+[package]
+name = "trill-gamedb"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+crc32fast = "1"
+trill-dataview = { path = "../trill-dataview" }
+thiserror = "1"
