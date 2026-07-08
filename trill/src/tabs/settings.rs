@@ -54,7 +54,7 @@ pub enum EndpointPreset {
     Default,
     CnServer,
     EasServer,
-    Trill,
+    Upstream,
 }
 
 impl EndpointPreset {
@@ -63,7 +63,7 @@ impl EndpointPreset {
             EndpointPreset::Default => "wss://matchmaking.trill.hikaricalyx.com",
             EndpointPreset::CnServer => "wss://matchmakingcn.trill.hikaricalyx.cn",
             EndpointPreset::EasServer => "wss://matchmakingeas.trill.hikaricalyx.com",
-            EndpointPreset::Trill => "wss://matchmaking.trill.n1gp.net",
+            EndpointPreset::FormerUpstream => "wss://matchmaking.tango.n1gp.net",
         }
     }
 
@@ -72,7 +72,7 @@ impl EndpointPreset {
             EndpointPreset::Default => "default",
             EndpointPreset::CnServer => "cnserver",
             EndpointPreset::EasServer => "easserver",
-            EndpointPreset::Trill => "trill",
+            EndpointPreset::FormerUpstream => "upstream",
         }
     }
 
@@ -81,7 +81,7 @@ impl EndpointPreset {
             "default" => Some(EndpointPreset::Default),
             "cnserver" => Some(EndpointPreset::CnServer),
             "easserver" => Some(EndpointPreset::EasServer),
-            "trill" => Some(EndpointPreset::Trill),
+            "upstream" => Some(EndpointPreset::FormerUpstream),
             _ => None,
         }
     }
@@ -776,13 +776,13 @@ fn settings_netplay<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config
         Choice::new("default".to_string(), t!(lang, "settings-netplay-endpoint-default")),
         Choice::new("cnserver".to_string(), t!(lang, "settings-netplay-endpoint-cnserver")),
         Choice::new("easserver".to_string(), t!(lang, "settings-netplay-endpoint-easserver")),
-        Choice::new("trill".to_string(), t!(lang, "settings-netplay-endpoint-trill")),
+        // Choice::new("upstream".to_string(), t!(lang, "settings-netplay-endpoint-upstream")),
     ];
     let selected_preset: Option<Choice<String>> = None; // No preset selected by default, showing placeholder
 
     // Warn when the currently configured endpoint is the Trill server,
     // whose maintainer removed the AGPL-licensed signaling server source.
-    let trill_endpoint_warning: Element<Message> = if config.matchmaking_endpoint == EndpointPreset::Trill.url() {
+    let trill_endpoint_warning: Element<Message> = if config.matchmaking_endpoint == EndpointPreset::FormerUpstream.url() {
         text(t!(lang, "settings-netplay-endpoint-trill-warning"))
             .size(TEXT_CAPTION)
             .width(Length::Fixed(480.0))
