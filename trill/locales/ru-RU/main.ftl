@@ -185,6 +185,9 @@ lobby-match-starting = Запуск…
 lobby-blind-mine = Скрыть сборку
 lobby-blind-peer-on = Соперник скрывает свою сборку.
 lobby-blind-self-on = Вы скрываете свою сборку.
+
+lobby-winlose-count = { $wincount } Побед / { $losecount } Поражений / { $nullcount } Jack-Outs
+
 session-opponent = Сборка соперника
 session-self = Моя сборка
 session-back-to-session = Вернуться к сессии

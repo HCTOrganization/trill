@@ -102,6 +102,9 @@ lobby-match-starting = 開始中…
 lobby-blind-mine = 構築を隠す
 lobby-blind-peer-on = 相手は構築を隠しています。
 lobby-blind-self-on = 自分の構築を隠しています。
+
+lobby-winlose-count = { $wincount } 勝 / { $losecount } 敗 / { $nullcount } プラグアウト
+
 session-opponent = 相手の構築
 session-self = 自分の構築
 session-back-to-session = 対戦に戻る

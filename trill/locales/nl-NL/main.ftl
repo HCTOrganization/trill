@@ -184,6 +184,9 @@ lobby-match-starting = Starten…
 lobby-blind-mine = Opzet verbergen
 lobby-blind-peer-on = Tegenstander verbergt zijn opzet.
 lobby-blind-self-on = Je verbergt je opzet.
+
+lobby-winlose-count = { $wincount } Overwinningen / { $losecount } Nederlagen / { $nullcount } Jack-Outs
+
 session-opponent = Opzet van tegenstander
 session-self = Mijn opzet
 session-back-to-session = Terug naar sessie

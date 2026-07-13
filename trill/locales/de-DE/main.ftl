@@ -184,6 +184,9 @@ lobby-match-starting = Beginnt…
 lobby-blind-mine = Setup verbergen
 lobby-blind-peer-on = Gegner verbirgt sein Setup.
 lobby-blind-self-on = Du verbirgst dein Setup.
+
+lobby-winlose-count = { $wincount } Siege / { $losecount } Niederlagen / { $nullcount } Jack-Outs
+
 session-opponent = Gegner-Setup
 session-self = Mein Setup
 session-back-to-session = Zurück zur Sitzung

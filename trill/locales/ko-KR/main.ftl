@@ -98,6 +98,9 @@ lobby-match-starting = 시작 중…
 lobby-blind-mine = 구성 숨기기
 lobby-blind-peer-on = 상대가 구성을 숨기고 있습니다.
 lobby-blind-self-on = 자신의 구성을 숨기고 있습니다.
+
+lobby-winlose-count = { $wincount } 승 / { $losecount } 패 / { $nullcount } 플러그아웃
+
 session-opponent = 상대 빌드
 session-self = 내 빌드
 session-back-to-session = 대전으로 돌아가기

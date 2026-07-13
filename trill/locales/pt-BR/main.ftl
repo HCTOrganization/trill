@@ -184,6 +184,9 @@ lobby-match-starting = Iniciando…
 lobby-blind-mine = Ocultar configuração
 lobby-blind-peer-on = O oponente está ocultando a configuração dele.
 lobby-blind-self-on = Você está ocultando sua configuração.
+
+lobby-winlose-count = { $wincount } Vitórias / { $losecount } Derrotas / { $nullcount } Jack-Outs
+
 session-opponent = Configuração do oponente
 session-self = Minha configuração
 session-back-to-session = Voltar à sessão

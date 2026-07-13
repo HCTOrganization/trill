@@ -181,6 +181,9 @@ lobby-match-starting = Đang bắt đầu…
 lobby-blind-mine = Ẩn thiết lập
 lobby-blind-peer-on = Đối thủ đang ẩn thiết lập.
 lobby-blind-self-on = Bạn đang ẩn thiết lập.
+
+lobby-winlose-count = { $wincount } Thắng / { $losecount } Thua / { $nullcount } Jack-Outs
+
 session-opponent = Thiết lập đối thủ
 session-self = Thiết lập của tôi
 session-back-to-session = Trở về phiên

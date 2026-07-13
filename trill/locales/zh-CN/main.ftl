@@ -181,6 +181,9 @@ lobby-match-starting = 开始中…
 lobby-blind-mine = 隐藏配置
 lobby-blind-peer-on = 对手正在隐藏配置。
 lobby-blind-self-on = 你正在隐藏配置。
+
+lobby-winlose-count = { $wincount } 胜 / { $losecount } 负 / { $nullcount } 拔線
+
 session-opponent = 对手配置
 session-self = 我的配置
 session-back-to-session = 返回对战
