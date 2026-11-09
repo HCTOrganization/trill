@@ -16,11 +16,6 @@ crash-no-log = 糟糕，Trill 遇到錯誤並已當機！
 
     { $error }
 
-# Discord rich presence
-discord-presence-looking = 正在尋找對戰
-discord-presence-in-single-player = 單人遊戲中
-discord-presence-in-lobby = 大廳中
-discord-presence-in-progress = 對戰進行中
 
 # Top-bar tabs
 tab-play = 對戰

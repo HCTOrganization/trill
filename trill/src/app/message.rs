@@ -58,10 +58,6 @@ pub enum Message {
         netplay::HandoffTicket,
         std::sync::Arc<std::sync::Mutex<Option<anyhow::Result<session::Launch>>>>,
     ),
-    /// 1 Hz tick: refresh Discord rich-presence + drain any
-    /// Discord-initiated join secret into the play link-code
-    /// field.
-    DiscordTick,
     /// Raw window event (open, resize, move, etc.). Filtered in the
     /// handler — only Opened / Resized / Moved trigger anything.
     Window(iced::window::Id, iced::window::Event),

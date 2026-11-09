@@ -256,7 +256,7 @@ impl State {
     }
 
     /// Prefill the link-code input from an external source — the CLI
-    /// `Join <code>` argument or a Discord join secret.
+    /// `Join <code>` argument or a `trill://join/<code>` deep link.
     pub fn adopt_link_code(&mut self, code: String) {
         self.link_code = code;
     }

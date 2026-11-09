@@ -120,10 +120,6 @@ impl App {
                     iced::Task::none()
                 }
             }
-            Message::DiscordTick => {
-                self.handle_discord_tick();
-                iced::Task::none()
-            }
             Message::Window(id, ev) => self.update_window(id, ev),
             Message::WindowScaleQueried { id, scale } => {
                 // Cap how big the window can get dragged. A surface is

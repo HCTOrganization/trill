@@ -18,7 +18,7 @@ this repository alone; each keeps its own license file there.
 - [mGBA](https://mgba.io): GBA emulator core, from [tangobattle/mgba](https://github.com/tangobattle/mgba)
 - [melonDS](https://melonds.kuribo64.net): DS emulator core, from [tangobattle/melonDS](https://github.com/tangobattle/melonDS)
 - [libdatachannel](https://github.com/paullouisageneau/libdatachannel) and [Mbed TLS](https://github.com/Mbed-TLS/mbedtls): WebRTC data channels and TLS, kept as git submodules
-- Crates formerly developed in separate repositories: `bps`, `datachannel-facade`, `datachannel-wrapper`, `discord-ipc`, `encoder-facade`, `gamepad-facade`, `getgud`, `mgba-rs`, `mgba-rollback`, `melonds-rs`, `melonds-rollback`, `rennet`, `trill-patch`, `trill-signaling`
+- Crates formerly developed in separate repositories: `bps`, `datachannel-facade`, `datachannel-wrapper`, `encoder-facade`, `gamepad-facade`, `getgud`, `mgba-rs`, `mgba-rollback`, `melonds-rs`, `melonds-rollback`, `rennet`, `trill-patch`, `trill-signaling`
 
 ## Translation
 

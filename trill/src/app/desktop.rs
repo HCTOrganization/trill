@@ -1,7 +1,6 @@
-//! Window lifecycle, clipboard, file manager, and Discord integration.
+//! Window lifecycle, clipboard, and file manager.
 
-use super::{App, Message, Tab};
-use crate::{discord, netplay, session};
+use super::{App, Message};
 
 /// Allow PvP's bounded Goodbye send to finish before the runtime exits.
 const PVP_EXIT_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(1500);
@@ -74,67 +73,6 @@ pub(super) fn reveal_path(path: impl AsRef<std::path::Path>) -> iced::Task<Messa
 }
 
 impl App {
-    /// Refresh Discord rich-presence + drain any Discord-initiated
-    /// join secret. Called from the 1 Hz tick.
-    pub(super) fn handle_discord_tick(&mut self) {
-        // Stamp / clear the session-start wall clock based on
-        // whether a session is currently active.
-        match (self.session.active(), &self.session_started_at) {
-            (Some(_), None) => self.session_started_at = Some(std::time::SystemTime::now()),
-            (None, Some(_)) => self.session_started_at = None,
-            _ => {}
-        }
-
-        // Discord "Join Game" handoff: the peer accepted our
-        // invite, Discord handed us their link code as the join
-        // secret. Drop it into the play tab + jump to it.
-        if self.discord.has_current_join_secret() {
-            if let Some(secret) = self.discord.take_current_join_secret() {
-                log::info!("discord: accepted join with link code");
-                self.play.adopt_link_code(secret);
-                self.tab = Tab::Play;
-            }
-        }
-
-        let activity = self.derive_discord_activity();
-        self.discord.set_current_activity(Some(activity));
-    }
-
-    /// Derive the current Discord activity from app state. Maps
-    /// roughly:
-    ///   * PvP session active  → make_in_progress_activity
-    ///   * Single-player active → make_single_player_activity
-    ///   * Replay active        → make_base_activity(None)
-    ///   * Netplay lobby (both peers connected) → in_lobby
-    ///   * Netplay connecting/negotiating       → looking
-    ///   * Otherwise → make_base_activity(current game info)
-    fn derive_discord_activity(&self) -> discord::activity::Activity {
-        let lang = &self.config.language;
-        let game_info = self
-            .loadout
-            .game()
-            .map(|g| discord::make_game_info(g, self.loadout.patch(), lang));
-
-        if let Some(active) = self.session.active() {
-            let start = self.session_started_at.unwrap_or_else(std::time::SystemTime::now);
-            return if active.is::<session::replay::ReplaySession>() {
-                discord::make_base_activity(None)
-            } else if active.is::<session::singleplayer::SinglePlayerSession>() {
-                discord::make_single_player_activity(start, lang, game_info)
-            } else {
-                discord::make_in_progress_activity(start, lang, game_info)
-            };
-        }
-
-        match &self.netplay.phase {
-            netplay::Phase::Lobby { ident } => discord::make_in_lobby_activity(ident, lang, game_info),
-            netplay::Phase::Connecting { ident, .. } | netplay::Phase::Negotiating { ident } => {
-                discord::make_looking_activity(ident, lang, game_info)
-            }
-            netplay::Phase::Idle | netplay::Phase::Failed { .. } => discord::make_base_activity(game_info),
-        }
-    }
-
     pub(super) fn update_window(&mut self, id: iced::window::Id, ev: iced::window::Event) -> iced::Task<Message> {
         match ev {
             iced::window::Event::Opened { .. } => {

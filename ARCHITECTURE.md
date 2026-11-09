@@ -63,9 +63,9 @@ and headless consumers need parsing and emulation without the desktop UI.
 Emulator bindings (`mgba`, `melonds`), rollback (`getgud`, the
 `*-rollback` crates), transport (`rennet`, `trill-signaling`,
 `datachannel-wrapper`), encoding (`encoder-facade`), input
-(`gamepad-facade`), Discord presence (`discord-ipc`), patching
-(`trill-patch`), and byte patching (`bps`) live in `vendor/` as workspace
-members rather than in separate repositories. Each still owns its own
+(`gamepad-facade`), patching (`trill-patch`), and byte patching (`bps`)
+live in `vendor/` as workspace members rather than in separate
+repositories. Each still owns its own
 layer: `trill-backend-*` adapts them to `trill-match`, and nothing above
 the backends names them. The emulator C cores are vendored beside their
 bindings; libdatachannel and Mbed TLS are submodules of
@@ -114,7 +114,7 @@ handler, which does no allocation or stderr I/O.
 | Lobby settings, compatibility, PvP handoff | `app/lobby.rs` |
 | Session effects: preference writes, clip export, watching replays | `app/sessions.rs` |
 | Settings effects (data folder, updater) and welcome screen effects | `app/settings.rs` |
-| Clipboard, file manager, external links, window events, Discord | `app/desktop.rs` |
+| Clipboard, file manager, external links, window events | `app/desktop.rs` |
 
 `trill_library::config::Config` holds only what both hosts read: the data
 and cache paths, the matchmaking and patch endpoints, and the selection

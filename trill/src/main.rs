@@ -23,7 +23,6 @@ mod replay_render;
 
 // Side services, and the app shell that ties everything together.
 mod app;
-mod discord;
 mod updater;
 mod window;
 
@@ -45,7 +44,7 @@ const FONT_NOTO_EMOJI: &[u8] = include_bytes!("../fonts/NotoEmoji-Regular.ttf");
 // Lucide icon font ships with the `lucide-icons` crate as
 // `LUCIDE_FONT_BYTES`; registered with iced below.
 
-/// Command-line entry points, also used by Discord join requests.
+/// Command-line entry points, also used by `trill://join/<code>` deep links.
 #[derive(clap::Parser, Debug, Clone)]
 struct Args {
     #[command(subcommand)]
@@ -56,7 +55,7 @@ struct Args {
 enum Command {
     /// Jump straight to the Play tab with the given netplay link
     /// code pre-filled. Used by `trill://join/<code>` style URI
-    /// handlers + Discord "Join Game" intents.
+    /// handlers.
     Join { link_code: String },
 }
 

@@ -27,7 +27,6 @@ members = [
     "vendor/bps",
     "vendor/datachannel-facade",
     "vendor/datachannel-wrapper",
-    "vendor/discord-ipc",
     "vendor/encoder-facade",
     "vendor/gamepad-facade",
     "vendor/getgud",
@@ -73,7 +72,6 @@ chrono = { version = "0.4", default-features = false }
 clap = { version = "4", features = ["derive"] }
 crc32fast = "1"
 datachannel-wrapper = { path = "vendor/datachannel-wrapper" }
-discord-ipc = { path = "vendor/discord-ipc" }
 encoder-facade = { path = "vendor/encoder-facade" }
 fluent-templates = "0.14"
 futures = "0.3"

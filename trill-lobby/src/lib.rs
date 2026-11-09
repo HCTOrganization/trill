@@ -159,7 +159,7 @@ pub use trill_net::connect::Status;
 /// Structured identifier for the current connection. Kept in
 /// `Phase` across the lifecycle, and also the payload of the
 /// play-tab's connect action, so consumers (UI header, status
-/// line, Discord rich presence, replay filenames) can render or
+/// line, replay filenames) can render or
 /// dispatch on the actual structure rather than re-parsing a
 /// flat string. Matchmaking carries the raw user-supplied code;
 /// `Direct` carries the parsed `DirectRole` describing whether
@@ -188,7 +188,7 @@ impl LinkIdent {
     /// The code another player can dial to reach the same rendezvous.
     /// Only matchmaking codes have one: a direct command names this
     /// machine's own role and wouldn't reach anyone else. Hosts show it
-    /// and offer it as a Discord join secret.
+    /// so it can be shared out of band.
     pub fn matchmaking_code(&self) -> Option<&str> {
         match self {
             LinkIdent::Matchmaking(code) => Some(code.as_str()),

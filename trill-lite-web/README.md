@@ -85,6 +85,6 @@ hidden tab stops receiving animation frames. DS emulation also uses
 workers, which is why the build requires shared memory.
 
 Desktop features without a browser counterpart include the save editor,
-results/stats sidecars, Discord presence, and signaling-free direct UDP
-connections. The app UI is not localized; game names use the shared
-localization data. Reconnect needs further testing on lossy mobile links.
+results/stats sidecars and signaling-free direct UDP connections. The app
+UI is not localized; game names use the shared localization data.
+Reconnect needs further testing on lossy mobile links.

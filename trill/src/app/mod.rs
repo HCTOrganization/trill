@@ -8,7 +8,7 @@
 use crate::library::{autoupdate, Catalog};
 use crate::platform::audio;
 use crate::ui::anim;
-use crate::{config, discord, i18n, netplay, selection, session, tabs, updater, INIT_LINK_CODE};
+use crate::{config, i18n, netplay, selection, session, tabs, updater, INIT_LINK_CODE};
 use i18n::t;
 use tabs::patches::PatchesState;
 use tabs::replays::ReplaysState;
@@ -66,15 +66,6 @@ pub struct App {
     /// Owns the active runtime and its presentation, including post-match results.
     session: session::State,
 
-    /// Discord rich-presence client (background tokio task auto-
-    /// reconnects). Activity is pushed once per second via the
-    /// `DiscordTick` subscription, plus on session start/end.
-    discord: discord::Client,
-    /// Wall-clock when the current session was first observed
-    /// active — used as the `start_time` for the
-    /// `make_single_player_activity` / `make_in_progress_activity`
-    /// timestamps. Reset to `None` when the session ends.
-    session_started_at: Option<std::time::SystemTime>,
     /// Background loop that re-fetches the patch index every 15 min
     /// (a conditional GET of metadata, not the packages) and refreshes
     /// the patches scanner in place.
@@ -229,7 +220,7 @@ impl App {
         }
 
         let mut play = tabs::play::State::default();
-        // CLI `Join <code>` (or Discord deep-link routed through
+        // CLI `Join <code>` (or a `trill://join/<code>` deep link routed through
         // the same channel) lands here — prefill the link code so
         // the user can hit Fight straight away.
         let init_link_code = INIT_LINK_CODE.get().and_then(|c| c.clone());
@@ -253,8 +244,6 @@ impl App {
             patches: PatchesState::default(),
             session: session::State::new(),
             netplay: netplay::State::new(),
-            discord: discord::Client::new(),
-            session_started_at: None,
             patch_autoupdater,
             downloads: downloads::Coordinator::default(),
             replay_controller: replay_controller::Controller::default(),
@@ -323,10 +312,6 @@ impl App {
         let mut subs = vec![
             session::subscription(&self.session).map(Message::Session),
             netplay::subscription(&self.netplay).map(Message::Netplay),
-            // 1 Hz Discord refresh — cheap (compares activity for
-            // equality before re-sending) and gives us the join-
-            // secret pickup loop too.
-            iced::time::every(std::time::Duration::from_secs(1)).map(|_| Message::DiscordTick),
             // Window events drive the geometry-persistence loop.
             iced::window::events().map(|(id, ev)| Message::Window(id, ev)),
         ];

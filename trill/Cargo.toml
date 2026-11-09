@@ -39,7 +39,6 @@ serde.workspace = true
 serde_json.workspace = true
 semver.workspace = true
 open = "5"
-discord-ipc.workspace = true
 trill-net-protocol = { path = "../trill-net-protocol" }
 trill-lobby = { path = "../trill-lobby" }
 # Reads packages and the index; the app never writes a package.
