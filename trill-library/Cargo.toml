@@ -1,0 +1,123 @@
+[package]
+name = "trill-library"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+publish = false
+
+# The user's game library and its persistence, extracted from the Trill
+# bin crate so a second frontend (a browser build over IndexedDB) reuses the
+# registry, the scanners, the patch catalog, and the config model
+# verbatim. Editors are optional (`ui`). No direct filesystem or HTTP access: all
+# I/O goes through the `storage::Storage` / `http::Http` traits, whose
+# std implementations are behind the default `native` feature. Builds
+# for native AND wasm32.
+[dependencies]
+trill-match = { path = "../trill-match" }
+trill-net-protocol = { path = "../trill-net-protocol" }
+trill-gamesupport-common-dataview = { path = "../trill-gamesupport-common-dataview" }
+log.workspace = true
+mailparse.workspace = true
+semver.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+unic-langid.workspace = true
+# `std::time::Instant` panics in a browser; used for rescan timing logs.
+web-time.workspace = true
+
+bps.workspace = true
+trill-gamesupport = { path = "../trill-gamesupport" }
+trill-patch = { workspace = true, features = ["package", "index"] }
+trill-replay = { path = "../trill-replay" }
+
+fluent-templates.workspace = true
+
+trill-gamesupport-bcc = { path = "../trill-gamesupport-bcc", optional = true }
+trill-gamesupport-bn1 = { path = "../trill-gamesupport-bn1", optional = true }
+trill-gamesupport-bn2 = { path = "../trill-gamesupport-bn2", optional = true }
+trill-gamesupport-bn3 = { path = "../trill-gamesupport-bn3", optional = true }
+trill-gamesupport-bn4 = { path = "../trill-gamesupport-bn4", optional = true }
+trill-gamesupport-bn5 = { path = "../trill-gamesupport-bn5", optional = true }
+trill-gamesupport-bn5ds = { path = "../trill-gamesupport-bn5ds", optional = true }
+trill-gamesupport-bn6 = { path = "../trill-gamesupport-bn6", optional = true }
+trill-gamesupport-exe45 = { path = "../trill-gamesupport-exe45", optional = true }
+trill-gamesupport-exeoss = { path = "../trill-gamesupport-exeoss", optional = true }
+
+# The `native` feature's std implementations only. Nothing outside
+# `storage::std_impl` / `http::reqwest_impl` / `bnlc` may reference these,
+# or the wasm32 build breaks.
+futures = { workspace = true, optional = true }
+reqwest = { workspace = true, features = ["stream"], optional = true }
+steamlocate = { workspace = true, optional = true }
+tokio = { workspace = true, features = ["time"], optional = true }
+walkdir = { workspace = true, optional = true }
+# Preserve the archive formats supported by the desktop library.
+zip = { workspace = true, features = ["aes-crypto", "bzip2", "deflate64", "deflate", "lzma", "time", "zstd", "xz"], optional = true }
+
+[dev-dependencies]
+num-rational.workspace = true
+# The library never writes a package; the patch tests build one to scan,
+# and stand up a real HTTP server to fetch it from.
+trill-patch = { workspace = true, features = ["package", "index", "bundle"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "net", "io-util", "time"] }
+
+[features]
+default = ["native"]
+# Attach editors only for games selected by gamesupport-*; enabling UI alone
+# does not pull in any games. The registry owns both feature paths.
+ui = [
+    "trill-gamesupport/ui",
+    "trill-gamesupport-bcc?/ui",
+    "trill-gamesupport-bn1?/ui",
+    "trill-gamesupport-bn2?/ui",
+    "trill-gamesupport-bn3?/ui",
+    "trill-gamesupport-bn4?/ui",
+    "trill-gamesupport-bn5?/ui",
+    "trill-gamesupport-bn5ds?/ui",
+    "trill-gamesupport-bn6?/ui",
+    "trill-gamesupport-exe45?/ui",
+    "trill-gamesupport-exeoss?/ui",
+]
+# std filesystem + reqwest HTTP + Steam (BNLC) discovery. A wasm build
+# turns this off and supplies its own IndexedDB / fetch implementations.
+native = ["dep:futures", "dep:reqwest", "dep:steamlocate", "dep:tokio", "dep:walkdir", "dep:zip", "reqwest/native-tls"]
+gamesupport-bcc = ["dep:trill-gamesupport-bcc"]
+gamesupport-bn1 = ["dep:trill-gamesupport-bn1"]
+gamesupport-bn2 = ["dep:trill-gamesupport-bn2"]
+gamesupport-bn3 = ["dep:trill-gamesupport-bn3"]
+gamesupport-bn4 = ["dep:trill-gamesupport-bn4"]
+gamesupport-bn5 = ["dep:trill-gamesupport-bn5"]
+gamesupport-bn5ds = ["dep:trill-gamesupport-bn5ds"]
+gamesupport-bn6 = ["dep:trill-gamesupport-bn6"]
+gamesupport-exe45 = ["dep:trill-gamesupport-exe45"]
+gamesupport-exeoss = ["dep:trill-gamesupport-exeoss"]
+gamesupport-all = [
+    "gamesupport-bcc",
+    "gamesupport-bn1",
+    "gamesupport-bn2",
+    "gamesupport-bn3",
+    "gamesupport-bn4",
+    "gamesupport-bn5",
+    "gamesupport-bn5ds",
+    "gamesupport-bn6",
+    "gamesupport-exe45",
+    "gamesupport-exeoss",
+]
+
+[lints]
+workspace = true
+
+[package.metadata.cargo-machete]
+ignored = [
+    "trill-gamesupport-bcc",
+    "trill-gamesupport-bn1",
+    "trill-gamesupport-bn2",
+    "trill-gamesupport-bn3",
+    "trill-gamesupport-bn4",
+    "trill-gamesupport-bn5",
+    "trill-gamesupport-bn5ds",
+    "trill-gamesupport-bn6",
+    "trill-gamesupport-exe45",
+    "trill-gamesupport-exeoss",
+]

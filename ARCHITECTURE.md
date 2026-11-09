@@ -1,6 +1,6 @@
 # Architecture
 
-Tango has two hosts over the same library, lobby, session drivers, and
+Trill has two hosts over the same library, lobby, session drivers, and
 match engine. The desktop owns threads and native devices. The browser
 pumps drivers from its event loop and supplies browser storage and audio.
 
@@ -9,33 +9,33 @@ pumps drivers from its event loop and supplies browser storage and audio.
 Arrows point from a consumer to the layer it uses. The frontends also use
 the replay renderer, which takes an engine replay configuration and emits
 video through `encoder-facade`. The library depends on
-`tango-net-protocol` only for the wire game info and settings it reads and
+`trill-net-protocol` only for the wire game info and settings it reads and
 builds, and the `compat::Facts` it returns to hosts. Both hosts build the
-lobby's `Settings` from `tango-net-protocol` directly, and the browser uses
-`tango-platform` for its timers. Neither host touches `tango-net`: the
+lobby's `Settings` from `trill-net-protocol` directly, and the browser uses
+`trill-platform` for its timers. Neither host touches `trill-net`: the
 lobby and the session drive the transport.
 
 ```mermaid
 flowchart TD
-    Desktop[tango: desktop host] --> Library[tango-library]
-    Browser[tango-lite-web: browser host] --> Library
-    Desktop --> Lobby[tango-lobby]
+    Desktop[trill: desktop host] --> Library[trill-library]
+    Browser[trill-lite-web: browser host] --> Library
+    Desktop --> Lobby[trill-lobby]
     Browser --> Lobby
-    Desktop --> Session[tango-session]
+    Desktop --> Session[trill-session]
     Browser --> Session
-    Browser --> Platform[tango-platform]
-    Desktop --> Protocol[tango-net-protocol]
+    Browser --> Platform[trill-platform]
+    Desktop --> Protocol[trill-net-protocol]
     Browser --> Protocol
-    Lobby --> Net[tango-net]
+    Lobby --> Net[trill-net]
     Session --> Net
     Net --> Protocol
     Net --> Platform
     Lobby --> Platform
     Lobby --> Protocol
     Session --> Platform
-    Session --> Match[tango-match]
+    Session --> Match[trill-match]
     Session --> Protocol
-    Session --> Replay[tango-replay]
+    Session --> Replay[trill-replay]
     Library --> Protocol
     Library --> Model[headless save models and validation]
     Library --> Games[per-game registrations]
@@ -54,26 +54,26 @@ flowchart TD
 | Backend | Console emulation and linked-console operations | Application UI and library scans |
 | Per-game support | Registration and game-specific engine hooks | Frontend orchestration |
 
-`tango-gamesupport-common-dataview::model` owns save preparation, staged edits,
+`trill-gamesupport-common-dataview::model` owns save preparation, staged edits,
 ROM overrides, and checksum-correct session snapshots. Per-game `-dataview`
 crates own layouts, assets, custom edits, and structured validation findings.
 `-ui` crates render these models and format findings as warnings. These remain separate because the browser
 and headless consumers need parsing and emulation without the desktop UI.
 
 Emulator bindings (`mgba`, `melonds`), rollback (`getgud`, the
-`*-rollback` crates), transport (`rennet`, `tango-signaling`,
+`*-rollback` crates), transport (`rennet`, `trill-signaling`,
 `datachannel-wrapper`), encoding (`encoder-facade`), input
 (`gamepad-facade`), Discord presence (`discord-ipc`), patching
-(`tango-patch`), and byte patching (`bps`) live in `vendor/` as workspace
+(`trill-patch`), and byte patching (`bps`) live in `vendor/` as workspace
 members rather than in separate repositories. Each still owns its own
-layer: `tango-backend-*` adapts them to `tango-match`, and nothing above
+layer: `trill-backend-*` adapts them to `trill-match`, and nothing above
 the backends names them. The emulator C cores are vendored beside their
 bindings; libdatachannel and Mbed TLS are submodules of
 `vendor/datachannel-facade`.
 
 ## Game registration and features
 
-`tango-library/src/game.rs` contains the one registration list. Each entry
+`trill-library/src/game.rs` contains the one registration list. Each entry
 names its core families and editor. `FAMILIES`, `GAMES`, lookup, localization,
 and optional editor lookup derive from that list.
 
@@ -116,10 +116,10 @@ handler, which does no allocation or stderr I/O.
 | Settings effects (data folder, updater) and welcome screen effects | `app/settings.rs` |
 | Clipboard, file manager, external links, window events, Discord | `app/desktop.rs` |
 
-`tango_library::config::Config` holds only what both hosts read: the data
+`trill_library::config::Config` holds only what both hosts read: the data
 and cache paths, the matchmaking and patch endpoints, and the selection
 memory (last game and family, save per family, patch per save, match type per
-family, favorite patches). `tango/src/config.rs` owns every other setting,
+family, favorite patches). `trill/src/config.rs` owns every other setting,
 including nickname, language, and frame delay (clamped on load), and
 `flatten`s the library struct into it. `config.json` stays one flat object with the
 keys the single-struct config wrote; tests there pin its key set and round trip.
@@ -161,7 +161,7 @@ or cancels clip exports, watches replays, and skips to the next queued one.
 Closing a session resets its presentation to the defaults in one step; only
 the install counter, the frame revisions, and the results card survive.
 
-`tango-match::screens::Arrangement` is the one geometry for presenting a
+`trill-match::screens::Arrangement` is the one geometry for presenting a
 multi-screen composition: the desktop maps its DS stacking and primary
 screen settings onto it, the browser always stacks vertically, and both
 re-pack frames and place the stylus area through it. The video exporter
@@ -176,7 +176,7 @@ preset and custom-screen speedup on top), and training and replay share its
 its game.
 
 Single-player save write-back is decided by
-`tango-session::singleplayer::SaveWriteback`: it refuses a cart image that
+`trill-session::singleplayer::SaveWriteback`: it refuses a cart image that
 does not parse as a save, keeps the file's tail, and skips unchanged images.
 Each host schedules the checks and performs the write.
 
@@ -189,7 +189,7 @@ to the results screen.
 The browser's `host.rs` composes explicit library, engine, and link handles
 and supplies them to Dioxus through context. Each operation receives its
 handle; the core state has no thread-local singleton. The library handle
-holds the same `tango-library::Catalog` and library config as the desktop,
+holds the same `trill-library::Catalog` and library config as the desktop,
 without the desktop's preferences, and the shell records every selection
 change in that config. The engine owns its
 audio sink and scheduling callbacks. Weak callback captures and listener,
@@ -199,11 +199,11 @@ install an abandoned match. The browser uses the same portable session drivers.
 
 ## Netplay
 
-`tango-lobby` depends on `tango-net` and `tango-platform`, independently of
+`trill-lobby` depends on `trill-net` and `trill-platform`, independently of
 library catalogs and emulator backends. Hosts resolve compatibility facts
 (ROM availability, patch availability, compatibility tags) with
-`tango-library::Catalog::compatibility_facts`. The fact type,
-`tango-net-protocol::compat::Facts`, sits below both crates, so the library
+`trill-library::Catalog::compatibility_facts`. The fact type,
+`trill-net-protocol::compat::Facts`, sits below both crates, so the library
 returns it and the lobby consumes it unchanged.
 
 After every lobby report and every local change, both hosts call
@@ -214,27 +214,27 @@ not Compatible, and returns any patch the host should fetch.
 match-type policy. Hosts supply the per-family memory from the config's
 `last_match_type_per_family` and record each pick there.
 
-`tango_lobby::LinkIdent::parse` turns what the user typed into a
+`trill_lobby::LinkIdent::parse` turns what the user typed into a
 matchmaking code or a `/host`/`/connect` direct role.
-`tango-net::open_channels` performs every bring-up: signaling rendezvous or
+`trill-net::open_channels` performs every bring-up: signaling rendezvous or
 direct host/connect, channel bundling (including which side offered, and
 whether ICE settled on a relay), and version negotiation. It is used by
 the lobby's `connect`/`connect_direct` and by `Link::reconnect`. Its typed
-`ConnectError` maps into `tango_lobby::Error`, a thiserror enum whose variants
+`ConnectError` maps into `trill_lobby::Error`, a thiserror enum whose variants
 name each failure. Hosts map them to localized text; variants without their
 own text use their `Display` in the generic failure template.
 
-A ready handshake yields `tango-net::handoff::PreMatchData`: cloneable
+A ready handshake yields `trill-net::handoff::PreMatchData`: cloneable
 `MatchTerms` plus separately owned live `LinkParts`. `State::take_pre_match`
 hands it over with a `HandoffTicket`, and the host settles its session build
 with `State::complete_handoff`: a build for a lobby the user has since left
 is dropped, a failure parks in the lobby's status line, and a success clears
 the lobby for the match. Preparation consumes the
 committed settings and saves; it does not need a network connection. Hosts
-build each `tango-session::pvp::Seat` (game, patched ROM, SRAM image) from
+build each `trill-session::pvp::Seat` (game, patched ROM, SRAM image) from
 the library's `ResolvedLoadout`, whose `match_sram` is the parsed save dumped
 in the game's own layout; the session never parses a save.
-`tango-session::pvp::PvpSession::new` attaches the prepared seats to the
+`trill-session::pvp::PvpSession::new` attaches the prepared seats to the
 live link.
 Disable the session crate's default `netplay` feature for offline drivers.
 
@@ -245,41 +245,41 @@ Disable the session crate's default `netplay` feature for offline drivers.
 - `pvp/recording.rs` builds metadata and opens the host's replay store.
 - `pvp/mod.rs` exposes controls, status, and shared state.
 
-`tango-session::Priming` (from `dyn Session::priming`) reports where a
+`trill-session::Priming` (from `dyn Session::priming`) reports where a
 session stands on its priming walk, for both hosts' notices.
 `pvp::clamp_frame_delay` and `pvp::initial_frame_delay` are the frame-delay rules.
 
 The host must call `Drive::finish` when a driver ends, so recordings receive
 their final marker. The desktop's runtime loop and browser pump do this.
 Completed match stats go to an optional host-supplied `StatsSink`. Replay
-analysis returns stats to its host too. `tango-library::stats` handles cache
+analysis returns stats to its host too. `trill-library::stats` handles cache
 paths, encoding, and atomic writes through `Storage`; sessions never open
 cache files. The desktop supplies both recording and stats adapters.
 
 Simulation details and invariants are in
-[the match-engine guide](tango-match/ARCHITECTURE.md).
+[the match-engine guide](trill-match/ARCHITECTURE.md).
 
 ## Loadout preparation
 
-`tango-library::Catalog` bundles the ROM, save, patch, and replay scanners.
+`trill-library::Catalog` bundles the ROM, save, patch, and replay scanners.
 Both hosts rescan through it (`Catalog::list`, then `rescan`, `rescan_library`,
 or `rescan_replays`), and build preparation inputs with `Catalog::resolver`,
 `Catalog::open_replay`, and `Catalog::compatibility_facts` rather than
 assembling them by hand.
 
-`tango-library::loadout::Selection` is the one selection policy. It holds the
+`trill-library::loadout::Selection` is the one selection policy. It holds the
 family, game, save, and patch overlay, and changes only through its pick
 methods, which keep them consistent with each other and the catalog. It
 restores from and persists to the config's per-family save memory and
 per-save patch memory. The desktop's pickers and the browser's library screen
 both drive it; the browser additionally calls `reconcile` after rescans.
 
-`tango-library::save` owns save-file operations over `Storage`: template
+`trill-library::save` owns save-file operations over `Storage`: template
 lookup (patch templates override bundled ones), creation, duplication,
 renaming, deletion, name sanitizing and disambiguation, and game detection.
 Hosts only format labels.
 
-Both hosts use `tango-library::loadout::Resolver` for single-player, training,
+Both hosts use `trill-library::loadout::Resolver` for single-player, training,
 and live matches, and for save-editor previews. It resolves the exact game and patch, parses either the
 saved file or an explicitly supplied snapshot, derives patched assets, and
 returns structured validation findings without creating an editor or emulator.
@@ -299,7 +299,7 @@ consume headless findings; they do not decide legality.
 ## Replay preparation
 
 A replay stores inputs, so viewing, analyzing, or exporting it runs the game
-again. Every consumer opens one with `tango-library::Catalog::open_replay`
+again. Every consumer opens one with `trill-library::Catalog::open_replay`
 (`replays::open`), which reads and decodes it through `Storage`, then
 resolves its ROMs with `replays::resolve_roms` to:
 
@@ -309,7 +309,7 @@ resolves its ROMs with `replays::resolve_roms` to:
 4. Return games and ROM bytes in absolute player order.
 
 The recording's local-player index changes perspective, never seat order.
-`tango-session::replay::EngineReplay` then validates the recording and builds
+`trill-session::replay::EngineReplay` then validates the recording and builds
 the engine configuration that playback, analysis, and export share.
 Missing patches and incompatible simulations fail before emulation starts.
 `rom::load` is also used for ordinary session launches. It releases the

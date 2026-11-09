@@ -81,10 +81,10 @@ jobs:
           echo "/opt/binaryen-version_131/bin" >> "$GITHUB_PATH"
 
       - name: Build
-        run: ./tango-lite-web/build.sh
+        run: ./trill-lite-web/build.sh
 
       # dist/ is the whole site — flat static files, pushed to the
-      # existing direct-upload Pages project (lite.tango.n1gp.net).
+      # existing direct-upload Pages project (lite.trill.hikaricalyx.cn).
       # `--branch=main` because a tag checkout is a detached HEAD:
       # wrangler can't read a branch name off it, and the deploy has to
       # name the project's production branch to be a production deploy
@@ -94,4 +94,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy tango-lite-web/dist --project-name=tango-lite-web --branch=main
+          command: pages deploy trill-lite-web/dist --project-name=trill-lite-web --branch=main

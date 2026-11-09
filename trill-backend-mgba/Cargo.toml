@@ -1,0 +1,24 @@
+[package]
+name = "trill-backend-mgba"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+
+# The mgba backend for trill-match: a pair of emulated GBAs on an
+# emulated link cable. Kept out of trill-match so the seam depends on no
+# emulator, and shared by every GBA game rather than copied into each.
+
+[dependencies]
+num-rational.workspace = true
+trill-match = { path = "../trill-match" }
+mgba.workspace = true
+mgba-rollback.workspace = true
+thiserror.workspace = true
+log.workspace = true
+
+[lints]
+workspace = true
+
+# The examples re-simulate recorded matches, so they read replay files.
+[dev-dependencies]
+trill-replay = { path = "../trill-replay" }

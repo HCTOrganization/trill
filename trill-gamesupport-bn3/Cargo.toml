@@ -1,0 +1,31 @@
+[package]
+name = "trill-gamesupport-bn3"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+
+# The game's aggregator: the `Game` registrations (ROM identity,
+# parsers, templates, presentation bits) plus the pvp engine support,
+# re-exporting `trill-gamesupport-bn3-dataview` as `dataview` and —
+# behind the `ui` feature, the one cfg point — the save-editor UI crate
+# as `ui`. Headless engine builds never link a UI
+# toolkit.
+
+[dependencies]
+trill-gamesupport = { path = "../trill-gamesupport" }
+trill-gamesupport-bn3-dataview = { path = "../trill-gamesupport-bn3-dataview" }
+trill-gamesupport-common = { path = "../trill-gamesupport-common" }
+trill-gamesupport-common-dataview = { path = "../trill-gamesupport-common-dataview" }
+trill-match = { path = "../trill-match" }
+trill-backend-mgba = { path = "../trill-backend-mgba" }
+mgba.workspace = true
+image = { workspace = true, features = ["png"] }
+bytemuck = { workspace = true, features = ["derive", "const_zeroed", "min_const_generics"] }
+
+trill-gamesupport-bn3-ui = { path = "../trill-gamesupport-bn3-ui", optional = true }
+
+[features]
+ui = ["trill-gamesupport/ui", "dep:trill-gamesupport-bn3-ui"]
+
+[lints]
+workspace = true

@@ -45,20 +45,20 @@ def check(root: Path) -> list[str]:
             if len(enabled) != len(set(enabled)) or set(enabled) != games:
                 errors.append(f"{label}: gamesupport-all must list every game feature exactly once")
             game_sets[name] = games
-            if name == "tango-library":
-                expected_ui = {"tango-gamesupport/ui", *(f"tango-{game}?/ui" for game in games)}
+            if name == "trill-library":
+                expected_ui = {"trill-gamesupport/ui", *(f"trill-{game}?/ui" for game in games)}
                 if set(features.get("ui", [])) != expected_ui:
                     errors.append(f"{label}: ui must enable editors weakly for every optional game")
                 registered = set(re.findall(
                     r'"(gamesupport-[a-z0-9]+)"\s*=>',
-                    (root / "tango-library/src/game.rs").read_text(),
+                    (root / "trill-library/src/game.rs").read_text(),
                 ))
                 if registered != games:
                     errors.append(f"{label}: game features must match the registry")
             else:
                 for game in games:
-                    if features[game] != [f"tango-library/{game}"]:
-                        errors.append(f"{label}: {game} must forward only to tango-library")
+                    if features[game] != [f"trill-library/{game}"]:
+                        errors.append(f"{label}: {game} must forward only to trill-library")
 
     for dependency, manifests in sorted(external.items()):
         if len(manifests) > 1 and dependency not in shared:
@@ -70,32 +70,32 @@ def check(root: Path) -> list[str]:
     return errors
 
 
-# A game's registration crate (`tango-gamesupport-bn6`), as opposed to its
+# A game's registration crate (`trill-gamesupport-bn6`), as opposed to its
 # `-dataview`/`-ui` halves or the shared `-common*` crates.
-GAME_REGISTRATION = re.compile(r"tango-gamesupport-(?!common$)[a-z0-9]+")
+GAME_REGISTRATION = re.compile(r"trill-gamesupport-(?!common$)[a-z0-9]+")
 
 
 def check_boundaries(root: Path) -> list[str]:
     errors = []
     allowed = {
-        "tango-match": set(),
-        "tango-net-protocol": set(),
-        "tango-platform": set(),
-        "tango-replay": set(),
-        "tango-ui": set(),
-        "tango-net": {"tango-platform", "tango-net-protocol"},
-        "tango-lobby": {"tango-net", "tango-platform", "tango-net-protocol"},
-        "tango-backend-mgba": {"tango-match"},
-        "tango-backend-melonds": {"tango-match"},
-        "tango-replay-renderer": {"tango-match"},
-        "tango-gamesupport": {"tango-match"},
-        "tango-gamesupport-common-dataview": {"tango-gamesupport"},
-        "tango-session": {
-            "tango-gamesupport", "tango-match", "tango-net", "tango-net-protocol", "tango-platform", "tango-replay",
+        "trill-match": set(),
+        "trill-net-protocol": set(),
+        "trill-platform": set(),
+        "trill-replay": set(),
+        "trill-ui": set(),
+        "trill-net": {"trill-platform", "trill-net-protocol"},
+        "trill-lobby": {"trill-net", "trill-platform", "trill-net-protocol"},
+        "trill-backend-mgba": {"trill-match"},
+        "trill-backend-melonds": {"trill-match"},
+        "trill-replay-renderer": {"trill-match"},
+        "trill-gamesupport": {"trill-match"},
+        "trill-gamesupport-common-dataview": {"trill-gamesupport"},
+        "trill-session": {
+            "trill-gamesupport", "trill-match", "trill-net", "trill-net-protocol", "trill-platform", "trill-replay",
         },
-        "tango-library": {
-            "tango-gamesupport", "tango-gamesupport-common-dataview", "tango-match", "tango-net-protocol",
-            "tango-replay", GAME_REGISTRATION,
+        "trill-library": {
+            "trill-gamesupport", "trill-gamesupport-common-dataview", "trill-match", "trill-net-protocol",
+            "trill-replay", GAME_REGISTRATION,
         },
     }
     for crate, permitted in allowed.items():
@@ -106,11 +106,11 @@ def check_boundaries(root: Path) -> list[str]:
                     continue
                 if not any(dependency == p if isinstance(p, str) else p.fullmatch(dependency) for p in permitted):
                     errors.append(f"{crate}: forbidden layer dependency {dependency}")
-    for path in (root / "tango-session/src").rglob("*.rs"):
+    for path in (root / "trill-session/src").rglob("*.rs"):
         if "std::fs::" in path.read_text():
             errors.append(f"{path.relative_to(root)}: session persistence must use a host adapter")
     for name in ("library", "engine", "link"):
-        path = root / f"tango-lite-web/src/{name}.rs"
+        path = root / f"trill-lite-web/src/{name}.rs"
         if "thread_local!" in path.read_text():
             errors.append(f"{path.relative_to(root)}: state must be owned by an explicit host handle")
     return errors
@@ -119,10 +119,10 @@ def check_boundaries(root: Path) -> list[str]:
 def check_resolved_boundaries(root: Path) -> list[str]:
     errors = []
     checks = {
-        "tango-gamesupport-common-dataview": {"iced", "tango-ui"},
-        "tango-library": {"iced", "tango-ui", "tango-session", "tango-lobby", "tango-net"},
-        "tango-session": {"iced", "tango-net", "datachannel-wrapper", "tango-signaling"},
-        "tango-lobby": {"iced", "tango-library", "tango-session", "tango-match", "mgba", "melonds"},
+        "trill-gamesupport-common-dataview": {"iced", "trill-ui"},
+        "trill-library": {"iced", "trill-ui", "trill-session", "trill-lobby", "trill-net"},
+        "trill-session": {"iced", "trill-net", "datachannel-wrapper", "trill-signaling"},
+        "trill-lobby": {"iced", "trill-library", "trill-session", "trill-match", "mgba", "melonds"},
     }
     for crate, forbidden in checks.items():
         result = subprocess.run(["cargo", "tree", "--locked", "--offline", "--no-default-features", "-p", crate,

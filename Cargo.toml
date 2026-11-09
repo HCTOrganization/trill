@@ -1,24 +1,24 @@
 [workspace]
 resolver = "2"
 members = [
-    "tango",
-    "tango-gamesupport",
-    "tango-library",
+    "trill",
+    "trill-gamesupport",
+    "trill-library",
     # wasm32-only; deliberately absent from `default-members` below, so a
     # plain root `cargo build`/`test` skips it rather than failing to
     # link a browser app for the host.
-    "tango-lite-web",
-    "tango-lobby",
-    "tango-net-protocol",
-    "tango-net",
-    "tango-platform",
-    "tango-match",
-    "tango-backend-melonds",
-    "tango-backend-mgba",
-    "tango-replay",
-    "tango-replay-renderer",
-    "tango-session",
-    "tango-ui",
+    "trill-lite-web",
+    "trill-lobby",
+    "trill-net-protocol",
+    "trill-net",
+    "trill-platform",
+    "trill-match",
+    "trill-backend-melonds",
+    "trill-backend-mgba",
+    "trill-replay",
+    "trill-replay-renderer",
+    "trill-session",
+    "trill-ui",
     # Third-party and formerly-extracted crates, vendored so the whole
     # dependency graph resolves from this repository (see `vendor/`).
     # Their own path dependencies (`mgba-sys`, `melonds-sys`,
@@ -36,27 +36,27 @@ members = [
     "vendor/mgba-rollback",
     "vendor/mgba-rs",
     "vendor/rennet",
-    "vendor/tango-patch",
-    "vendor/tango-signaling",
+    "vendor/trill-patch",
+    "vendor/trill-signaling",
 ]
-# The per-game `tango-gamesupport-*` crates auto-join this workspace as
+# The per-game `trill-gamesupport-*` crates auto-join this workspace as
 # path dependencies rather than being listed above. Keep a plain root
 # build scoped to the app and shared infrastructure; app features pull
 # in whichever game crates a build needs.
 default-members = [
-    "tango",
-    "tango-gamesupport",
-    "tango-library",
-    "tango-lobby",
-    "tango-net-protocol",
-    "tango-net",
-    "tango-platform",
-    "tango-match",
-    "tango-backend-mgba",
-    "tango-replay",
-    "tango-replay-renderer",
-    "tango-session",
-    "tango-ui",
+    "trill",
+    "trill-gamesupport",
+    "trill-library",
+    "trill-lobby",
+    "trill-net-protocol",
+    "trill-net",
+    "trill-platform",
+    "trill-match",
+    "trill-backend-mgba",
+    "trill-replay",
+    "trill-replay-renderer",
+    "trill-session",
+    "trill-ui",
 ]
 # Shared external dependency versions. Members inherit these and enable
 # only the features they need. Keep this list alphabetical.
@@ -110,8 +110,8 @@ sha3 = "0.10"
 steamlocate = "2"
 subtle = "2"
 sweeten = "0.14"
-tango-patch = { path = "vendor/tango-patch" }
-tango-signaling = { path = "vendor/tango-signaling" }
+trill-patch = { path = "vendor/trill-patch" }
+trill-signaling = { path = "vendor/trill-signaling" }
 thiserror = "1"
 tiny-skia = "0.11"
 tokio = "1"

@@ -1,0 +1,30 @@
+[package]
+name = "trill-gamesupport-exeoss"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+
+# Rockman.EXE Operate Shooting Star.
+#
+# The second DS cartridge Trill supports, and so the second game whose
+# engine is melonDS rather than mgba: netplay is a pair of emulated DSes
+# on emulated local wireless, primed into the game's own link battle by
+# PC redirects, exactly as `trill-gamesupport-bn5ds` does it.
+
+[features]
+# Pairs with the app's UI build, switching the save editor on: the
+# read-only folder viewer from `trill-gamesupport-exeoss-ui`.
+ui = ["trill-gamesupport/ui", "dep:trill-gamesupport-exeoss-ui"]
+
+[dependencies]
+trill-gamesupport = { path = "../trill-gamesupport" }
+trill-gamesupport-exeoss-dataview = { path = "../trill-gamesupport-exeoss-dataview" }
+trill-gamesupport-common-dataview = { path = "../trill-gamesupport-common-dataview" }
+trill-match = { path = "../trill-match" }
+trill-backend-melonds = { path = "../trill-backend-melonds" }
+log.workspace = true
+
+trill-gamesupport-exeoss-ui = { path = "../trill-gamesupport-exeoss-ui", optional = true }
+
+[lints]
+workspace = true

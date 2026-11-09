@@ -7585,736 +7585,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tango"
-version = "5.1.49"
-dependencies = [
- "anyhow",
- "arboard",
- "arrayvec",
- "bytemuck",
- "chrono",
- "clap",
- "cpal",
- "crash-handler",
- "directories-next",
- "discord-ipc",
- "embed-resource",
- "encoder-facade",
- "env_logger 0.9.3",
- "fluent-templates",
- "futures",
- "gamepad-facade",
- "iced",
- "iced_graphics",
- "image",
- "itertools 0.13.0",
- "libc",
- "log",
- "lucide-icons",
- "minidumper",
- "objc2 0.5.2",
- "open",
- "opener",
- "rand 0.8.5",
- "reqwest 0.11.27",
- "rfd",
- "semver",
- "serde",
- "serde_json",
- "sweeten",
- "tango-gamesupport",
- "tango-library",
- "tango-lobby",
- "tango-match",
- "tango-net-protocol",
- "tango-patch",
- "tango-replay",
- "tango-replay-renderer",
- "tango-session",
- "tango-ui",
- "thiserror 1.0.69",
- "tokio",
- "tokio-util",
- "unic-langid",
- "wgpu",
- "windows-core 0.61.2",
-]
-
-[[package]]
-name = "tango-backend-melonds"
-version = "0.1.0"
-dependencies = [
- "melonds",
- "melonds-rollback",
- "num-rational",
- "num-traits",
- "tango-match",
-]
-
-[[package]]
-name = "tango-backend-mgba"
-version = "0.1.0"
-dependencies = [
- "log",
- "mgba",
- "mgba-rollback",
- "num-rational",
- "tango-match",
- "tango-replay",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tango-gamesupport"
-version = "0.1.0"
-dependencies = [
- "crc32fast",
- "iced",
- "image",
- "semver",
- "tango-match",
- "tango-patch",
- "thiserror 1.0.69",
- "unic-langid",
-]
-
-[[package]]
-name = "tango-gamesupport-bcc"
-version = "0.1.0"
-dependencies = [
- "image",
- "mgba",
- "tango-backend-mgba",
- "tango-gamesupport",
- "tango-gamesupport-bcc-dataview",
- "tango-gamesupport-bcc-ui",
- "tango-gamesupport-common-dataview",
- "tango-match",
-]
-
-[[package]]
-name = "tango-gamesupport-bcc-dataview"
-version = "0.1.0"
-dependencies = [
- "byteorder",
- "image",
- "tango-gamesupport-common-dataview",
-]
-
-[[package]]
-name = "tango-gamesupport-bcc-ui"
-version = "0.1.0"
-dependencies = [
- "iced",
- "lucide-icons",
- "tango-gamesupport-bcc-dataview",
- "tango-gamesupport-common-dataview",
- "tango-gamesupport-common-ui",
- "unic-langid",
-]
-
-[[package]]
-name = "tango-gamesupport-bn1"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "image",
- "mgba",
- "tango-backend-mgba",
- "tango-gamesupport",
- "tango-gamesupport-bn1-dataview",
- "tango-gamesupport-bn1-ui",
- "tango-gamesupport-common",
- "tango-gamesupport-common-dataview",
- "tango-match",
-]
-
-[[package]]
-name = "tango-gamesupport-bn1-dataview"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "image",
- "num-traits",
- "tango-gamesupport-common-dataview",
-]
-
-[[package]]
-name = "tango-gamesupport-bn1-ui"
-version = "0.1.0"
-dependencies = [
- "tango-gamesupport-common-ui",
-]
-
-[[package]]
-name = "tango-gamesupport-bn2"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "image",
- "mgba",
- "tango-backend-mgba",
- "tango-gamesupport",
- "tango-gamesupport-bn2-dataview",
- "tango-gamesupport-bn2-ui",
- "tango-gamesupport-common",
- "tango-gamesupport-common-dataview",
- "tango-match",
-]
-
-[[package]]
-name = "tango-gamesupport-bn2-dataview"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "c2rust-bitfields",
- "image",
- "num-traits",
- "tango-gamesupport-common-dataview",
-]
-
-[[package]]
-name = "tango-gamesupport-bn2-ui"
-version = "0.1.0"
-dependencies = [
- "tango-gamesupport-common-ui",
-]
-
-[[package]]
-name = "tango-gamesupport-bn3"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "image",
- "mgba",
- "tango-backend-mgba",
- "tango-gamesupport",
- "tango-gamesupport-bn3-dataview",
- "tango-gamesupport-bn3-ui",
- "tango-gamesupport-common",
- "tango-gamesupport-common-dataview",
- "tango-match",
-]
-
-[[package]]
-name = "tango-gamesupport-bn3-dataview"
-version = "0.1.0"
-dependencies = [
- "bitvec",
- "bytemuck",
- "c2rust-bitfields",
- "image",
- "ndarray",
- "num-traits",
- "tango-gamesupport-common-dataview",
-]
-
-[[package]]
-name = "tango-gamesupport-bn3-ui"
-version = "0.1.0"
-dependencies = [
- "iced",
- "tango-gamesupport-common-ui",
- "unic-langid",
-]
-
-[[package]]
-name = "tango-gamesupport-bn4"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "image",
- "mgba",
- "tango-backend-mgba",
- "tango-gamesupport",
- "tango-gamesupport-bn4-dataview",
- "tango-gamesupport-bn4-ui",
- "tango-gamesupport-common",
- "tango-gamesupport-common-dataview",
- "tango-match",
-]
-
-[[package]]
-name = "tango-gamesupport-bn4-dataview"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "c2rust-bitfields",
- "image",
- "ndarray",
- "num-traits",
- "tango-gamesupport-common-dataview",
-]
-
-[[package]]
-name = "tango-gamesupport-bn4-ui"
-version = "0.1.0"
-dependencies = [
- "iced",
- "sweeten",
- "tango-gamesupport-bn4-dataview",
- "tango-gamesupport-common-dataview",
- "tango-gamesupport-common-ui",
- "unic-langid",
-]
-
-[[package]]
-name = "tango-gamesupport-bn5"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "image",
- "mgba",
- "tango-backend-mgba",
- "tango-gamesupport",
- "tango-gamesupport-bn5-dataview",
- "tango-gamesupport-bn5-ui",
- "tango-gamesupport-common",
- "tango-gamesupport-common-dataview",
- "tango-match",
-]
-
-[[package]]
-name = "tango-gamesupport-bn5-dataview"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "c2rust-bitfields",
- "image",
- "ndarray",
- "num-traits",
- "tango-gamesupport-common-dataview",
-]
-
-[[package]]
-name = "tango-gamesupport-bn5-ui"
-version = "0.1.0"
-dependencies = [
- "tango-gamesupport-common-ui",
-]
-
-[[package]]
-name = "tango-gamesupport-bn5ds"
-version = "0.1.0"
-dependencies = [
- "image",
- "log",
- "tango-backend-melonds",
- "tango-gamesupport",
- "tango-gamesupport-bn5ds-dataview",
- "tango-gamesupport-bn5ds-ui",
- "tango-gamesupport-common",
- "tango-gamesupport-common-dataview",
- "tango-match",
-]
-
-[[package]]
-name = "tango-gamesupport-bn5ds-dataview"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "c2rust-bitfields",
- "image",
- "ndarray",
- "num-traits",
- "tango-gamesupport-common-dataview",
-]
-
-[[package]]
-name = "tango-gamesupport-bn5ds-ui"
-version = "0.1.0"
-dependencies = [
- "iced",
- "sweeten",
- "tango-gamesupport-bn5ds-dataview",
- "tango-gamesupport-common-ui",
- "unic-langid",
-]
-
-[[package]]
-name = "tango-gamesupport-bn6"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "image",
- "mgba",
- "tango-backend-mgba",
- "tango-gamesupport",
- "tango-gamesupport-bn6-dataview",
- "tango-gamesupport-bn6-ui",
- "tango-gamesupport-common",
- "tango-gamesupport-common-dataview",
- "tango-match",
-]
-
-[[package]]
-name = "tango-gamesupport-bn6-dataview"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "c2rust-bitfields",
- "image",
- "ndarray",
- "num-traits",
- "tango-gamesupport-common-dataview",
-]
-
-[[package]]
-name = "tango-gamesupport-bn6-ui"
-version = "0.1.0"
-dependencies = [
- "tango-gamesupport-common-ui",
-]
-
-[[package]]
-name = "tango-gamesupport-common"
-version = "0.1.0"
-dependencies = [
- "tango-match",
-]
-
-[[package]]
-name = "tango-gamesupport-common-dataview"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "byteorder",
- "c2rust-bitfields",
- "image",
- "itertools 0.13.0",
- "ndarray",
- "num-derive",
- "num-traits",
- "patricia_tree",
- "tango-gamesupport",
- "tango-patch",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tango-gamesupport-common-ui"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "fluent-templates",
- "iced",
- "iced_graphics",
- "iced_tiny_skia",
- "image",
- "indexmap",
- "lucide-icons",
- "sweeten",
- "tango-gamesupport",
- "tango-gamesupport-common-dataview",
- "tango-ui",
- "tiny-skia",
- "unic-langid",
-]
-
-[[package]]
-name = "tango-gamesupport-exe45"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "image",
- "mgba",
- "tango-backend-mgba",
- "tango-gamesupport",
- "tango-gamesupport-common",
- "tango-gamesupport-common-dataview",
- "tango-gamesupport-exe45-dataview",
- "tango-gamesupport-exe45-ui",
- "tango-match",
-]
-
-[[package]]
-name = "tango-gamesupport-exe45-dataview"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "c2rust-bitfields",
- "image",
- "num-traits",
- "tango-gamesupport-common-dataview",
-]
-
-[[package]]
-name = "tango-gamesupport-exe45-ui"
-version = "0.1.0"
-dependencies = [
- "tango-gamesupport-common-ui",
-]
-
-[[package]]
-name = "tango-gamesupport-exeoss"
-version = "0.1.0"
-dependencies = [
- "log",
- "tango-backend-melonds",
- "tango-gamesupport",
- "tango-gamesupport-common-dataview",
- "tango-gamesupport-exeoss-dataview",
- "tango-gamesupport-exeoss-ui",
- "tango-match",
-]
-
-[[package]]
-name = "tango-gamesupport-exeoss-dataview"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "crc32fast",
- "image",
- "num-traits",
- "tango-gamesupport-common-dataview",
-]
-
-[[package]]
-name = "tango-gamesupport-exeoss-ui"
-version = "0.1.0"
-dependencies = [
- "tango-gamesupport-common-ui",
-]
-
-[[package]]
-name = "tango-library"
-version = "0.1.0"
-dependencies = [
- "bps",
- "fluent-templates",
- "futures",
- "log",
- "mailparse",
- "num-rational",
- "reqwest 0.11.27",
- "semver",
- "serde",
- "serde_json",
- "steamlocate",
- "tango-gamesupport",
- "tango-gamesupport-bcc",
- "tango-gamesupport-bn1",
- "tango-gamesupport-bn2",
- "tango-gamesupport-bn3",
- "tango-gamesupport-bn4",
- "tango-gamesupport-bn5",
- "tango-gamesupport-bn5ds",
- "tango-gamesupport-bn6",
- "tango-gamesupport-common-dataview",
- "tango-gamesupport-exe45",
- "tango-gamesupport-exeoss",
- "tango-match",
- "tango-net-protocol",
- "tango-patch",
- "tango-replay",
- "thiserror 1.0.69",
- "tokio",
- "unic-langid",
- "walkdir",
- "web-time",
- "zip",
-]
-
-[[package]]
-name = "tango-lite-web"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "chrono",
- "console_error_panic_hook",
- "console_log",
- "dioxus",
- "encoder-facade",
- "futures",
- "gamepad-facade",
- "getrandom 0.2.16",
- "js-sys",
- "log",
- "num-traits",
- "semver",
- "tango-library",
- "tango-lobby",
- "tango-match",
- "tango-net-protocol",
- "tango-platform",
- "tango-replay",
- "tango-replay-renderer",
- "tango-session",
- "unic-langid",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
-name = "tango-lobby"
-version = "0.1.0"
-dependencies = [
- "futures",
- "log",
- "rand 0.8.5",
- "semver",
- "subtle",
- "tango-net",
- "tango-net-protocol",
- "tango-platform",
- "tango-signaling",
- "thiserror 1.0.69",
- "tokio",
- "tokio-util",
- "unic-langid",
- "web-time",
- "zstd",
-]
-
-[[package]]
-name = "tango-match"
-version = "0.1.0"
-dependencies = [
- "getgud",
- "log",
- "num-rational",
- "num-traits",
- "serde",
- "serde_repr",
- "tango-replay",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tango-net"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "datachannel-wrapper",
- "futures",
- "log",
- "rennet",
- "tango-net-protocol",
- "tango-platform",
- "tango-signaling",
- "thiserror 1.0.69",
- "tokio",
- "tokio-util",
- "web-time",
-]
-
-[[package]]
-name = "tango-net-protocol"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "rand 0.8.5",
- "rand_pcg 0.3.1",
- "rennet",
- "semver",
- "serde",
- "sha3",
-]
-
-[[package]]
-name = "tango-patch"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "semver",
- "serde",
- "serde_json",
- "sha2",
- "thiserror 1.0.69",
- "toml 0.8.23",
- "unic-langid",
- "zip",
-]
-
-[[package]]
-name = "tango-platform"
-version = "0.1.0"
-dependencies = [
- "futures",
- "gloo-timers",
- "thiserror 1.0.69",
- "tokio",
- "wasm-bindgen-futures",
-]
-
-[[package]]
-name = "tango-replay"
-version = "0.1.0"
-dependencies = [
- "byteorder",
- "prost",
- "prost-build",
- "serde",
- "thiserror 1.0.69",
- "zstd",
-]
-
-[[package]]
-name = "tango-replay-renderer"
-version = "0.1.0"
-dependencies = [
- "encoder-facade",
- "num-rational",
- "num-traits",
- "tango-match",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tango-session"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "chrono",
- "log",
- "num-traits",
- "rand 0.8.5",
- "rand_pcg 0.3.1",
- "tango-gamesupport",
- "tango-match",
- "tango-net",
- "tango-net-protocol",
- "tango-platform",
- "tango-replay",
- "thiserror 1.0.69",
- "tokio",
- "tokio-util",
- "web-time",
-]
-
-[[package]]
-name = "tango-signaling"
-version = "0.1.0"
-dependencies = [
- "datachannel-wrapper",
- "futures-util",
- "gloo-timers",
- "http 0.2.12",
- "log",
- "prost",
- "prost-build",
- "rand 0.8.5",
- "thiserror 1.0.69",
- "tokio",
- "tokio-tungstenite 0.16.1",
- "tokio-tungstenite-wasm",
- "url",
- "urlencoding",
- "wasm-bindgen-futures",
-]
-
-[[package]]
-name = "tango-ui"
-version = "0.1.0"
-dependencies = [
- "iced",
- "lucide-icons",
- "sweeten",
-]
-
-[[package]]
 name = "tap"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8839,6 +8109,736 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "trill"
+version = "5.1.49"
+dependencies = [
+ "anyhow",
+ "arboard",
+ "arrayvec",
+ "bytemuck",
+ "chrono",
+ "clap",
+ "cpal",
+ "crash-handler",
+ "directories-next",
+ "discord-ipc",
+ "embed-resource",
+ "encoder-facade",
+ "env_logger 0.9.3",
+ "fluent-templates",
+ "futures",
+ "gamepad-facade",
+ "iced",
+ "iced_graphics",
+ "image",
+ "itertools 0.13.0",
+ "libc",
+ "log",
+ "lucide-icons",
+ "minidumper",
+ "objc2 0.5.2",
+ "open",
+ "opener",
+ "rand 0.8.5",
+ "reqwest 0.11.27",
+ "rfd",
+ "semver",
+ "serde",
+ "serde_json",
+ "sweeten",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-util",
+ "trill-gamesupport",
+ "trill-library",
+ "trill-lobby",
+ "trill-match",
+ "trill-net-protocol",
+ "trill-patch",
+ "trill-replay",
+ "trill-replay-renderer",
+ "trill-session",
+ "trill-ui",
+ "unic-langid",
+ "wgpu",
+ "windows-core 0.61.2",
+]
+
+[[package]]
+name = "trill-backend-melonds"
+version = "0.1.0"
+dependencies = [
+ "melonds",
+ "melonds-rollback",
+ "num-rational",
+ "num-traits",
+ "trill-match",
+]
+
+[[package]]
+name = "trill-backend-mgba"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "mgba",
+ "mgba-rollback",
+ "num-rational",
+ "thiserror 1.0.69",
+ "trill-match",
+ "trill-replay",
+]
+
+[[package]]
+name = "trill-gamesupport"
+version = "0.1.0"
+dependencies = [
+ "crc32fast",
+ "iced",
+ "image",
+ "semver",
+ "thiserror 1.0.69",
+ "trill-match",
+ "trill-patch",
+ "unic-langid",
+]
+
+[[package]]
+name = "trill-gamesupport-bcc"
+version = "0.1.0"
+dependencies = [
+ "image",
+ "mgba",
+ "trill-backend-mgba",
+ "trill-gamesupport",
+ "trill-gamesupport-bcc-dataview",
+ "trill-gamesupport-bcc-ui",
+ "trill-gamesupport-common-dataview",
+ "trill-match",
+]
+
+[[package]]
+name = "trill-gamesupport-bcc-dataview"
+version = "0.1.0"
+dependencies = [
+ "byteorder",
+ "image",
+ "trill-gamesupport-common-dataview",
+]
+
+[[package]]
+name = "trill-gamesupport-bcc-ui"
+version = "0.1.0"
+dependencies = [
+ "iced",
+ "lucide-icons",
+ "trill-gamesupport-bcc-dataview",
+ "trill-gamesupport-common-dataview",
+ "trill-gamesupport-common-ui",
+ "unic-langid",
+]
+
+[[package]]
+name = "trill-gamesupport-bn1"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "image",
+ "mgba",
+ "trill-backend-mgba",
+ "trill-gamesupport",
+ "trill-gamesupport-bn1-dataview",
+ "trill-gamesupport-bn1-ui",
+ "trill-gamesupport-common",
+ "trill-gamesupport-common-dataview",
+ "trill-match",
+]
+
+[[package]]
+name = "trill-gamesupport-bn1-dataview"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "image",
+ "num-traits",
+ "trill-gamesupport-common-dataview",
+]
+
+[[package]]
+name = "trill-gamesupport-bn1-ui"
+version = "0.1.0"
+dependencies = [
+ "trill-gamesupport-common-ui",
+]
+
+[[package]]
+name = "trill-gamesupport-bn2"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "image",
+ "mgba",
+ "trill-backend-mgba",
+ "trill-gamesupport",
+ "trill-gamesupport-bn2-dataview",
+ "trill-gamesupport-bn2-ui",
+ "trill-gamesupport-common",
+ "trill-gamesupport-common-dataview",
+ "trill-match",
+]
+
+[[package]]
+name = "trill-gamesupport-bn2-dataview"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "c2rust-bitfields",
+ "image",
+ "num-traits",
+ "trill-gamesupport-common-dataview",
+]
+
+[[package]]
+name = "trill-gamesupport-bn2-ui"
+version = "0.1.0"
+dependencies = [
+ "trill-gamesupport-common-ui",
+]
+
+[[package]]
+name = "trill-gamesupport-bn3"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "image",
+ "mgba",
+ "trill-backend-mgba",
+ "trill-gamesupport",
+ "trill-gamesupport-bn3-dataview",
+ "trill-gamesupport-bn3-ui",
+ "trill-gamesupport-common",
+ "trill-gamesupport-common-dataview",
+ "trill-match",
+]
+
+[[package]]
+name = "trill-gamesupport-bn3-dataview"
+version = "0.1.0"
+dependencies = [
+ "bitvec",
+ "bytemuck",
+ "c2rust-bitfields",
+ "image",
+ "ndarray",
+ "num-traits",
+ "trill-gamesupport-common-dataview",
+]
+
+[[package]]
+name = "trill-gamesupport-bn3-ui"
+version = "0.1.0"
+dependencies = [
+ "iced",
+ "trill-gamesupport-common-ui",
+ "unic-langid",
+]
+
+[[package]]
+name = "trill-gamesupport-bn4"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "image",
+ "mgba",
+ "trill-backend-mgba",
+ "trill-gamesupport",
+ "trill-gamesupport-bn4-dataview",
+ "trill-gamesupport-bn4-ui",
+ "trill-gamesupport-common",
+ "trill-gamesupport-common-dataview",
+ "trill-match",
+]
+
+[[package]]
+name = "trill-gamesupport-bn4-dataview"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "c2rust-bitfields",
+ "image",
+ "ndarray",
+ "num-traits",
+ "trill-gamesupport-common-dataview",
+]
+
+[[package]]
+name = "trill-gamesupport-bn4-ui"
+version = "0.1.0"
+dependencies = [
+ "iced",
+ "sweeten",
+ "trill-gamesupport-bn4-dataview",
+ "trill-gamesupport-common-dataview",
+ "trill-gamesupport-common-ui",
+ "unic-langid",
+]
+
+[[package]]
+name = "trill-gamesupport-bn5"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "image",
+ "mgba",
+ "trill-backend-mgba",
+ "trill-gamesupport",
+ "trill-gamesupport-bn5-dataview",
+ "trill-gamesupport-bn5-ui",
+ "trill-gamesupport-common",
+ "trill-gamesupport-common-dataview",
+ "trill-match",
+]
+
+[[package]]
+name = "trill-gamesupport-bn5-dataview"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "c2rust-bitfields",
+ "image",
+ "ndarray",
+ "num-traits",
+ "trill-gamesupport-common-dataview",
+]
+
+[[package]]
+name = "trill-gamesupport-bn5-ui"
+version = "0.1.0"
+dependencies = [
+ "trill-gamesupport-common-ui",
+]
+
+[[package]]
+name = "trill-gamesupport-bn5ds"
+version = "0.1.0"
+dependencies = [
+ "image",
+ "log",
+ "trill-backend-melonds",
+ "trill-gamesupport",
+ "trill-gamesupport-bn5ds-dataview",
+ "trill-gamesupport-bn5ds-ui",
+ "trill-gamesupport-common",
+ "trill-gamesupport-common-dataview",
+ "trill-match",
+]
+
+[[package]]
+name = "trill-gamesupport-bn5ds-dataview"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "c2rust-bitfields",
+ "image",
+ "ndarray",
+ "num-traits",
+ "trill-gamesupport-common-dataview",
+]
+
+[[package]]
+name = "trill-gamesupport-bn5ds-ui"
+version = "0.1.0"
+dependencies = [
+ "iced",
+ "sweeten",
+ "trill-gamesupport-bn5ds-dataview",
+ "trill-gamesupport-common-ui",
+ "unic-langid",
+]
+
+[[package]]
+name = "trill-gamesupport-bn6"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "image",
+ "mgba",
+ "trill-backend-mgba",
+ "trill-gamesupport",
+ "trill-gamesupport-bn6-dataview",
+ "trill-gamesupport-bn6-ui",
+ "trill-gamesupport-common",
+ "trill-gamesupport-common-dataview",
+ "trill-match",
+]
+
+[[package]]
+name = "trill-gamesupport-bn6-dataview"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "c2rust-bitfields",
+ "image",
+ "ndarray",
+ "num-traits",
+ "trill-gamesupport-common-dataview",
+]
+
+[[package]]
+name = "trill-gamesupport-bn6-ui"
+version = "0.1.0"
+dependencies = [
+ "trill-gamesupport-common-ui",
+]
+
+[[package]]
+name = "trill-gamesupport-common"
+version = "0.1.0"
+dependencies = [
+ "trill-match",
+]
+
+[[package]]
+name = "trill-gamesupport-common-dataview"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "byteorder",
+ "c2rust-bitfields",
+ "image",
+ "itertools 0.13.0",
+ "ndarray",
+ "num-derive",
+ "num-traits",
+ "patricia_tree",
+ "thiserror 1.0.69",
+ "trill-gamesupport",
+ "trill-patch",
+]
+
+[[package]]
+name = "trill-gamesupport-common-ui"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "fluent-templates",
+ "iced",
+ "iced_graphics",
+ "iced_tiny_skia",
+ "image",
+ "indexmap",
+ "lucide-icons",
+ "sweeten",
+ "tiny-skia",
+ "trill-gamesupport",
+ "trill-gamesupport-common-dataview",
+ "trill-ui",
+ "unic-langid",
+]
+
+[[package]]
+name = "trill-gamesupport-exe45"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "image",
+ "mgba",
+ "trill-backend-mgba",
+ "trill-gamesupport",
+ "trill-gamesupport-common",
+ "trill-gamesupport-common-dataview",
+ "trill-gamesupport-exe45-dataview",
+ "trill-gamesupport-exe45-ui",
+ "trill-match",
+]
+
+[[package]]
+name = "trill-gamesupport-exe45-dataview"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "c2rust-bitfields",
+ "image",
+ "num-traits",
+ "trill-gamesupport-common-dataview",
+]
+
+[[package]]
+name = "trill-gamesupport-exe45-ui"
+version = "0.1.0"
+dependencies = [
+ "trill-gamesupport-common-ui",
+]
+
+[[package]]
+name = "trill-gamesupport-exeoss"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "trill-backend-melonds",
+ "trill-gamesupport",
+ "trill-gamesupport-common-dataview",
+ "trill-gamesupport-exeoss-dataview",
+ "trill-gamesupport-exeoss-ui",
+ "trill-match",
+]
+
+[[package]]
+name = "trill-gamesupport-exeoss-dataview"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "crc32fast",
+ "image",
+ "num-traits",
+ "trill-gamesupport-common-dataview",
+]
+
+[[package]]
+name = "trill-gamesupport-exeoss-ui"
+version = "0.1.0"
+dependencies = [
+ "trill-gamesupport-common-ui",
+]
+
+[[package]]
+name = "trill-library"
+version = "0.1.0"
+dependencies = [
+ "bps",
+ "fluent-templates",
+ "futures",
+ "log",
+ "mailparse",
+ "num-rational",
+ "reqwest 0.11.27",
+ "semver",
+ "serde",
+ "serde_json",
+ "steamlocate",
+ "thiserror 1.0.69",
+ "tokio",
+ "trill-gamesupport",
+ "trill-gamesupport-bcc",
+ "trill-gamesupport-bn1",
+ "trill-gamesupport-bn2",
+ "trill-gamesupport-bn3",
+ "trill-gamesupport-bn4",
+ "trill-gamesupport-bn5",
+ "trill-gamesupport-bn5ds",
+ "trill-gamesupport-bn6",
+ "trill-gamesupport-common-dataview",
+ "trill-gamesupport-exe45",
+ "trill-gamesupport-exeoss",
+ "trill-match",
+ "trill-net-protocol",
+ "trill-patch",
+ "trill-replay",
+ "unic-langid",
+ "walkdir",
+ "web-time",
+ "zip",
+]
+
+[[package]]
+name = "trill-lite-web"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "chrono",
+ "console_error_panic_hook",
+ "console_log",
+ "dioxus",
+ "encoder-facade",
+ "futures",
+ "gamepad-facade",
+ "getrandom 0.2.16",
+ "js-sys",
+ "log",
+ "num-traits",
+ "semver",
+ "trill-library",
+ "trill-lobby",
+ "trill-match",
+ "trill-net-protocol",
+ "trill-platform",
+ "trill-replay",
+ "trill-replay-renderer",
+ "trill-session",
+ "unic-langid",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
+name = "trill-lobby"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "log",
+ "rand 0.8.5",
+ "semver",
+ "subtle",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-util",
+ "trill-net",
+ "trill-net-protocol",
+ "trill-platform",
+ "trill-signaling",
+ "unic-langid",
+ "web-time",
+ "zstd",
+]
+
+[[package]]
+name = "trill-match"
+version = "0.1.0"
+dependencies = [
+ "getgud",
+ "log",
+ "num-rational",
+ "num-traits",
+ "serde",
+ "serde_repr",
+ "thiserror 1.0.69",
+ "trill-replay",
+]
+
+[[package]]
+name = "trill-net"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "datachannel-wrapper",
+ "futures",
+ "log",
+ "rennet",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-util",
+ "trill-net-protocol",
+ "trill-platform",
+ "trill-signaling",
+ "web-time",
+]
+
+[[package]]
+name = "trill-net-protocol"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "rand 0.8.5",
+ "rand_pcg 0.3.1",
+ "rennet",
+ "semver",
+ "serde",
+ "sha3",
+]
+
+[[package]]
+name = "trill-patch"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "semver",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 1.0.69",
+ "toml 0.8.23",
+ "unic-langid",
+ "zip",
+]
+
+[[package]]
+name = "trill-platform"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "gloo-timers",
+ "thiserror 1.0.69",
+ "tokio",
+ "wasm-bindgen-futures",
+]
+
+[[package]]
+name = "trill-replay"
+version = "0.1.0"
+dependencies = [
+ "byteorder",
+ "prost",
+ "prost-build",
+ "serde",
+ "thiserror 1.0.69",
+ "zstd",
+]
+
+[[package]]
+name = "trill-replay-renderer"
+version = "0.1.0"
+dependencies = [
+ "encoder-facade",
+ "num-rational",
+ "num-traits",
+ "thiserror 1.0.69",
+ "trill-match",
+]
+
+[[package]]
+name = "trill-session"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "chrono",
+ "log",
+ "num-traits",
+ "rand 0.8.5",
+ "rand_pcg 0.3.1",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-util",
+ "trill-gamesupport",
+ "trill-match",
+ "trill-net",
+ "trill-net-protocol",
+ "trill-platform",
+ "trill-replay",
+ "web-time",
+]
+
+[[package]]
+name = "trill-signaling"
+version = "0.1.0"
+dependencies = [
+ "datachannel-wrapper",
+ "futures-util",
+ "gloo-timers",
+ "http 0.2.12",
+ "log",
+ "prost",
+ "prost-build",
+ "rand 0.8.5",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-tungstenite 0.16.1",
+ "tokio-tungstenite-wasm",
+ "url",
+ "urlencoding",
+ "wasm-bindgen-futures",
+]
+
+[[package]]
+name = "trill-ui"
+version = "0.1.0"
+dependencies = [
+ "iced",
+ "lucide-icons",
+ "sweeten",
 ]
 
 [[package]]

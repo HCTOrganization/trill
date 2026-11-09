@@ -75,7 +75,7 @@ jobs:
       # script's OUT_DIR, so they have to match win/build.sh exactly or the
       # release build looks for its C++ artifacts somewhere else.
       - name: Check
-        run: cargo check --bin tango --features gamesupport-all --profile release-dist --target x86_64-pc-windows-msvc
+        run: cargo check --bin trill --features gamesupport-all --profile release-dist --target x86_64-pc-windows-msvc
 
   check-mac-universal:
     runs-on: macos-15
@@ -106,8 +106,8 @@ jobs:
       # its own target subdirectory and its own vendored C++.
       - name: Check
         run: |
-          cargo check --bin tango --features gamesupport-all --profile release-dist --target aarch64-apple-darwin
-          cargo check --bin tango --features gamesupport-all --profile release-dist --target x86_64-apple-darwin
+          cargo check --bin trill --features gamesupport-all --profile release-dist --target aarch64-apple-darwin
+          cargo check --bin trill --features gamesupport-all --profile release-dist --target x86_64-apple-darwin
 
   # Fills web.yaml's deploy-web cache. Its own shared-key rather than
   # release-dist: a shared-key names ONE cache entry per image, so this
@@ -157,7 +157,7 @@ jobs:
           shared-key: release-web
           cache-on-failure: true
 
-      # Triple, profile, features AND flags match tango-lite-web/build.sh
+      # Triple, profile, features AND flags match trill-lite-web/build.sh
       # — note `release`, not `release-dist`; the web build keeps the
       # stock profile.
       - name: Check
@@ -174,7 +174,7 @@ jobs:
             -Clink-arg=--export=__tls_base
             -Clink-arg=--export=__heap_base
             -Clink-arg=--export=__data_end
-        run: cargo check --package tango-lite-web --features gamesupport-all --profile release --target wasm32-unknown-unknown -Zbuild-std=std,panic_abort
+        run: cargo check --package trill-lite-web --features gamesupport-all --profile release --target wasm32-unknown-unknown -Zbuild-std=std,panic_abort
 
   check-linux-x86_64:
     runs-on: ubuntu-22.04
@@ -209,4 +209,4 @@ jobs:
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y alsa build-essential clang cmake curl fuse git libnss3 librust-atk-dev librust-gdk-pixbuf-dev librust-gdk-sys-dev librust-pango-dev libsdl2-dev pkgconf sudo wget
 
       - name: Check
-        run: cargo check --bin tango --features gamesupport-all --profile release-dist --target x86_64-unknown-linux-gnu
+        run: cargo check --bin trill --features gamesupport-all --profile release-dist --target x86_64-unknown-linux-gnu

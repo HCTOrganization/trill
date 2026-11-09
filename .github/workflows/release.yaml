@@ -23,9 +23,9 @@ jobs:
           git fetch --tags --force
           msg=$(git for-each-ref --format='%(contents)' refs/tags/${{ github.ref_name }})
           {
-            echo 'msg<<TANGO_TAG_MSG_EOF'
+            echo 'msg<<TRILL_TAG_MSG_EOF'
             echo "$msg"
-            echo 'TANGO_TAG_MSG_EOF'
+            echo 'TRILL_TAG_MSG_EOF'
           } >> "$GITHUB_OUTPUT"
 
       - uses: softprops/action-gh-release@v2
@@ -77,7 +77,7 @@ jobs:
       # melonDS's JIT is GCC/Clang-only code — a GAS-syntax linkage stub,
       # inline asm, VLAs — that cl.exe rejects, so melonds-sys builds the
       # DS core with clang targeting the MSVC ABI and links it statically
-      # into tango.exe (see its build.rs). The runner image already ships
+      # into trill.exe (see its build.rs). The runner image already ships
       # LLVM at C:\Program Files\LLVM, which is where the build script
       # looks; only the CMake generator has to be added.
       - name: Install Ninja (CMake generator for the melonDS core)
@@ -114,8 +114,8 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            ./dist/tango-x86_64-windows.exe
-            ./dist/tango-x86_64-windows.pdb
+            ./dist/trill-x86_64-windows.exe
+            ./dist/trill-x86_64-windows.pdb
 
   release-mac-universal:
     runs-on: macos-15
@@ -160,7 +160,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            ./dist/tango-macos.dmg
+            ./dist/trill-macos.dmg
 
   release-linux-x86_64:
     # Pin to Ubuntu 22.04 so the produced binary links against an older glibc
@@ -211,5 +211,5 @@ jobs:
           # The .debug sidecar is the split-out DWARF, published for
           # offline crash symbolication like the Windows .pdb.
           files: |
-            ./dist/tango-x86_64-linux.AppImage
-            ./dist/tango-x86_64-linux.debug
+            ./dist/trill-x86_64-linux.AppImage
+            ./dist/trill-x86_64-linux.debug

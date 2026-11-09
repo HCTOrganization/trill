@@ -1,0 +1,36 @@
+[package]
+name = "trill-session"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+publish = false
+
+# Portable session drivers; live networking is enabled by the netplay feature.
+[dependencies]
+trill-platform = { path = "../trill-platform" }
+trill-net = { path = "../trill-net", optional = true }
+bytemuck.workspace = true
+chrono = { workspace = true, default-features = true }
+log.workspace = true
+num-traits.workspace = true
+rand.workspace = true
+rand_pcg.workspace = true
+trill-gamesupport = { path = "../trill-gamesupport" }
+trill-match = { path = "../trill-match" }
+trill-net-protocol = { path = "../trill-net-protocol" }
+trill-replay = { path = "../trill-replay" }
+thiserror.workspace = true
+# Runtime-neutral synchronization and futures macros only.
+tokio = { workspace = true, features = ["sync", "macros"] }
+tokio-util = { workspace = true, features = ["rt"] }
+# `std::time::Instant` panics in a browser; this is the same API backed
+# by `performance.now()` there and by std everywhere else.
+web-time.workspace = true
+
+
+[lints]
+workspace = true
+
+[features]
+default = ["netplay"]
+netplay = ["dep:trill-net"]

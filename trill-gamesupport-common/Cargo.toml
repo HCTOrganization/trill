@@ -1,0 +1,16 @@
+[package]
+name = "trill-gamesupport-common"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+
+# The private gamesupport layer's shared telemetry trackers (the
+# chip-use edge detector the game pollers embed). The save/ROM parsing
+# substrate lives in trill-gamesupport-common-dataview, the save-editor
+# UI in trill-gamesupport-common-ui.
+
+[dependencies]
+trill-match = { path = "../trill-match" }
+
+[lints]
+workspace = true
