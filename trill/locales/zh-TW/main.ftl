@@ -1,6 +1,6 @@
 # Window
 # Endonym for this locale; shown in the language picker.
-LANGUAGE = 繁體中文（台灣、香港、澳門）
+LANGUAGE = 繁體中文
 
 window-title = Trill
 # Tooltip on the top bar's close button (fullscreen only).
