@@ -42,7 +42,7 @@ pub struct Offsets {
 const NAVICUST_BG_TOB: image::Rgba<u8> = image::Rgba([0x21, 0x8c, 0xa5, 0xff]);
 const NAVICUST_BG_TOC: image::Rgba<u8> = image::Rgba([0x5a, 0x5a, 0x4a, 0xff]);
 
-// Team of Blues (ProtoMan) and Team of Colonel each get their own roster, one
+// Team of Blues (Blues) and Team of Colonel each get their own roster, one
 // row apiece.
 const NAVI_ORDER_TOB: &[&[usize]] = &[&[0, 1, 2, 3, 4, 5, 6]];
 const NAVI_ORDER_TOC: &[&[usize]] = &[&[0, 7, 8, 9, 10, 11, 12]];

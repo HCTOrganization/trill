@@ -504,27 +504,17 @@ pub fn hex_chain<'a, M: 'a>(height: f32) -> Element<'a, M> {
 /// normally a left→right primary→cooler gradient so the rule has
 /// motion — not a single flat color stripe across the window.
 pub fn hud_scanline_top<'a, M: 'a>() -> Element<'a, M> {
-    hud_scanline(crate::ui::theme::is_gay_time().then(|| flag_background(&crate::ui::theme::rainbow_flag_stops())))
+    hud_scanline()
 }
 
 /// The bottom-edge accent strip.
 pub fn hud_scanline_bottom<'a, M: 'a>() -> Element<'a, M> {
-    hud_scanline(crate::ui::theme::is_gay_time().then(|| flag_background(&crate::ui::theme::trans_flag_stops())))
+    hud_scanline()
 }
 
-/// A flat left→right linear gradient through `stops`, packaged as a
-/// `Background` ready to drop into a scanline override.
-fn flag_background(stops: &[(f32, iced::Color)]) -> iced::Background {
-    iced::Background::Gradient(iced::Gradient::Linear(stops.iter().fold(
-        iced::gradient::Linear::new(std::f32::consts::FRAC_PI_2),
-        |grad, &(offset, color)| grad.add_stop(offset, color),
-    )))
-}
-
-/// Shared scanline body. `override_bg` replaces the fill when `Some`
-/// (e.g. a pride-flag gradient in June); when `None` it falls back to
-/// the usual primary→cooler accent rule derived from the live theme.
-fn hud_scanline<'a, M: 'a>(override_bg: Option<iced::Background>) -> Element<'a, M> {
+/// Shared scanline body: the usual primary→cooler accent rule derived
+/// from the live theme.
+fn hud_scanline<'a, M: 'a>() -> Element<'a, M> {
     container(
         iced::widget::Space::new()
             .width(Length::Fill)
@@ -533,32 +523,29 @@ fn hud_scanline<'a, M: 'a>(override_bg: Option<iced::Background>) -> Element<'a,
     .width(Length::Fill)
     .height(Length::Fixed(3.0))
     .style(move |theme: &Theme| {
-        let background = override_bg.unwrap_or_else(|| {
-            let primary = theme.palette().primary;
-            // Shift the right edge a quarter-turn around the hue
-            // wheel (green→teal, blue→violet, red→orange…) so the
-            // rule has motion without leaving the accent's family —
-            // the old green-tuned channel math landed off-brand
-            // colors under other accents.
-            let shifted = rotate_hue(primary, 45.0);
-            // Re-punch the rotated stop: push it away from gray so
-            // the far end burns as hot as the old hand-tuned teal
-            // did, instead of a mid-tone accent fading politely.
-            let gray = (shifted.r + shifted.g + shifted.b) / 3.0;
-            let right = iced::Color {
-                r: (gray + (shifted.r - gray) * 1.4).clamp(0.0, 1.0),
-                g: (gray + (shifted.g - gray) * 1.4).clamp(0.0, 1.0),
-                b: (gray + (shifted.b - gray) * 1.4).clamp(0.0, 1.0),
-                a: 1.0,
-            };
-            iced::Background::Gradient(iced::Gradient::Linear(
+        let primary = theme.palette().primary;
+        // Shift the right edge a quarter-turn around the hue
+        // wheel (green→teal, blue→violet, red→orange…) so the
+        // rule has motion without leaving the accent's family —
+        // the old green-tuned channel math landed off-brand
+        // colors under other accents.
+        let shifted = rotate_hue(primary, 45.0);
+        // Re-punch the rotated stop: push it away from gray so
+        // the far end burns as hot as the old hand-tuned teal
+        // did, instead of a mid-tone accent fading politely.
+        let gray = (shifted.r + shifted.g + shifted.b) / 3.0;
+        let right = iced::Color {
+            r: (gray + (shifted.r - gray) * 1.4).clamp(0.0, 1.0),
+            g: (gray + (shifted.g - gray) * 1.4).clamp(0.0, 1.0),
+            b: (gray + (shifted.b - gray) * 1.4).clamp(0.0, 1.0),
+            a: 1.0,
+        };
+        iced::widget::container::Style {
+            background: Some(iced::Background::Gradient(iced::Gradient::Linear(
                 iced::gradient::Linear::new(std::f32::consts::FRAC_PI_2)
                     .add_stop(0.0, primary)
                     .add_stop(1.0, right),
-            ))
-        });
-        iced::widget::container::Style {
-            background: Some(background),
+            ))),
             ..Default::default()
         }
     })

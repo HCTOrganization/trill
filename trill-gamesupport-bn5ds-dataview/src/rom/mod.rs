@@ -95,7 +95,7 @@ pub struct Offsets {
     ncp_descriptions: &'static str,
     /// The navi emblem sheet (cart file): thirteen 16x16 icons of
     /// 2x2 tiles, one per navi in id order — the GBA pair's two sheets
-    /// merged, MegaMan and Team ProtoMan's six from the ProtoMan cart
+    /// merged, MegaMan and Team Blues's six from the Blues cart
     /// followed by Team Colonel's six from the Colonel cart, byte for
     /// byte (which is how it was found). The palettes are the eight
     /// both GBA carts share; which one a navi takes is
@@ -394,7 +394,7 @@ impl Assets {
     pub fn cross_name(&self, cross: crate::save::Cross) -> Option<String> {
         let (pointer, index) = match cross {
             crate::save::Cross::None => (self.offsets.navi_names_pointer, MEGAMAN_NAVI_INDEX),
-            crate::save::Cross::BassProto | crate::save::Cross::BassColonel => {
+            crate::save::Cross::ForteBlues | crate::save::Cross::ForteColonel => {
                 (self.offsets.enemy_names_pointer, BASS_CROSS_ENEMY_INDEX)
             }
             crate::save::Cross::Sol => (self.offsets.enemy_names_pointer, SOL_CROSS_ENEMY_INDEX),
@@ -403,7 +403,7 @@ impl Assets {
     }
 
     /// What the cart calls the navi leading `team`, the way its own file
-    /// select names a file: `ProtoMan`/`Colonel`, ブルース/カーネル. Off the
+    /// select names a file: `Blues`/`Colonel`, ブルース/カーネル. Off the
     /// same roster as plain MegaMan — the two are the roster's first
     /// entries after him, each team's leader.
     pub fn leader_name(&self, team: u8) -> Option<String> {
@@ -416,7 +416,7 @@ impl Assets {
     /// The roster archive gives every navi a block of six entries (the
     /// navi, its α, β and Y versions, its DS one, then a blank), so a
     /// navi's own name is the first of its block; MegaMan sits ahead of
-    /// the blocks. That is how ProtoMan lands on entry 1 and Colonel on
+    /// the blocks. That is how Blues lands on entry 1 and Colonel on
     /// 37, which is where the file select's own two names come from.
     pub fn navi_name(&self, id: usize) -> Option<String> {
         let index = match id {
@@ -961,7 +961,7 @@ const PARTY_PROGRAM_BONUSES: [crate::save::PartycustBonus; super::NUM_PARTY_PROG
 /// one colour per version; this cart holds both teams' files, and the
 /// backdrop is the one thing here that would have to know which of them
 /// is open — the layout is asked of the cart, not of a save — so both
-/// get Team ProtoMan's.
+/// get Team Blues's.
 const NAVICUST_BG: image::Rgba<u8> = image::Rgba([0x21, 0x8c, 0xa5, 0xff]);
 
 impl trill_gamesupport_common_dataview::rom::Assets for Assets {

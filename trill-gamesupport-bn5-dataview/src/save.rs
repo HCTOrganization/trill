@@ -22,7 +22,7 @@ pub enum Region {
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub enum Variant {
-    Protoman,
+    Blues,
     Colonel,
 }
 
@@ -52,7 +52,7 @@ impl Save {
         let game_info = match &buf[GAME_NAME_OFFSET..][..20] {
             b"REXE5TOB 20041104 JP" => GameInfo {
                 region: Region::JP,
-                variant: Variant::Protoman,
+                variant: Variant::Blues,
             },
             b"REXE5TOK 20041104 JP" => GameInfo {
                 region: Region::JP,
@@ -60,7 +60,7 @@ impl Save {
             },
             b"REXE5TOB 20041006 US" => GameInfo {
                 region: Region::US,
-                variant: Variant::Protoman,
+                variant: Variant::Blues,
             },
             b"REXE5TOK 20041006 US" => GameInfo {
                 region: Region::US,
@@ -103,7 +103,7 @@ impl Save {
     pub fn compute_checksum(&self) -> u32 {
         trill_gamesupport_common_dataview::save::compute_raw_checksum(&self.buf, CHECKSUM_OFFSET)
             + match self.game_info.variant {
-                Variant::Protoman => 0x72,
+                Variant::Blues => 0x72,
                 Variant::Colonel => 0x18,
             }
     }
@@ -178,7 +178,7 @@ pub const KARMA_MAX: u16 = 1000;
 
 /// Karma's anti-tamper mirror: a u32 the game keeps equal to
 /// `karma ^ key`, with the key the u32 at [`KARMA_KEY_OFFSET`]. The
-/// game's own writer/verifier pair (US Protoman `0x080064d8` /
+/// game's own writer/verifier pair (US Blues `0x080064d8` /
 /// `0x080064f2`, reached through the record getter at `0x08010dc8`)
 /// reads karma out of navi record 0 at `+0x44`, XORs the key over it
 /// and keeps the result here, at the head of the save's last section —
@@ -380,7 +380,7 @@ impl<S: std::ops::DerefMut<Target = Save>> trill_gamesupport_common_dataview::sa
 
     fn rebuild_anticheat(&mut self) {
         let mask = match self.save.game_info.variant {
-            Variant::Protoman => 0x43,
+            Variant::Blues => 0x43,
             Variant::Colonel => 0x8d,
         };
         for id in 0..0x200 {
@@ -465,7 +465,7 @@ impl<S: std::ops::DerefMut<Target = Save>> trill_gamesupport_common_dataview::sa
 
     fn rebuild_anticheat(&mut self) {
         let mask = match self.save.game_info.variant {
-            Variant::Protoman => 0x17,
+            Variant::Blues => 0x17,
             Variant::Colonel => 0x81,
         };
         for id in 0..0x200 {
@@ -853,7 +853,7 @@ mod tests {
             &buf,
             GameInfo {
                 region: Region::US,
-                variant: Variant::Protoman,
+                variant: Variant::Blues,
             },
         )
         .unwrap();

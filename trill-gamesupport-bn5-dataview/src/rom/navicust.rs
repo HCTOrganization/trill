@@ -1,13 +1,13 @@
 //! NaviCust program effects for BN5, cataloged by part template id (the part
 //! `id >> 2`, i.e. ignoring the four colour variants).
 //!
-//! Reverse-engineered from the effect-application code (Team ProtoMan BRBE): the
+//! Reverse-engineered from the effect-application code (Team Blues BRBE): the
 //! navicust compiler dispatches each installed program through a jump table at
 //! `0x0813fb40` (indexed by program id), into a handler that calls
 //! `set_stat(navi, field, value)` — `field` is the navi-stats byte offset. The
 //! field layout matches BN6, so the shared abilities behave identically; BN5
 //! adds SoulTime, the virus folders, Chivalry, AutoRun, SoulCleanse and the
-//! (unobtainable) HubStyle bundle. Values are identical between Team ProtoMan
+//! (unobtainable) HubStyle bundle. Values are identical between Team Blues
 //! and Team Colonel.
 //!
 //! Bugs come from a second jump table at `0x08140064`, dispatched by effect

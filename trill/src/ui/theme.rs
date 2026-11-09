@@ -24,38 +24,6 @@ use iced::Theme;
 pub const TRILL_GREEN: iced::Color =
     iced::Color::from_rgb(0x4c as f32 / 255.0, 0xaf as f32 / 255.0, 0x50 as f32 / 255.0);
 
-pub fn is_gay_time() -> bool {
-    use chrono::Datelike;
-    chrono::Local::now().month() == 6
-}
-
-// The n/5 pattern spells out the six evenly-spaced stops; clippy's
-// eq_op would flag the final 5.0/5.0.
-#[allow(clippy::eq_op)]
-pub fn rainbow_flag_stops() -> [(f32, iced::Color); 6] {
-    [
-        (0.0 / 5.0, iced::Color::from_rgb8(0xe4, 0x03, 0x03)), // red
-        (1.0 / 5.0, iced::Color::from_rgb8(0xff, 0x8c, 0x00)), // orange
-        (2.0 / 5.0, iced::Color::from_rgb8(0xff, 0xed, 0x00)), // yellow
-        (3.0 / 5.0, iced::Color::from_rgb8(0x00, 0x80, 0x26)), // green
-        (4.0 / 5.0, iced::Color::from_rgb8(0x00, 0x4d, 0xff)), // blue
-        (5.0 / 5.0, iced::Color::from_rgb8(0x75, 0x07, 0x87)), // violet
-    ]
-}
-
-/// The trans flag's five stripes (blue / pink / white / pink / blue),
-/// left→right, as linear-gradient stops — the symmetric mirror means it
-/// reads the same flying either direction.
-pub fn trans_flag_stops() -> [(f32, iced::Color); 5] {
-    [
-        (0.00, iced::Color::from_rgb8(0x5b, 0xce, 0xfa)), // light blue
-        (0.25, iced::Color::from_rgb8(0xf5, 0xa9, 0xb8)), // pink
-        (0.50, iced::Color::from_rgb8(0xff, 0xff, 0xff)), // white
-        (0.75, iced::Color::from_rgb8(0xf5, 0xa9, 0xb8)), // pink
-        (1.00, iced::Color::from_rgb8(0x5b, 0xce, 0xfa)), // light blue
-    ]
-}
-
 /// The chrome color for a [`config::AccentColor`] choice, per theme
 /// mode. Dark mode wants bright accents that glow against the
 /// charcoal; light mode needs deeper shades of the same identity or
@@ -71,8 +39,8 @@ pub fn accent_color(accent: config::AccentColor, dark: bool) -> iced::Color {
         (config::AccentColor::MegaManBlue, false) => (0x14, 0x5c, 0xc2),
         // Crimson, a step deeper than the danger red so alarms still
         // read a notch hotter than the chrome.
-        (config::AccentColor::ProtoManRed, true) => (0xef, 0x40, 0x56),
-        (config::AccentColor::ProtoManRed, false) => (0xb7, 0x1c, 0x30),
+        (config::AccentColor::BluesRed, true) => (0xef, 0x40, 0x56),
+        (config::AccentColor::BluesRed, false) => (0xb7, 0x1c, 0x30),
         (config::AccentColor::RollPink, true) => (0xff, 0x6e, 0xa8),
         (config::AccentColor::RollPink, false) => (0xc2, 0x2f, 0x6d),
         // GutsMan's metallic amber-gold — deeper than the selection

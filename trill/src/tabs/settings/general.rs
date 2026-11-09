@@ -23,11 +23,11 @@ fn accent_choice(lang: &LanguageIdentifier, accent: config::AccentColor) -> Choi
         accent,
         match accent {
             config::AccentColor::TrillGreen => t!(lang, "settings-accent-trill-green"),
-            config::AccentColor::MegaManBlue => t!(lang, "settings-accent-megaman-blue"),
-            config::AccentColor::ProtoManRed => t!(lang, "settings-accent-protoman-red"),
+            config::AccentColor::MegaManBlue => t!(lang, "settings-accent-rockman-blue"),
+            config::AccentColor::BluesRed => t!(lang, "settings-accent-blues-red"),
             config::AccentColor::RollPink => t!(lang, "settings-accent-roll-pink"),
             config::AccentColor::GutsManYellow => t!(lang, "settings-accent-gutsman-yellow"),
-            config::AccentColor::BassPurple => t!(lang, "settings-accent-bass-purple"),
+            config::AccentColor::BassPurple => t!(lang, "settings-accent-forte-purple"),
         },
     )
 }
@@ -82,7 +82,7 @@ pub(super) fn settings_general<'a>(lang: &'a LanguageIdentifier, config: &'a con
                     let options = vec![
                         accent_choice(lang, config::AccentColor::TrillGreen),
                         accent_choice(lang, config::AccentColor::MegaManBlue),
-                        accent_choice(lang, config::AccentColor::ProtoManRed),
+                        accent_choice(lang, config::AccentColor::BluesRed),
                         accent_choice(lang, config::AccentColor::RollPink),
                         accent_choice(lang, config::AccentColor::GutsManYellow),
                         accent_choice(lang, config::AccentColor::BassPurple),

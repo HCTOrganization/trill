@@ -182,7 +182,7 @@ pub const KARMA_MAX: u16 = 1000;
 
 /// Karma's anti-tamper mirror: a u32 the game keeps equal to
 /// `karma ^ key`, with the key another u32 the save carries. The GBA
-/// game writes and verifies the same pair (US Protoman `0x080064d8` /
+/// game writes and verifies the same pair (US Blues `0x080064d8` /
 /// `0x080064f2`: read record 0 `+0x44`, XOR the key, store into its
 /// last save section), and this cart's played files hold exactly that
 /// relation at these offsets — so a karma write has to land in both
@@ -626,8 +626,8 @@ fn cost_of(program: usize, assets: &crate::rom::Assets) -> u8 {
 ///
 /// BassCross is two values because the game keeps two, chosen by the
 /// save's own team ([`TEAM_OFFSET`]) rather than by the player: a Team
-/// ProtoMan save's is [`Cross::BassProto`] and a Team Colonel save's
-/// [`Cross::BassColonel`]. [`Cross::bass_for`] is that rule, so a pick
+/// Blues save's is [`Cross::ForteBlues`] and a Team Colonel save's
+/// [`Cross::ForteColonel`]. [`Cross::bass_for`] is that rule, so a pick
 /// lands the value the game would have written.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(u8)]
@@ -635,17 +635,17 @@ pub enum Cross {
     /// No cross: plain MegaMan, which is every save that has not been
     /// through the prompt.
     None = 0,
-    /// BassCross MegaMan on a Team ProtoMan save.
-    BassProto = 1,
+    /// BassCross MegaMan on a Team Blues save.
+    ForteBlues = 1,
     /// BassCross MegaMan on a Team Colonel save.
-    BassColonel = 2,
+    ForteColonel = 2,
     /// SolCross MegaMan, from the Boktai cartridge (Boktai 2 in the US
     /// build, Boktai 3 in the JP one — one value either way).
     Sol = 3,
 }
 
 /// Which of the cartridge's two teams a save plays, at this offset in
-/// the save image: 0 Team ProtoMan, 1 Team Colonel. The game reads it
+/// the save image: 0 Team Blues, 1 Team Colonel. The game reads it
 /// through the accessor at US `0x02001d74` to pick which BassCross
 /// value to write.
 pub const TEAM_OFFSET: usize = 0x0b;
@@ -660,8 +660,8 @@ impl Cross {
     /// game does not write.
     pub fn from_raw(raw: u8) -> Self {
         match raw {
-            1 => Cross::BassProto,
-            2 => Cross::BassColonel,
+            1 => Cross::ForteBlues,
+            2 => Cross::ForteColonel,
             3 => Cross::Sol,
             _ => Cross::None,
         }
@@ -671,15 +671,15 @@ impl Cross {
     /// byte is `team` — the game's own choice between the two values.
     pub fn bass_for(team: u8) -> Self {
         if team == 0 {
-            Cross::BassProto
+            Cross::ForteBlues
         } else {
-            Cross::BassColonel
+            Cross::ForteColonel
         }
     }
 
     /// Whether this is a BassCross, either team's.
-    pub fn is_bass(self) -> bool {
-        matches!(self, Cross::BassProto | Cross::BassColonel)
+    pub fn is_forte(self) -> bool {
+        matches!(self, Cross::ForteBlues | Cross::ForteColonel)
     }
 }
 
@@ -1621,10 +1621,10 @@ impl<S: std::ops::Deref<Target = Save>> trill_gamesupport_common_dataview::save:
 
         match self.save.cross() {
             Cross::None => {}
-            Cross::BassProto => {
+            Cross::ForteBlues => {
                 max_hp += 200;
             }
-            Cross::BassColonel => {
+            Cross::ForteColonel => {
                 const BONUS: u32 = 20;
                 max_hp = (max_hp as u32 * (100 + BONUS) / 100) as u16;
             }
@@ -1648,7 +1648,7 @@ impl<S: std::ops::Deref<Target = Save>> trill_gamesupport_common_dataview::save:
         let mut mega: isize = BASE_MEGA_LIMIT;
         let mut giga: usize = BASE_GIGA_LIMIT;
 
-        if matches!(self.save.cross(), Cross::BassColonel | Cross::BassProto | Cross::Sol) {
+        if matches!(self.save.cross(), Cross::ForteColonel | Cross::ForteBlues | Cross::Sol) {
             mega -= 2;
         }
 
@@ -2492,15 +2492,15 @@ mod tests {
     #[test]
     fn the_cross_round_trips_per_file() {
         let mut data = two_files();
-        // File 0 is Team ProtoMan, file 1 Team Colonel — which is what
+        // File 0 is Team Blues, file 1 Team Colonel — which is what
         // picks between the two BassCross values. (Their live blocks are
         // 0 and 4; see `two_files`.)
         data[TEAM_OFFSET] = 0;
         data[4 * BLOCK_SIZE + TEAM_OFFSET] = 1;
         let set = SaveSet::parse(&data).unwrap();
         assert_eq!(set.save(0).unwrap().cross(), Cross::None);
-        assert_eq!(Cross::bass_for(set.save(0).unwrap().team()), Cross::BassProto);
-        assert_eq!(Cross::bass_for(set.save(1).unwrap().team()), Cross::BassColonel);
+        assert_eq!(Cross::bass_for(set.save(0).unwrap().team()), Cross::ForteBlues);
+        assert_eq!(Cross::bass_for(set.save(1).unwrap().team()), Cross::ForteColonel);
 
         let mut file1 = set.save(1).unwrap();
         file1.set_cross(Cross::Sol);

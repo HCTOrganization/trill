@@ -540,7 +540,7 @@ fn creation_template_options(
 
 /// Bare localized template label (e.g. "Heat Guts"), without any
 /// variant prefix. Empty `raw` is the unnamed default-template file that
-/// patches ship as `<rom>_<rev>.sav`; the `.save-megaman` attr usually
+/// patches ship as `<rom>_<rev>.sav`; the `.save-rockman` attr usually
 /// carries the right label for it.
 fn template_label(lang: &unic_langid::LanguageIdentifier, family: &str, raw: &str) -> String {
     save::template_label(lang, family, raw).unwrap_or_else(|| {

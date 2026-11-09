@@ -53,9 +53,9 @@ macro_rules! bn5_save {
     };
 }
 
-// ---------------- EXE5 Blues (Protoman) JP ----------------
-static EXE5B_DARK: LazyLock<crate::dataview::save::Save> = bn5_save!("saves/dark_protoman_jp.raw", JP, Protoman);
-static EXE5B_LIGHT: LazyLock<crate::dataview::save::Save> = bn5_save!("saves/light_protoman_jp.raw", JP, Protoman);
+// ---------------- EXE5 Blues (Blues) JP ----------------
+static EXE5B_DARK: LazyLock<crate::dataview::save::Save> = bn5_save!("saves/dark_blues_jp.raw", JP, Blues);
+static EXE5B_LIGHT: LazyLock<crate::dataview::save::Save> = bn5_save!("saves/light_blues_jp.raw", JP, Blues);
 static EXE5B_T: SaveTemplates = LazyLock::new(|| {
     vec![
         (
@@ -89,7 +89,7 @@ pub static EXE5B: Game = Game {
     crc32: 0xc73f23c0,
     rom_size: 0x800000,
     region: Region::JP,
-    parse_save_fn: |data| parse_save(data, dataview::save::Region::JP, dataview::save::Variant::Protoman),
+    parse_save_fn: |data| parse_save(data, dataview::save::Region::JP, dataview::save::Variant::Blues),
     load_rom_assets_fn: Some(|rom, wram, charset| {
         trill_gamesupport_common_dataview::wrap_assets(Box::new(dataview::rom::Assets::new(
             &dataview::rom::BRBJ_00,
@@ -143,9 +143,9 @@ pub static EXE5C: Game = Game {
     background: Some(BACKGROUND),
 };
 
-// ---------------- BN5 Protoman US ----------------
-static BN5P_DARK: LazyLock<crate::dataview::save::Save> = bn5_save!("saves/dark_protoman_us.raw", US, Protoman);
-static BN5P_LIGHT: LazyLock<crate::dataview::save::Save> = bn5_save!("saves/light_protoman_us.raw", US, Protoman);
+// ---------------- BN5 Blues US ----------------
+static BN5P_DARK: LazyLock<crate::dataview::save::Save> = bn5_save!("saves/dark_blues_us.raw", US, Blues);
+static BN5P_LIGHT: LazyLock<crate::dataview::save::Save> = bn5_save!("saves/light_blues_us.raw", US, Blues);
 static BN5P_T: SaveTemplates = LazyLock::new(|| {
     vec![
         (
@@ -167,7 +167,7 @@ pub static BN5P: Game = Game {
     crc32: 0xa73e83a4,
     rom_size: 0x800000,
     region: Region::US,
-    parse_save_fn: |data| parse_save(data, dataview::save::Region::US, dataview::save::Variant::Protoman),
+    parse_save_fn: |data| parse_save(data, dataview::save::Region::US, dataview::save::Variant::Blues),
     load_rom_assets_fn: Some(|rom, wram, charset| {
         trill_gamesupport_common_dataview::wrap_assets(Box::new(dataview::rom::Assets::new(
             &dataview::rom::BRBE_00,

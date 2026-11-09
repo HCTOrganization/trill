@@ -1,6 +1,6 @@
 //! MegaMan Battle Network 5: Double Team DS.
 //!
-//! One cart carrying both Team ProtoMan and Team Colonel — the player
+//! One cart carrying both Team Blues and Team Colonel — the player
 //! picks a side per save, so there is a single ROM revision rather than
 //! the paired versions the GBA games ship as.
 //!

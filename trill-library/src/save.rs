@@ -250,10 +250,10 @@ pub fn template(
 }
 
 /// A template's label in its family's own words ("Heat Guts"), if the
-/// family names it. The unnamed default template is keyed `save-megaman`.
+/// family names it. The unnamed default template is keyed `save-rockman`.
 /// Hosts choose their own fallback.
 pub fn template_label(lang: &unic_langid::LanguageIdentifier, family: &str, template: &str) -> Option<String> {
-    let key = if template.is_empty() { "megaman" } else { template };
+    let key = if template.is_empty() { "rockman" } else { template };
     crate::game::family_str(family, lang, &format!("save-{key}"))
 }
 

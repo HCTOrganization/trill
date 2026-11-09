@@ -190,7 +190,7 @@ pub const NAVI_STATS: &[RawNaviStats] = &[
         effective_max_hp: 2000,
         ..BASE
     },
-    // ProtoMan
+    // Blues
     RawNaviStats {
         navi_id: 11,
         attack: 4,

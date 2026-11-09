@@ -43,7 +43,7 @@ fn default_setup_pane_widths() -> [f32; 2] {
 }
 
 fn default_language() -> unic_langid::LanguageIdentifier {
-    trill_library::lang::FALLBACK_LANG
+    trill_library::lang::UI_FALLBACK_LANG
 }
 
 fn ser_language<S: serde::Serializer>(lang: &unic_langid::LanguageIdentifier, s: S) -> Result<S::Ok, S::Error> {
@@ -114,7 +114,7 @@ pub enum AccentColor {
     #[default]
     TrillGreen,
     MegaManBlue,
-    ProtoManRed,
+    BluesRed,
     RollPink,
     GutsManYellow,
     /// Was `BassGold` before Bass went to his canon violet (the gold
@@ -631,7 +631,7 @@ mod tests {
         assert_eq!(config.ui_scale, 1.0);
         assert_eq!(config.volume, 1.0);
         assert_eq!(config.pvp_setup_pane_widths, [420.0; 2]);
-        assert_eq!(config.language, trill_library::lang::FALLBACK_LANG);
+        assert_eq!(config.language, trill_library::lang::UI_FALLBACK_LANG);
         assert_eq!(config.opponent_view, OpponentView::Off);
     }
 

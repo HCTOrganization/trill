@@ -300,7 +300,7 @@ const MAX_HP_OFFSET: usize = 0x0020;
 /// What the cart's own folder editor allows, and so what this one does:
 /// five copies of any one chip, five navi chips. The played cart's
 /// folder sits at both caps — five Paladin B, and five navis from
-/// ProtoMan V2 to Rogue — which is the shape a folder built under them
+/// Blues V2 to Rogue — which is the shape a folder built under them
 /// takes.
 const MAX_COPIES: usize = 5;
 const NAVI_LIMIT: usize = 5;

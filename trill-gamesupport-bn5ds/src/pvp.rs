@@ -889,7 +889,7 @@ pub mod priming {
     /// SearchMan, the own words read `0x256` and `0x257`, and picking
     /// those same two navis on the screen and committing with DOWNLOAD
     /// writes `0x278` and `0x279`. Both gaps are this, and the screen's
-    /// roster runs consecutively from ProtoMan at `0x277`, so the two
+    /// roster runs consecutively from Blues at `0x277`, so the two
     /// orders agree once the origin does.
     ///
     /// Nothing about the roster's *length* is known here, so a word that

@@ -670,7 +670,7 @@ fn reconnecting_overlay<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession) -
 #[cfg(test)]
 mod build_warning_tests {
     use super::*;
-    use trill_library::lang::FALLBACK_LANG;
+    use trill_library::lang::UI_FALLBACK_LANG;
 
     #[derive(Debug)]
     struct TestBuildWarnings;
@@ -687,15 +687,18 @@ mod build_warning_tests {
 
     #[test]
     fn warning_chrome_is_translated_in_every_supported_language() {
-        let english = [
-            t!(&FALLBACK_LANG, "session-build-warning-title"),
-            t!(&FALLBACK_LANG, "session-build-warning-show-violations"),
-            t!(&FALLBACK_LANG, "session-build-warning-hide-violations"),
+        // Every shipped locale must translate the build-warning chrome;
+        // the first one is the reference the others are compared with.
+        let reference = crate::i18n::SUPPORTED_LANGS[0].clone();
+        let baseline = [
+            t!(&reference, "session-build-warning-title"),
+            t!(&reference, "session-build-warning-show-violations"),
+            t!(&reference, "session-build-warning-hide-violations"),
         ];
         for language in crate::i18n::SUPPORTED_LANGS.iter().skip(1) {
-            assert_ne!(t!(language, "session-build-warning-title"), english[0]);
-            assert_ne!(t!(language, "session-build-warning-show-violations"), english[1]);
-            assert_ne!(t!(language, "session-build-warning-hide-violations"), english[2]);
+            assert_ne!(t!(language, "session-build-warning-title"), baseline[0]);
+            assert_ne!(t!(language, "session-build-warning-show-violations"), baseline[1]);
+            assert_ne!(t!(language, "session-build-warning-hide-violations"), baseline[2]);
         }
     }
 
@@ -713,7 +716,7 @@ mod build_warning_tests {
             pane_drag: None,
         });
 
-        assert!(build_warning_overlay(&FALLBACK_LANG, &state).is_some());
+        assert!(build_warning_overlay(&UI_FALLBACK_LANG, &state).is_some());
         assert_eq!(
             state
                 .pvp_panes
@@ -722,7 +725,7 @@ mod build_warning_tests {
                 .opponent_build_warnings
                 .as_ref()
                 .unwrap()
-                .format(&FALLBACK_LANG),
+                .format(&UI_FALLBACK_LANG),
             ["SecretChip: illegal"]
         );
         assert_eq!(
@@ -738,7 +741,8 @@ mod build_warning_tests {
         );
 
         assert!(!state.pvp_panes.as_ref().unwrap().build_warning_violations_expanded);
-        let _ = crate::session::update::pvp::update(&mut state, Message::ToggleBuildWarningViolations, &FALLBACK_LANG);
+        let _ =
+            crate::session::update::pvp::update(&mut state, Message::ToggleBuildWarningViolations, &UI_FALLBACK_LANG);
         assert!(state.pvp_panes.as_ref().unwrap().build_warning_violations_expanded);
     }
 }

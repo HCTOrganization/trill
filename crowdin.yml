@@ -1,3 +1,4 @@
 files:
-  - source: /trill/locales/en-US/**/*.ftl
+  # zh-CN is the source bundle: the app ships Chinese and Japanese only.
+  - source: /trill/locales/zh-CN/**/*.ftl
     translation: /trill/locales/%locale%/**/%original_file_name%

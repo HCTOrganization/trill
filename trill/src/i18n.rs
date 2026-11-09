@@ -8,15 +8,16 @@ use fluent_templates::Loader;
 pub use crate::{t, t_opt};
 
 /// The locale set is the library's, shared with the game-name bundles.
-/// Strings the non-en locales don't translate (trill-specific keys like
-/// crash-*, tab-*, replays-incomplete, etc.) fall back to en-US via the
-/// fluent_templates static_loader's fallback_language.
+/// `locales/` ships Chinese and Japanese only; anything those bundles
+/// don't define (a newly added key, or one the translation hasn't
+/// caught up with) falls back to `zh-CN` via the fluent_templates
+/// static_loader's fallback_language.
 pub use trill_library::lang::SUPPORTED_LANGS;
 
 fluent_templates::static_loader! {
     static LOCALES = {
         locales: "./locales",
-        fallback_language: "en-US",
+        fallback_language: "zh-CN",
         // Disable Fluent's BiDi isolation, which otherwise wraps every
         // interpolated placeholder (e.g. `path` in the crash dialog) in
         // U+2068/U+2069 control chars. Text renderers hide those, but

@@ -86,7 +86,7 @@ pub fn match_type_name(game: GameRef, mode: u8, subtype: u8) -> String {
 /// What a save template is called, in the family's own words —
 /// "Heat Guts", "Shield", "Saito/Normal". Each family ships these as
 /// `save-<template>` keys; the unnamed default template is keyed
-/// `save-megaman`, which is the desktop's convention and the reason a
+/// `save-rockman`, which is the desktop's convention and the reason a
 /// bare `""` template still has something to be called.
 pub fn save_template_name(game: GameRef, template: &str) -> String {
     trill_library::save::template_label(lang(), game.family_and_variant().0, template).unwrap_or_else(|| {

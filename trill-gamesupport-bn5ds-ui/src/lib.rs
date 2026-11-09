@@ -211,7 +211,7 @@ fn cross_choices<'a>(loaded: &'a OpenSave, save: &'a Save) -> (Vec<CrossChoice>,
     let current = save.cross();
     let selected = options
         .iter()
-        .find(|c| c.cross == current || (c.cross.is_bass() && current.is_bass()))
+        .find(|c| c.cross == current || (c.cross.is_forte() && current.is_forte()))
         .cloned();
     (options, selected)
 }
