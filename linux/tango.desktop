@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Tango
+Icon=tango
+Exec=tango
+Categories=Game;
+Terminal=false

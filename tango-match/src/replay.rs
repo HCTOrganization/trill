@@ -1,0 +1,1030 @@
+//! Replaying a recorded match, concretely, over any [`Link`].
+//!
+//! A recording is the boot configuration plus one continuous run of
+//! confirmed `[p0, p1]` input rows. The pair is deterministic, so
+//! playback is a linear re-sim: boot, prime, feed the stream — and any
+//! recorded tick can be reached by loading the nearest capture at or
+//! before it and stepping forward. None of that is engine business:
+//! it all runs over the seam's own [`Link`], so an engine contributes
+//! exactly one thing — [`ReplayBoot`], booting a primed pair for the
+//! recording — and playback, seeking, and the statistics pass come
+//! with it, the same way [`Match`](crate::Match) is the one rollback
+//! loop over any link and [`Solo`](crate::Solo) the one ride over any
+//! console.
+//!
+//! The host owns the threads (drive loop, prefetcher, seek worker);
+//! this module provides the work they do.
+
+use std::collections::BTreeMap;
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
+
+use crate::link::Link;
+use crate::seek::{SeekChase, SeekController, SeekStep};
+use crate::telemetry::TelemetryHandle;
+
+/// Both seats' displays at one captured moment: per-seat RGBA8 frames,
+/// empty for a seat that had not drawn yet. What a host is handed when
+/// a seek lands or a frame publishes, so it can show pixels without
+/// emulating anything.
+#[derive(Clone)]
+pub struct LiveFrames {
+    /// The tick this capture is poised at.
+    pub tick: u32,
+    /// Per-seat RGBA8 frames; empty for a seat that had not drawn yet.
+    pub frames: [Vec<u8>; 2],
+}
+
+/// A whole-pair capture poised at a tick: the link's own opaque
+/// snapshot plus both seats' rendered frames, so previews and blits
+/// never need emulation.
+pub struct Capture {
+    snap: crate::Snapshot,
+    /// Both seats' rendered frames at this tick.
+    pub frames: LiveFrames,
+}
+
+impl Capture {
+    pub fn new(snap: crate::Snapshot, frames: LiveFrames) -> Self {
+        Capture { snap, frames }
+    }
+
+    /// The tick this capture is poised at.
+    pub fn tick(&self) -> u32 {
+        self.frames.tick
+    }
+
+    /// The link snapshot inside, for a harness restoring by hand —
+    /// [`Playback::load`] is the normal path.
+    pub fn snapshot(&self) -> &crate::Snapshot {
+        &self.snap
+    }
+}
+
+/// Take a keyframe at most once per this many ticks: a seek re-simulates
+/// at most this far past its keyframe, traded against one whole-pair
+/// capture held per interval for the length of the recording.
+pub const KEYFRAME_INTERVAL: u32 = 60;
+
+/// Depth of the [`RewindRing`]'s per-tick window behind the playhead.
+pub const REWIND_FRAMES: u32 = 90;
+
+/// Hard cap on rewind-ring entries. The window proper spans
+/// `REWIND_FRAMES + KEYFRAME_INTERVAL + 1` ticks behind the anchor; the
+/// headroom covers captures a chase lays on either side of it, and the
+/// cap bounds the ring's memory whatever a chase does.
+const REWIND_MAX_ENTRIES: usize = 192;
+
+/// Sparse keyframe store covering the whole replay, shared between the
+/// prefetch worker, the drive loop, and the seek chase.
+///
+/// Generic over what it stores — the seam keeps [`Capture`]s, an
+/// engine's probe harness can keep its own richer snapshots — with the
+/// tick supplied at insertion.
+pub struct SnapshotStore<T = Capture>(Arc<Mutex<BTreeMap<u32, Arc<T>>>>);
+
+impl<T> Default for SnapshotStore<T> {
+    fn default() -> Self {
+        SnapshotStore(Arc::new(Mutex::new(BTreeMap::new())))
+    }
+}
+
+impl<T> Clone for SnapshotStore<T> {
+    fn clone(&self) -> Self {
+        SnapshotStore(self.0.clone())
+    }
+}
+
+impl<T> SnapshotStore<T> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// True if no keyframe exists within [`KEYFRAME_INTERVAL`] at or
+    /// before `tick` — capturing here fills a gap.
+    pub fn snapshot_needed(&self, tick: u32) -> bool {
+        let lo = tick.saturating_sub(KEYFRAME_INTERVAL);
+        self.0
+            .lock()
+            .unwrap()
+            .range((std::ops::Bound::Excluded(lo), std::ops::Bound::Included(tick)))
+            .next()
+            .is_none()
+    }
+
+    pub fn push(&self, tick: u32, snap: Arc<T>) {
+        self.0.lock().unwrap().insert(tick, snap);
+    }
+
+    /// Largest keyframe with `tick <= target`, if any.
+    pub fn best_at_or_before(&self, target: u32) -> Option<Arc<T>> {
+        self.0
+            .lock()
+            .unwrap()
+            .range(..=target)
+            .next_back()
+            .map(|(_, s)| s.clone())
+    }
+
+    /// Largest keyframe with `lo_exclusive < tick <= hi_inclusive`.
+    pub fn best_in_range(&self, lo_exclusive: u32, hi_inclusive: u32) -> Option<Arc<T>> {
+        self.0
+            .lock()
+            .unwrap()
+            .range((
+                std::ops::Bound::Excluded(lo_exclusive),
+                std::ops::Bound::Included(hi_inclusive),
+            ))
+            .next_back()
+            .map(|(_, s)| s.clone())
+    }
+}
+
+/// Rolling per-tick snapshot window trailing the playhead: every tick the
+/// playback pair runs (normal playback and seek chases alike) is
+/// captured, so short backward steps land on exact snapshots. Forward
+/// playback drags the anchor along and a seek re-anchors it at its
+/// target; eviction drops captures that fall behind the window, then
+/// whichever end lies farthest from the anchor.
+pub struct RewindRing<T = Capture>(Arc<RewindRingInner<T>>);
+
+struct RewindRingInner<T> {
+    entries: Mutex<BTreeMap<u32, Arc<T>>>,
+    anchor: AtomicU32,
+}
+
+impl<T> Default for RewindRing<T> {
+    fn default() -> Self {
+        RewindRing(Arc::new(RewindRingInner {
+            entries: Mutex::new(BTreeMap::new()),
+            anchor: AtomicU32::new(0),
+        }))
+    }
+}
+
+impl<T> Clone for RewindRing<T> {
+    fn clone(&self) -> Self {
+        RewindRing(self.0.clone())
+    }
+}
+
+impl<T> RewindRing<T> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Re-anchor the window at `tick` (each seek chase's target); normal
+    /// playback captures only ever raise it.
+    pub fn set_anchor(&self, tick: u32) {
+        self.0.anchor.store(tick, Ordering::Release);
+    }
+
+    pub fn insert(&self, tick: u32, snap: Arc<T>) {
+        // Forward playback drags the anchor along; captures below it
+        // (seek catch-up runs) leave it where the chase put it.
+        self.0.anchor.fetch_max(tick, Ordering::AcqRel);
+        let anchor = self.0.anchor.load(Ordering::Acquire);
+        let mut entries = self.0.entries.lock().unwrap();
+        entries.insert(tick, snap);
+        let keep_from = anchor.saturating_sub(REWIND_FRAMES + KEYFRAME_INTERVAL + 1);
+        while let Some((&lo, _)) = entries.first_key_value() {
+            if lo < keep_from {
+                entries.pop_first();
+            } else {
+                break;
+            }
+        }
+        while entries.len() > REWIND_MAX_ENTRIES {
+            let (&lo, _) = entries.first_key_value().unwrap();
+            let (&hi, _) = entries.last_key_value().unwrap();
+            if lo.abs_diff(anchor) >= hi.abs_diff(anchor) {
+                entries.pop_first();
+            } else {
+                entries.pop_last();
+            }
+        }
+    }
+
+    pub fn best_at_or_before(&self, target: u32) -> Option<Arc<T>> {
+        self.0
+            .entries
+            .lock()
+            .unwrap()
+            .range(..=target)
+            .next_back()
+            .map(|(_, s)| s.clone())
+    }
+
+    pub fn best_in_range(&self, lo_exclusive: u32, hi_inclusive: u32) -> Option<Arc<T>> {
+        self.0
+            .entries
+            .lock()
+            .unwrap()
+            .range((
+                std::ops::Bound::Excluded(lo_exclusive),
+                std::ops::Bound::Included(hi_inclusive),
+            ))
+            .next_back()
+            .map(|(_, s)| s.clone())
+    }
+}
+
+/// The playback pair: a booted, primed link plus the recorded input
+/// stream and a cursor. [`Replay`] wraps it in a mutex — the drive
+/// loop, the seek chase, and the audio pull interleave on that lock.
+pub struct Playback {
+    link: Box<dyn Link>,
+    inputs: Arc<Vec<[crate::HostInput; 2]>>,
+    cursor: u32,
+    /// Optional reading end of the link's per-tick observations. Replay
+    /// viewers attach it so presentation can react to live game state.
+    telemetry: Option<TelemetryHandle>,
+    /// Backend tick convention, learned from the first observation. See
+    /// [`Self::either_player_in_custom_screen`].
+    telemetry_cursor_offset: Option<u32>,
+    /// Where the played seat's sound goes, once a host has asked for
+    /// any ([`Replay::play_audio`]). Pumped at the end of every step,
+    /// while the pair is still in hand — a seek chase holds this lock
+    /// for whole slices at a time, so a sound callback reaching for it
+    /// would find it busy exactly when there is the most to play.
+    audio: Option<crate::audio::Pump>,
+}
+
+impl Playback {
+    /// Take the wheel of a booted pair, poised at tick 0.
+    pub fn new(link: Box<dyn Link>, inputs: Arc<Vec<[crate::HostInput; 2]>>) -> Self {
+        Playback {
+            link,
+            inputs,
+            cursor: 0,
+            telemetry: None,
+            telemetry_cursor_offset: None,
+            audio: None,
+        }
+    }
+
+    fn with_telemetry(mut self, telemetry: Option<TelemetryHandle>) -> Self {
+        self.telemetry = telemetry;
+        self
+    }
+
+    /// Play `seat` into `into` from here on — the producing end of a
+    /// [`channel`](crate::audio::channel) whose other end the host
+    /// plays. `seat` is read every tick, so a viewer swapping
+    /// perspective moves the sound without anything downstream being
+    /// rebuilt.
+    pub fn play_audio(&mut self, seat: Arc<AtomicUsize>, into: crate::AudioIn) {
+        let mut pump = crate::audio::Pump::new(into, seat);
+        // The boot walked this pair into its battle; that walk's sound
+        // is not part of the recording.
+        pump.discard(&mut *self.link);
+        self.audio = Some(pump);
+    }
+
+    /// Input pairs consumed so far = the playhead tick.
+    pub fn cursor(&self) -> u32 {
+        self.cursor
+    }
+
+    pub fn total(&self) -> u32 {
+        self.inputs.len() as u32
+    }
+
+    pub fn at_end(&self) -> bool {
+        self.cursor >= self.total()
+    }
+
+    /// Whether either seat's custom screen was open on the current tick.
+    ///
+    /// GBA observations use the consumed-input count while DS observations
+    /// use that count minus one. Learning the offset from the first sample
+    /// also lets this reject a stale last sample during result/inter-round
+    /// screens, when no current battle observation exists.
+    pub fn either_player_in_custom_screen(&mut self) -> bool {
+        let Some(telemetry) = self.telemetry.as_ref() else {
+            return false;
+        };
+        let telemetry = telemetry.lock().unwrap();
+        let Some((sample_tick, obs)) = telemetry.samples().last() else {
+            return false;
+        };
+        let offset = match self.telemetry_cursor_offset {
+            Some(offset) => offset,
+            None => {
+                let offset = self.cursor.saturating_sub(*sample_tick);
+                if offset > 1 {
+                    return false;
+                }
+                self.telemetry_cursor_offset = Some(offset);
+                offset
+            }
+        };
+        sample_tick.checked_add(offset) == Some(self.cursor) && obs.custom.iter().any(|&open| open)
+    }
+
+    /// Feed the next recorded input pair. Returns false at end-of-stream.
+    pub fn step(&mut self) -> bool {
+        let Some(&row) = self.inputs.get(self.cursor as usize) else {
+            return false;
+        };
+        self.link.tick(row);
+        if let Some(audio) = self.audio.as_mut() {
+            audio.pump(&mut *self.link);
+        }
+        self.cursor += 1;
+        true
+    }
+
+    /// [`Self::step`] with the tick's sound thrown away instead of
+    /// published — the seek chase's catch-up ticks. A chase runs far off
+    /// the recording's own pace, and anything it publishes reaches the
+    /// device callback *while the walk is still going* — on a paused
+    /// viewer, whose seek is then the only thing producing, that played
+    /// out as a burst of fast-forward music. Discarding per tick is what
+    /// keeps a seek silent; purging only at the landing catches just
+    /// whatever happened to still be queued when it got there.
+    pub fn step_muted(&mut self) -> bool {
+        let Some(&row) = self.inputs.get(self.cursor as usize) else {
+            return false;
+        };
+        self.link.tick(row);
+        self.discard_audio();
+        self.cursor += 1;
+        true
+    }
+
+    /// Capture the pair (with both frames) at the current cursor.
+    pub fn capture(&mut self) -> Result<Arc<Capture>, crate::Error> {
+        let snap = self.link.snapshot(None)?;
+        let f0 = self.link.side(0).frame().unwrap_or_default();
+        let f1 = self.link.side(1).frame().unwrap_or_default();
+        Ok(Arc::new(Capture {
+            snap,
+            frames: LiveFrames {
+                tick: self.cursor,
+                frames: [f0, f1],
+            },
+        }))
+    }
+
+    /// Restore the pair to `capture` and move the cursor there.
+    pub fn load(&mut self, capture: &Capture) -> Result<(), crate::Error> {
+        self.link.restore(&capture.snap)?;
+        self.cursor = capture.tick();
+        Ok(())
+    }
+
+    /// Both seats' displays right now, as an owned capture a host can
+    /// publish.
+    pub fn frames(&mut self) -> LiveFrames {
+        let f0 = self.link.side(0).frame().unwrap_or_default();
+        let f1 = self.link.side(1).frame().unwrap_or_default();
+        LiveFrames {
+            tick: self.cursor,
+            frames: [f0, f1],
+        }
+    }
+
+    /// One console's per-side surface, for the audio pull.
+    pub fn side(&mut self, player: usize) -> Box<dyn crate::Side + '_> {
+        self.link.side(player)
+    }
+
+    /// Throw away whatever audio the pair has queued — the fast-forward
+    /// burst a seek catch-up piles up, which would play as a garbled
+    /// blast if it ever reached the device.
+    pub fn discard_audio(&mut self) {
+        match self.audio.as_mut() {
+            Some(audio) => audio.discard(&mut *self.link),
+            // Nobody is listening, but the consoles still have to be
+            // emptied: their own buffers are small, and what a chase
+            // left in one opens the next span as a stale burst.
+            None => crate::audio::drop_link_audio(&mut *self.link),
+        }
+    }
+}
+
+/// A recording being played back: the pair a viewer watches, with the
+/// seek machinery that serves it — keyframes across the whole
+/// recording, a rewind ring around the playhead, and the chase that
+/// walks between them.
+///
+/// Playback is a pair, not a single console: a replay records both
+/// seats' inputs and re-simulates the match from them, so both sides
+/// are available to show. The host picks which one it presents.
+pub struct Replay {
+    playback: Arc<Mutex<Playback>>,
+    store: SnapshotStore,
+    rewind: RewindRing,
+    chase: SeekChase,
+    len: u32,
+}
+
+impl Replay {
+    fn new(playback: Playback, store: SnapshotStore) -> Self {
+        let len = playback.total();
+        Replay {
+            playback: Arc::new(Mutex::new(playback)),
+            store,
+            rewind: RewindRing::new(),
+            chase: SeekChase::default(),
+            len,
+        }
+    }
+
+    /// Feed the next recorded input pair, capturing the tick into the
+    /// rewind ring (keyframes shared into the store). `false` at end of
+    /// recording.
+    pub fn step(&mut self) -> bool {
+        let mut pb = self.playback.lock().unwrap();
+        if pb.at_end() {
+            return false;
+        }
+        pb.step();
+        match pb.capture() {
+            Ok(snap) => {
+                if self.store.snapshot_needed(snap.tick()) {
+                    self.store.push(snap.tick(), snap.clone());
+                }
+                self.rewind.insert(snap.tick(), snap);
+            }
+            Err(e) => log::warn!("replay: frame capture failed: {e:?}"),
+        }
+        true
+    }
+
+    /// Input pairs consumed so far — the playhead tick.
+    pub fn cursor(&self) -> u32 {
+        self.playback.lock().unwrap().cursor()
+    }
+
+    /// How many ticks the recording holds.
+    pub fn len(&self) -> u32 {
+        self.len
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
+    pub fn at_end(&self) -> bool {
+        self.cursor() >= self.len()
+    }
+
+    /// Whether either seat's custom screen was open on the current tick.
+    ///
+    /// A sample must match the playhead after accounting for its backend's
+    /// tick convention: outside a battle the telemetry store may still end in
+    /// the previous round's last sample, which must not keep a viewer's
+    /// custom-screen behavior engaged through the result and inter-round
+    /// screens.
+    pub fn either_player_in_custom_screen(&mut self) -> bool {
+        self.playback.lock().unwrap().either_player_in_custom_screen()
+    }
+
+    /// Advance a pending seek by at most `budget` ticks, planning one
+    /// first if a request is waiting on `ctrl`.
+    ///
+    /// Seeking is sliced for the host's sake: a desktop hands it a
+    /// worker thread and an unbounded budget, a browser calls it from
+    /// its event loop a slice at a time and keeps painting in between.
+    /// `on_progress` reports the moving cursor, `publish` shows a
+    /// landing capture, and `on_resume` unpauses a host whose seek
+    /// asked to resume playback once it lands.
+    pub fn seek_step(
+        &mut self,
+        ctrl: &SeekController,
+        budget: u32,
+        on_progress: &mut dyn FnMut(u32),
+        publish: &mut dyn FnMut(&LiveFrames),
+        on_resume: &mut dyn FnMut(),
+    ) -> SeekStep {
+        self.chase.step(
+            ctrl,
+            &self.playback,
+            &self.store,
+            &self.rewind,
+            budget,
+            on_progress,
+            &mut |snap| publish(&snap.frames),
+            on_resume,
+        )
+    }
+
+    /// Both seats' displays right now, as a capture a host can publish.
+    pub fn frames(&mut self) -> LiveFrames {
+        self.playback.lock().unwrap().frames()
+    }
+
+    /// Play whichever seat `seat` currently names into `into` — the
+    /// producing end of a [`channel`](crate::audio::channel) whose other
+    /// end the host plays. A viewer can swap perspective mid-playback,
+    /// so `seat` is read every tick rather than fixed here.
+    pub fn play_audio(&self, seat: Arc<AtomicUsize>, into: crate::AudioIn) {
+        self.playback.lock().unwrap().play_audio(seat, into);
+    }
+
+    /// The latest capture at or before `tick`, if one was kept — what
+    /// backs a scrub bar's hover thumbnail. The ring holds the last
+    /// second or so exactly, the keyframes cover the whole recording
+    /// sparsely. Emulation-free, so a miss is `None` rather than a
+    /// catch-up run.
+    pub fn nearest_capture(&self, tick: u32) -> Option<Arc<Capture>> {
+        [self.store.best_at_or_before(tick), self.rewind.best_at_or_before(tick)]
+            .into_iter()
+            .flatten()
+            .max_by_key(|s| s.tick())
+    }
+}
+
+/// The statistics pass: a second pair racing ahead of the viewer
+/// through the whole stream, laying a keyframe every
+/// [`KEYFRAME_INTERVAL`] into the shared store and — when the pair was
+/// booted with telemetry — folding what it observes into
+/// [`MatchStats`](crate::analysis::MatchStats), round boundaries
+/// included.
+///
+/// Separate from playback because it is a separate simulation: it runs
+/// ahead of what the viewer is watching, on its own pair, so a user
+/// scrubbing around does not disturb it and it does not disturb them.
+/// Sliced for the same reason a seek is: this is background work
+/// competing with playback for a host's time, so how much of it happens
+/// at once is the host's call.
+pub struct StatsPass {
+    playback: Playback,
+    /// The confirmed-telemetry store the pair's own link feeds, when
+    /// this boot observes one.
+    telemetry: Option<TelemetryHandle>,
+    builder: Option<crate::analysis::StatsBuilder>,
+    local_player: usize,
+    store: SnapshotStore,
+    cancel: Arc<AtomicBool>,
+    /// Where the pass reports the tick it has reached, every tick (see
+    /// [`report_progress_into`](Self::report_progress_into)). `None`
+    /// for a pass nobody is watching, which is every pass but the one
+    /// behind a scrub bar.
+    progress: Option<Arc<AtomicU32>>,
+}
+
+impl StatsPass {
+    /// Run up to `budget` ticks of the pass. `true` while there is more
+    /// to do; `false` once the recording is finished or the pass was
+    /// cancelled.
+    pub fn step(&mut self, budget: u32) -> Result<bool, crate::Error> {
+        for _ in 0..budget {
+            if self.cancel.load(Ordering::Relaxed) {
+                return Ok(false);
+            }
+            if !self.playback.step() {
+                return Ok(false);
+            }
+            let tick = self.playback.cursor();
+            if let Some(progress) = &self.progress {
+                progress.store(tick, Ordering::Relaxed);
+            }
+
+            if let Some(telemetry) = &self.telemetry {
+                // Taken whether or not anything is folding it: taking
+                // also prunes the store, and a pass that never does so
+                // grows one entry per tick for the length
+                // of the recording.
+                let (samples, events) = telemetry.lock().unwrap().take_through(tick);
+                if let Some(builder) = &mut self.builder {
+                    // Everything is final on a linear re-sim — fold as
+                    // we go.
+                    crate::analysis::fold_confirmed(builder, self.local_player, samples, events);
+                }
+            }
+
+            if self.store.snapshot_needed(tick) {
+                self.store.push(tick, self.playback.capture()?);
+            }
+        }
+        Ok(!self.playback.at_end())
+    }
+
+    /// Ticks the pass has covered so far, for a host drawing its
+    /// progress.
+    pub fn progress(&self) -> u32 {
+        self.playback.cursor()
+    }
+
+    /// Report [`progress`](Self::progress) into `cell` as the pass
+    /// covers each tick, rather than leaving a host to read it between
+    /// slices.
+    ///
+    /// A slice is background work sized for how often the *host* wants
+    /// control back — hundreds of ticks, which on a DS-class pair is a
+    /// visible slab of wall clock — so a bar sampled once per slice
+    /// advances in slabs too, and worst exactly when the pass is
+    /// slowest: while playback is rendering beside it. One relaxed
+    /// store per tick decouples the two, leaving the budget to mean
+    /// only what it says.
+    pub fn report_progress_into(&mut self, cell: Arc<AtomicU32>) {
+        cell.store(self.playback.cursor(), Ordering::Relaxed);
+        self.progress = Some(cell);
+    }
+
+    /// The fold so far, for a host drawing the chart while the pass is
+    /// still running. `None` if this pass collects no statistics.
+    pub fn preview(&self) -> Option<crate::analysis::MatchStats> {
+        self.builder.as_ref().map(|b| b.snapshot())
+    }
+
+    /// The finished analysis, once [`step`](Self::step) has reported the
+    /// pass done. A cancelled pass yields nothing.
+    pub fn finish(self) -> Option<crate::analysis::MatchStats> {
+        self.playback.at_end().then(|| self.builder.map(|b| b.finish()))?
+    }
+}
+
+/// What an engine's replay boot hands back: the pair, primed and
+/// poised at tick 0.
+pub struct BootedReplay {
+    /// The primed pair, rendering on both sides.
+    pub link: Box<dyn Link>,
+    /// The store the pair's telemetry feeds, when the boot was asked to
+    /// observe and the game has telemetry to wire. The link itself
+    /// polls and revokes; this is the reading end.
+    pub telemetry: Option<TelemetryHandle>,
+}
+
+/// The one thing an engine contributes to replays: booting a primed
+/// pair for the recording. Everything above it — playback, seeking,
+/// the statistics pass — is [`ReplaySet`]'s, concretely.
+pub trait ReplayBoot: Send + Sync {
+    /// Boot + prime one pair. Called up to twice — the display pair and
+    /// the stats pass each boot on whichever host thread pays for it,
+    /// which is what keeps those boots concurrent (unless the stats
+    /// pass reuses the display pair's primed state — see
+    /// [`Self::boot_unprimed`]). With `observe`, wire the game's
+    /// telemetry and hand back its store — the stats pass folds it, while
+    /// the viewer's display pair reads the current battle state. Flipping
+    /// `cancel` mid-prime fails the boot with
+    /// [`Error::Cancelled`](crate::Error::Cancelled) instead of
+    /// finishing the walk. Bare linear/export passes do not observe.
+    fn boot(&self, observe: bool, cancel: &AtomicBool) -> Result<BootedReplay, crate::Error>;
+
+    /// Boot one pair *without* the priming walk, for a caller about to
+    /// restore an already-primed capture into it
+    /// ([`ReplaySet::stats_reusing_playback`]). No priming walk and
+    /// nothing to cancel — bounded setup at most, so a caller can treat
+    /// this as construction.
+    ///
+    /// The contract an engine signs by implementing this: the pair it
+    /// returns, landed on a primed capture, plays on as the pair that
+    /// took the capture. That is a claim about everything a restore
+    /// *doesn't* carry — no standing traps, no host-side config
+    /// flipped mid-walk, and no unserialized state the simulation can
+    /// observe. Both engines needed work to be able to say it: melonDS
+    /// rebuilds the raster state display capture turns into VRAM, and
+    /// its savestates carry the timing state its JIT bakes into
+    /// compiled blocks.
+    fn boot_unprimed(&self, observe: bool) -> Result<BootedReplay, crate::Error>;
+}
+
+/// One recording, ready to simulate: the pair a viewer watches and the
+/// statistics pass that runs ahead of it.
+///
+/// Both are booted on demand rather than up front, because booting one
+/// is seconds of priming and a host runs the two on separate threads —
+/// asking for them separately is what keeps those boots concurrent.
+/// Where the engine allows it, the stats pass skips its walk entirely
+/// and lands on the display pair's primed first state instead
+/// ([`Self::stats_reusing_playback`]). What the two share is the
+/// keyframes they lay down, so the pass racing ahead is also what
+/// makes seeking behind the playhead cheap.
+pub struct ReplaySet {
+    boot: Box<dyn ReplayBoot>,
+    inputs: Arc<Vec<[crate::HostInput; 2]>>,
+    local_player: usize,
+    /// Whether the host wants statistics folded. The stats pass boots
+    /// observed either way, so this gates only the aggregation — but
+    /// round boundaries come out of that same fold, so a host that wants
+    /// to know where the rounds are wants this on.
+    want_stats: bool,
+    /// Shared: the pass racing ahead lays the keyframes a seek behind
+    /// the playhead lands on.
+    store: SnapshotStore,
+    /// The display boot's capture at tick 0, for the stats pass to land
+    /// on instead of priming a second pair. Condvar-signalled: the pass
+    /// opens on another thread and parks here while the display pair is
+    /// still walking its prime.
+    first_capture: Mutex<FirstCapture>,
+    first_capture_cv: std::sync::Condvar,
+    cancel: Arc<AtomicBool>,
+}
+
+/// Where the display pair's primed first state stands — see
+/// [`ReplaySet::stats_reusing_playback`].
+#[derive(Clone)]
+enum FirstCapture {
+    /// No display boot has landed yet.
+    Pending,
+    /// The display pair, captured primed and poised at tick 0.
+    Available(Arc<Capture>),
+    /// The display boot failed (or couldn't capture) — nothing to reuse.
+    Unavailable,
+}
+
+impl ReplaySet {
+    /// The set over an engine's boot.
+    pub fn new(config: &ReplayConfig, boot: impl ReplayBoot + 'static) -> Self {
+        ReplaySet {
+            boot: Box::new(boot),
+            inputs: config.inputs.clone(),
+            local_player: config.local_player,
+            want_stats: config.want_stats,
+            store: SnapshotStore::new(),
+            first_capture: Mutex::new(FirstCapture::Pending),
+            first_capture_cv: std::sync::Condvar::new(),
+            cancel: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    /// Boot the display pair. Blocks for the priming walk.
+    pub fn playback(&self) -> Result<Replay, crate::Error> {
+        // The display pair is observed too: unlike the stats pass, it does
+        // not fold or drain those readings, but replay presentation can react
+        // to live state (for example, custom-screen fast-forwarding) without
+        // inferring game state from inputs or frames.
+        let booted = match self.boot.boot(true, &self.cancel) {
+            Ok(booted) => booted,
+            Err(e) => {
+                // A stats pass parked on this boot reprimes for itself.
+                self.publish_first_capture(FirstCapture::Unavailable);
+                return Err(e);
+            }
+        };
+        let mut playback = Playback::new(booted.link, self.inputs.clone()).with_telemetry(booted.telemetry);
+        // The primed pre-battle state, captured before the first input:
+        // the keyframe every backward seek bottoms out on, and the
+        // state the stats pass lands its own pair on instead of walking
+        // the prime again ([`Self::stats_reusing_playback`]).
+        match playback.capture() {
+            Ok(capture) => {
+                self.store.push(0, capture.clone());
+                self.publish_first_capture(FirstCapture::Available(capture));
+            }
+            Err(e) => {
+                log::warn!("replay: primed-state capture failed: {e:?}");
+                self.publish_first_capture(FirstCapture::Unavailable);
+            }
+        }
+        Ok(Replay::new(playback, self.store.clone()))
+    }
+
+    /// Boot a bare linear pass over the recording: the pair alone, no
+    /// seek machinery, no telemetry, and no capture per tick — for a
+    /// host re-simulating front to back, which is what a video export
+    /// is. Blocks for the priming walk.
+    ///
+    /// With `land_on`, the pass starts from that capture and skips the
+    /// walk entirely ([`ReplayBoot::boot_unprimed`]) — a caller
+    /// jump-starting mid-recording never plays the prefix, and a
+    /// restore replaces every bit of state the walk would have reached,
+    /// so walking first is time spent on state that is about to be
+    /// overwritten. An engine that can't land the state reprimes
+    /// instead of failing, exactly as [`Self::stats_reusing_playback`]
+    /// does.
+    pub fn linear(&self, land_on: Option<&Capture>) -> Result<Playback, crate::Error> {
+        if let Some(capture) = land_on {
+            match self.boot.boot_unprimed(false) {
+                Ok(bare) => {
+                    let mut playback = Playback::new(bare.link, self.inputs.clone());
+                    match playback.load(capture) {
+                        Ok(()) => return Ok(playback),
+                        Err(e) => log::warn!("linear pass: primed-state landing failed, repriming: {e:?}"),
+                    }
+                }
+                Err(e) => log::warn!("linear pass: unprimed boot failed, repriming: {e:?}"),
+            }
+        }
+        let booted = self.boot.boot(false, &self.cancel)?;
+        Ok(Playback::new(booted.link, self.inputs.clone()))
+    }
+
+    /// Re-simulate the whole recording front to back and fold its
+    /// telemetry into [`MatchStats`](crate::analysis::MatchStats) — the
+    /// batch flavor of [`Self::stats`], for a host computing statistics
+    /// with no viewer attached: no keyframes are laid, and both sides
+    /// skip rasterization once primed. Blocks for the priming walk and
+    /// then the full linear pass — seconds of CPU, so run it on a
+    /// worker.
+    ///
+    /// `on_progress` is called once per simulated tick with
+    /// `(done, total)` and the in-flight builder for live partial
+    /// previews. Flipping `cancel` (checked mid-prime and per tick)
+    /// aborts with [`Error::Cancelled`](crate::Error::Cancelled) and
+    /// nothing partial.
+    pub fn analyze(
+        &self,
+        on_progress: &mut dyn FnMut(u32, u32, &crate::analysis::StatsBuilder),
+        cancel: &AtomicBool,
+    ) -> Result<crate::analysis::MatchStats, crate::Error> {
+        let booted = self.boot.boot(true, cancel)?;
+        // No telemetry, no analysis: without pollers the fold would
+        // produce an empty result that reads as a real (statless)
+        // match, so fail out instead and let the caller cache nothing.
+        let Some(telemetry) = booted.telemetry else {
+            return Err(crate::Error::Unsupported("this game reports no telemetry"));
+        };
+        let mut playback = Playback::new(booted.link, self.inputs.clone());
+        for player in 0..2 {
+            playback.side(player).set_render(false);
+        }
+        let mut builder = crate::analysis::StatsBuilder::new();
+        let total = playback.total();
+        loop {
+            if cancel.load(Ordering::Relaxed) || self.cancel.load(Ordering::Relaxed) {
+                return Err(crate::Error::Cancelled);
+            }
+            if !playback.step() {
+                break;
+            }
+            let tick = playback.cursor();
+            // Everything is final on a linear re-sim — fold as we go.
+            let (samples, events) = telemetry.lock().unwrap().take_through(tick);
+            crate::analysis::fold_confirmed(&mut builder, self.local_player, samples, events);
+            on_progress(tick, total, &builder);
+        }
+        Ok(builder.finish())
+    }
+
+    /// Boot the statistics pass. Blocks for the priming walk.
+    pub fn stats(&self) -> Result<StatsPass, crate::Error> {
+        let booted = self.boot.boot(true, &self.cancel)?;
+        let mut playback = Playback::new(booted.link, self.inputs.clone());
+        // Keyframe at tick 0: the primed pre-battle state every backward
+        // seek bottoms out on.
+        self.store.push(0, playback.capture()?);
+        Ok(self.assemble_stats(booted.telemetry, playback))
+    }
+
+    /// The statistics pass off the display pair's primed first state,
+    /// for a host that boots both: park until [`Self::playback`]'s
+    /// tick-0 capture lands, then land a bare pair on it
+    /// ([`ReplayBoot::boot_unprimed`]) instead of walking the prime a
+    /// second time — the walk is seconds of simulation, and both walks
+    /// reach identical state by construction. Falls back to
+    /// [`Self::stats`]'s own walk when the display boot came up
+    /// empty-handed.
+    ///
+    /// Blocks until the display boot lands one way or the other, so
+    /// only a host that is actually booting the display pair should
+    /// call this — anyone else wants [`Self::stats`].
+    pub fn stats_reusing_playback(&self) -> Result<StatsPass, crate::Error> {
+        let bare = self.boot.boot_unprimed(true)?;
+        match self.wait_first_capture() {
+            FirstCapture::Available(capture) => {
+                let mut playback = Playback::new(bare.link, self.inputs.clone());
+                match playback.load(&capture) {
+                    // The capture is already in the store — the display
+                    // boot pushed it — so no tick-0 push here.
+                    Ok(()) => return Ok(self.assemble_stats(bare.telemetry, playback)),
+                    // The pair is fresh and the state is foreign; an
+                    // engine that can't land it reprimes rather than
+                    // dying.
+                    Err(e) => log::warn!("stats pass: primed-state reuse failed, repriming: {e:?}"),
+                }
+            }
+            // Only cancellation leaves the wait pending (or a host
+            // without threads asking before its display boot — it
+            // can't park, so it primes).
+            FirstCapture::Pending if self.cancel.load(Ordering::Relaxed) => {
+                return Err(crate::Error::Cancelled);
+            }
+            FirstCapture::Pending | FirstCapture::Unavailable => {}
+        }
+        self.stats()
+    }
+
+    /// Everything above the pair: the shared keyframe store and the
+    /// fold (when this boot observes and the host asked).
+    fn assemble_stats(&self, telemetry: Option<TelemetryHandle>, playback: Playback) -> StatsPass {
+        // No telemetry, no fold — a game without pollers still lays
+        // keyframes, and the host keeps the rest of the ride.
+        let builder = (telemetry.is_some() && self.want_stats).then(crate::analysis::StatsBuilder::new);
+        StatsPass {
+            playback,
+            telemetry,
+            builder,
+            local_player: self.local_player,
+            store: self.store.clone(),
+            cancel: self.cancel.clone(),
+            // Wired up only by a host that draws the pass; see
+            // [`StatsPass::report_progress_into`].
+            progress: None,
+        }
+    }
+
+    /// Park until the display boot has published its first capture (or
+    /// its failure), or the set is cancelled. A wasm host has no thread
+    /// to park, so there it's a single look — its one event loop boots
+    /// the display pair before it first pumps the stats pass anyway.
+    fn wait_first_capture(&self) -> FirstCapture {
+        #[cfg_attr(target_arch = "wasm32", allow(unused_mut))]
+        let mut state = self.first_capture.lock().unwrap();
+        #[cfg(not(target_arch = "wasm32"))]
+        while matches!(&*state, FirstCapture::Pending) && !self.cancel.load(Ordering::Relaxed) {
+            // Timeout as a backstop so a notify racing the park can
+            // never strand this thread; cancel() also notifies for
+            // promptness.
+            let (guard, _) = self
+                .first_capture_cv
+                .wait_timeout(state, std::time::Duration::from_millis(100))
+                .unwrap();
+            state = guard;
+        }
+        state.clone()
+    }
+
+    fn publish_first_capture(&self, state: FirstCapture) {
+        *self.first_capture.lock().unwrap() = state;
+        self.first_capture_cv.notify_all();
+    }
+
+    /// Abandon both simulations. A pass mid-slice sees this and stops,
+    /// a boot mid-prime fails out, and a stats pass parked on the
+    /// display boot wakes empty-handed.
+    pub fn cancel(&self) {
+        self.cancel.store(true, Ordering::Relaxed);
+        self.first_capture_cv.notify_all();
+    }
+}
+
+/// Everything a replay needs to come up: the recording's own header,
+/// which is what the app read out of the replay file.
+///
+/// Owned rather than borrowed, because a [`ReplaySet`] outlives the
+/// call that made it — each of its two simulations boots later, on
+/// whichever thread the host decided should pay for it.
+pub struct ReplayConfig {
+    /// Per-seat ROM images, already patched.
+    pub roms: [Vec<u8>; 2],
+    /// Per-seat save memory as it stood when the match started.
+    pub saves: [Vec<u8>; 2],
+    /// The recorded input rows, `(p0, p1)` per tick.
+    pub inputs: Arc<Vec<[crate::HostInput; 2]>>,
+    /// The match's negotiated seed and clock, so re-simulation lands
+    /// where the original did.
+    pub rng_seed: [u8; 16],
+    pub rtc: std::time::SystemTime,
+    pub match_type: (u8, u8),
+    /// Which seat the recording was taken from.
+    pub local_player: usize,
+    /// The peer's cartridge, for the seat this backend does not own.
+    pub peer_rom: crate::PeerRom,
+    /// Collect per-round statistics as the pass runs. A host that only
+    /// wants to watch leaves this off and the pass just lays keyframes.
+    pub want_stats: bool,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn cap(tick: u32) -> Arc<Capture> {
+        Arc::new(Capture::new(
+            Box::new(()),
+            LiveFrames {
+                tick,
+                frames: [vec![], vec![]],
+            },
+        ))
+    }
+
+    /// The store thins captures to one per keyframe interval (the
+    /// window's lower bound is exclusive), and lookups walk backwards
+    /// from the target.
+    #[test]
+    fn the_store_keeps_sparse_keyframes() {
+        let store: SnapshotStore = SnapshotStore::new();
+        assert!(store.snapshot_needed(1));
+        store.push(1, cap(1));
+        assert!(!store.snapshot_needed(KEYFRAME_INTERVAL));
+        assert!(store.snapshot_needed(KEYFRAME_INTERVAL + 2));
+        store.push(KEYFRAME_INTERVAL + 2, cap(KEYFRAME_INTERVAL + 2));
+        assert_eq!(store.best_at_or_before(KEYFRAME_INTERVAL).map(|s| s.tick()), Some(1));
+        assert_eq!(
+            store.best_in_range(1, 500).map(|s| s.tick()),
+            Some(KEYFRAME_INTERVAL + 2)
+        );
+        assert_eq!(store.best_in_range(KEYFRAME_INTERVAL + 2, 500).map(|s| s.tick()), None);
+    }
+
+    /// The ring keeps a bounded window behind its anchor: entries
+    /// falling out the back are evicted as the anchor advances.
+    #[test]
+    fn the_ring_trails_its_anchor() {
+        let ring: RewindRing = RewindRing::new();
+        let horizon = REWIND_FRAMES + KEYFRAME_INTERVAL + 1;
+        for tick in 0..=horizon * 2 {
+            ring.insert(tick, cap(tick));
+        }
+        assert_eq!(ring.best_at_or_before(horizon * 2).map(|s| s.tick()), Some(horizon * 2));
+        // The oldest entries fell out as the anchor (dragged by the
+        // inserts) moved past them.
+        assert_eq!(ring.best_at_or_before(horizon - 1).map(|s| s.tick()), None);
+    }
+}

@@ -1,0 +1,212 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  create-release:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Resolve the pushed tag back to its annotated message (if any).
+      # Lightweight tags have no message; the release body falls back to
+      # empty in that case, matching what `gh release create` would do.
+      - id: tag-msg
+        run: |
+          git fetch --tags --force
+          msg=$(git for-each-ref --format='%(contents)' refs/tags/${{ github.ref_name }})
+          {
+            echo 'msg<<TANGO_TAG_MSG_EOF'
+            echo "$msg"
+            echo 'TANGO_TAG_MSG_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body: ${{ steps.tag-msg.outputs.msg }}
+          # Semver prereleases carry a `-` after the version number
+          # (e.g. v1.0.0-alpha.0, v5.0.0-beta.3); a plain `v1.2.3`
+          # never contains `-`, so tag-name search is a clean check.
+          prerelease: ${{ contains(github.ref_name, '-') }}
+
+  release-win32-x64:
+    runs-on: windows-2022
+    needs: create-release
+    env:
+      CMAKE_POLICY_VERSION_MINIMUM: 3.5
+
+    steps:
+      # Windows caps paths at 260 characters, and libgit2 (what cargo
+      # checks git dependencies out with) refuses to write past that
+      # unless core.longpaths says otherwise. datachannel-facade nests
+      # libdatachannel two crates deep, and libdatachannel vendors
+      # nlohmann/json, whose benchmark-report fixtures have very long
+      # names — the worst lands at 266 characters under ~/.cargo/git and
+      # failed the checkout outright ("path too long; class=Filesystem").
+      # First step so the repo's own submodule checkout is covered too.
+      - name: Allow long paths
+        shell: bash
+        run: |
+          git config --global core.longpaths true
+          git config --system core.longpaths true || true
+
+      - uses: actions/checkout@v4
+
+      - run: git fetch --tags --force
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Source MSVC vcvars (cl.exe / link.exe / nmake.exe / Windows SDK)
+      # into the rest of the workflow so cmake + cc-rs all pick up the
+      # same MSVC toolset.
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      # melonDS's JIT is GCC/Clang-only code — a GAS-syntax linkage stub,
+      # inline asm, VLAs — that cl.exe rejects, so melonds-sys builds the
+      # DS core with clang targeting the MSVC ABI and links it statically
+      # into tango.exe (see its build.rs). The runner image already ships
+      # LLVM at C:\Program Files\LLVM, which is where the build script
+      # looks; only the CMake generator has to be added.
+      - name: Install Ninja (CMake generator for the melonDS core)
+        run: choco install ninja -y
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: x86_64-pc-windows-msvc
+
+      # rust-cache keys on the installed rustc, so it has to come after
+      # the toolchain step. It caches ~/.cargo plus the dependency half
+      # of target/, dropping this workspace's own crates — which a
+      # tagged release build recompiles anyway.
+      #
+      # Restore-only, and off ci.yaml's key. A cache written from a tag
+      # is readable by nothing but a re-run of that same tag, so saving
+      # one here would only spend the repository's 10 GB on entries no
+      # later release can reach; ci.yaml fills the default branch's
+      # scope instead, which is the one a tag run can read.
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-dist
+          save-if: false
+
+      - name: Install Python build deps
+        run: pip install semver==3.0.0-dev3 toml mako
+
+      - name: Build
+        shell: bash
+        run: ./win/build.sh
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            ./dist/tango-x86_64-windows.exe
+            ./dist/tango-x86_64-windows.pdb
+
+  release-mac-universal:
+    runs-on: macos-15
+    needs: create-release
+    env:
+      CMAKE_POLICY_VERSION_MINIMUM: 3.5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: git fetch --tags --force
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: x86_64-apple-darwin, aarch64-apple-darwin
+
+      # See the note in release-win32-x64: after the toolchain, and it
+      # restores both target/aarch64-apple-darwin and
+      # target/x86_64-apple-darwin for the lipo'd universal build.
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-dist
+          save-if: false
+
+      # using venv to avoid: "The directory '/Users/runner/Library/Caches/pip' or its parent directory is not owned or is not writable by the current user"
+      - name: Build
+        run: |
+          python3 -m venv ./macos/venv
+          source ./macos/venv/bin/activate
+          python3 -m pip install semver==3.0.0-dev3 toml dmgbuild pyobjc-framework-Quartz mako
+          ./macos/build.sh
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            ./dist/tango-macos.dmg
+
+  release-linux-x86_64:
+    # Pin to Ubuntu 22.04 so the produced binary links against an older glibc
+    # and stays runnable on the broadest spread of user distributions.
+    runs-on: ubuntu-22.04
+    needs: create-release
+    env:
+      CMAKE_POLICY_VERSION_MINIMUM: 3.5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: git fetch --tags --force
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: x86_64-unknown-linux-gnu
+
+      # See the note in release-win32-x64.
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-dist
+          save-if: false
+
+      - name: Install Python build deps
+        run: sudo pip3 install semver==3.0.0-dev3 toml mako
+
+      - name: Install system packages
+        run: |
+          sudo apt-get update -y
+          sudo apt-get upgrade -y
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y alsa build-essential clang cmake curl fuse git libnss3 librust-atk-dev librust-gdk-pixbuf-dev librust-gdk-sys-dev librust-pango-dev libsdl2-dev pkgconf sudo wget
+
+      - name: Build
+        run: ./linux/build.sh
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          # The .debug sidecar is the split-out DWARF, published for
+          # offline crash symbolication like the Windows .pdb.
+          files: |
+            ./dist/tango-x86_64-linux.AppImage
+            ./dist/tango-x86_64-linux.debug

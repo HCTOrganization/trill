@@ -1,0 +1,17 @@
+target/
+dist/
+/tango_win_workdir
+/Tango.app
+/tango_macos_workdir
+
+# notes
+-*
+
+# ROMs are never committed.
+*.nds
+*.gba
+*.srl
+
+# Local OS and Python artifacts.
+.DS_Store
+__pycache__/

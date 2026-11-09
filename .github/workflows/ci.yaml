@@ -1,0 +1,204 @@
+name: ci
+
+# This workflow exists to fill a cache, not to gate anything.
+#
+# release.yaml runs on tag pushes, and a GitHub cache written under
+# refs/tags/vX.Y.Z can be read by nothing except a re-run of that exact
+# tag. A run *can* also read the default branch's scope — so a check
+# built here on main leaves behind a cache the release jobs restore.
+#
+# For that to work the rust-cache keys have to line up, which is what
+# `shared-key` below pins: without it the key includes the job id and
+# `check-linux-x86_64` would never hand anything to `release-linux-x86_64`.
+# The rest of the alignment is by construction — same runner image, same
+# toolchain, same CMAKE_POLICY_VERSION_MINIMUM (rust-cache hashes CMAKE_*
+# and CARGO_* into the key), same target triples, same features.
+#
+# `cargo check` doesn't emit the rlibs a release `cargo build` links, so
+# what carries over is ~/.cargo and the build-script half of target/ —
+# the vendored C and C++ (melonDS, mgba, libdatachannel, Mbed TLS) that
+# dominates a cold build. The dependency crates still compile at release
+# time.
+on:
+  push:
+    branches:
+      - main
+  # Caches are evicted after 7 days unused, and the tail end of a quiet
+  # week would otherwise hit a tag build cold. This refills on demand.
+  workflow_dispatch:
+
+jobs:
+  check-win32-x64:
+    runs-on: windows-2022
+    env:
+      CMAKE_POLICY_VERSION_MINIMUM: 3.5
+
+    steps:
+      # See release.yaml: libdatachannel's vendored nlohmann/json fixtures
+      # run past Windows' 260-character path cap under ~/.cargo/git, and
+      # the checkout fails outright without this.
+      - name: Allow long paths
+        shell: bash
+        run: |
+          git config --global core.longpaths true
+          git config --system core.longpaths true || true
+
+      - uses: actions/checkout@v4
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install Ninja (CMake generator for the melonDS core)
+        run: choco install ninja -y
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: x86_64-pc-windows-msvc
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-dist
+          cache-on-failure: true
+
+      # Triple, profile and features all feed the hash that names a build
+      # script's OUT_DIR, so they have to match win/build.sh exactly or the
+      # release build looks for its C++ artifacts somewhere else.
+      - name: Check
+        run: cargo check --bin tango --features gamesupport-all --profile release-dist --target x86_64-pc-windows-msvc
+
+  check-mac-universal:
+    runs-on: macos-15
+    env:
+      CMAKE_POLICY_VERSION_MINIMUM: 3.5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: x86_64-apple-darwin, aarch64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-dist
+          cache-on-failure: true
+
+      # Both halves of the lipo'd universal build, since each triple gets
+      # its own target subdirectory and its own vendored C++.
+      - name: Check
+        run: |
+          cargo check --bin tango --features gamesupport-all --profile release-dist --target aarch64-apple-darwin
+          cargo check --bin tango --features gamesupport-all --profile release-dist --target x86_64-apple-darwin
+
+  # Fills web.yaml's deploy-web cache. Its own shared-key rather than
+  # release-dist: a shared-key names ONE cache entry per image, so this
+  # job and check-linux-x86_64 — both Linux — would otherwise race to
+  # save it, and whichever lost would leave its release job restoring
+  # the other target's dependencies.
+  check-web:
+    # ubuntu-latest to match web.yaml's deploy-web: a cache carries
+    # host-built build-script binaries, so the images must be the same.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # See the note in web.yaml's deploy-web. ninja-build is for
+      # melonds-sys, whose build script drives the melonDS cmake build
+      # with the Ninja generator.
+      - name: Install wasi-sdk
+        run: |
+          curl -fsSL -o /tmp/wasi-sdk.tar.gz \
+            "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz"
+          sudo tar -C /opt -xzf /tmp/wasi-sdk.tar.gz
+          sudo mv /opt/wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
+          sudo apt-get update -y && sudo apt-get install -y ninja-build
+          {
+            echo "WASI_SDK_PATH=/opt/wasi-sdk"
+            echo "CC_wasm32_unknown_unknown=/opt/wasi-sdk/bin/clang"
+            echo "AR_wasm32_unknown_unknown=/opt/wasi-sdk/bin/llvm-ar"
+          } >> "$GITHUB_ENV"
+
+      # Nightly with rust-src: the web build is a shared-memory module
+      # (the DS engine's C++ needs atomics), and std for a non-default
+      # target-feature set only exists via -Zbuild-std.
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+          targets: wasm32-unknown-unknown
+          components: rust-src
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-web
+          cache-on-failure: true
+
+      # Triple, profile, features AND flags match tango-lite-web/build.sh
+      # — note `release`, not `release-dist`; the web build keeps the
+      # stock profile.
+      - name: Check
+        env:
+          RUSTFLAGS: >-
+            -Ctarget-feature=+atomics,+bulk-memory,+mutable-globals
+            -Clink-arg=--shared-memory
+            -Clink-arg=--import-memory
+            -Clink-arg=--max-memory=2147483648
+            -Clink-arg=-zstack-size=8388608
+            -Clink-arg=--export=__wasm_init_tls
+            -Clink-arg=--export=__tls_size
+            -Clink-arg=--export=__tls_align
+            -Clink-arg=--export=__tls_base
+            -Clink-arg=--export=__heap_base
+            -Clink-arg=--export=__data_end
+        run: cargo check --package tango-lite-web --features gamesupport-all --profile release --target wasm32-unknown-unknown -Zbuild-std=std,panic_abort
+
+  check-linux-x86_64:
+    runs-on: ubuntu-22.04
+    env:
+      CMAKE_POLICY_VERSION_MINIMUM: 3.5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: x86_64-unknown-linux-gnu
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-dist
+          cache-on-failure: true
+
+      # Same list release.yaml installs: the build scripts pkg-config for
+      # SDL2 and friends whether or not anything gets linked afterwards.
+      - name: Install system packages
+        run: |
+          sudo apt-get update -y
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y alsa build-essential clang cmake curl fuse git libnss3 librust-atk-dev librust-gdk-pixbuf-dev librust-gdk-sys-dev librust-pango-dev libsdl2-dev pkgconf sudo wget
+
+      - name: Check
+        run: cargo check --bin tango --features gamesupport-all --profile release-dist --target x86_64-unknown-linux-gnu

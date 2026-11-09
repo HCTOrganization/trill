@@ -1,0 +1,123 @@
+[package]
+name = "tango-library"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+publish = false
+
+# The user's game library and its persistence, extracted from the tango
+# bin crate so a second frontend (a browser build over IndexedDB) reuses the
+# registry, the scanners, the patch catalog, and the config model
+# verbatim. Editors are optional (`ui`). No direct filesystem or HTTP access: all
+# I/O goes through the `storage::Storage` / `http::Http` traits, whose
+# std implementations are behind the default `native` feature. Builds
+# for native AND wasm32.
+[dependencies]
+tango-match = { path = "../tango-match" }
+tango-net-protocol = { path = "../tango-net-protocol" }
+tango-gamesupport-common-dataview = { path = "../tango-gamesupport-common-dataview" }
+log.workspace = true
+mailparse.workspace = true
+semver.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+unic-langid.workspace = true
+# `std::time::Instant` panics in a browser; used for rescan timing logs.
+web-time.workspace = true
+
+bps.workspace = true
+tango-gamesupport = { path = "../tango-gamesupport" }
+tango-patch = { workspace = true, features = ["package", "index"] }
+tango-replay = { path = "../tango-replay" }
+
+fluent-templates.workspace = true
+
+tango-gamesupport-bcc = { path = "../tango-gamesupport-bcc", optional = true }
+tango-gamesupport-bn1 = { path = "../tango-gamesupport-bn1", optional = true }
+tango-gamesupport-bn2 = { path = "../tango-gamesupport-bn2", optional = true }
+tango-gamesupport-bn3 = { path = "../tango-gamesupport-bn3", optional = true }
+tango-gamesupport-bn4 = { path = "../tango-gamesupport-bn4", optional = true }
+tango-gamesupport-bn5 = { path = "../tango-gamesupport-bn5", optional = true }
+tango-gamesupport-bn5ds = { path = "../tango-gamesupport-bn5ds", optional = true }
+tango-gamesupport-bn6 = { path = "../tango-gamesupport-bn6", optional = true }
+tango-gamesupport-exe45 = { path = "../tango-gamesupport-exe45", optional = true }
+tango-gamesupport-exeoss = { path = "../tango-gamesupport-exeoss", optional = true }
+
+# The `native` feature's std implementations only. Nothing outside
+# `storage::std_impl` / `http::reqwest_impl` / `bnlc` may reference these,
+# or the wasm32 build breaks.
+futures = { workspace = true, optional = true }
+reqwest = { workspace = true, features = ["stream"], optional = true }
+steamlocate = { workspace = true, optional = true }
+tokio = { workspace = true, features = ["time"], optional = true }
+walkdir = { workspace = true, optional = true }
+# Preserve the archive formats supported by the desktop library.
+zip = { workspace = true, features = ["aes-crypto", "bzip2", "deflate64", "deflate", "lzma", "time", "zstd", "xz"], optional = true }
+
+[dev-dependencies]
+num-rational.workspace = true
+# The library never writes a package; the patch tests build one to scan,
+# and stand up a real HTTP server to fetch it from.
+tango-patch = { workspace = true, features = ["package", "index", "bundle"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "net", "io-util", "time"] }
+
+[features]
+default = ["native"]
+# Attach editors only for games selected by gamesupport-*; enabling UI alone
+# does not pull in any games. The registry owns both feature paths.
+ui = [
+    "tango-gamesupport/ui",
+    "tango-gamesupport-bcc?/ui",
+    "tango-gamesupport-bn1?/ui",
+    "tango-gamesupport-bn2?/ui",
+    "tango-gamesupport-bn3?/ui",
+    "tango-gamesupport-bn4?/ui",
+    "tango-gamesupport-bn5?/ui",
+    "tango-gamesupport-bn5ds?/ui",
+    "tango-gamesupport-bn6?/ui",
+    "tango-gamesupport-exe45?/ui",
+    "tango-gamesupport-exeoss?/ui",
+]
+# std filesystem + reqwest HTTP + Steam (BNLC) discovery. A wasm build
+# turns this off and supplies its own IndexedDB / fetch implementations.
+native = ["dep:futures", "dep:reqwest", "dep:steamlocate", "dep:tokio", "dep:walkdir", "dep:zip", "reqwest/native-tls"]
+gamesupport-bcc = ["dep:tango-gamesupport-bcc"]
+gamesupport-bn1 = ["dep:tango-gamesupport-bn1"]
+gamesupport-bn2 = ["dep:tango-gamesupport-bn2"]
+gamesupport-bn3 = ["dep:tango-gamesupport-bn3"]
+gamesupport-bn4 = ["dep:tango-gamesupport-bn4"]
+gamesupport-bn5 = ["dep:tango-gamesupport-bn5"]
+gamesupport-bn5ds = ["dep:tango-gamesupport-bn5ds"]
+gamesupport-bn6 = ["dep:tango-gamesupport-bn6"]
+gamesupport-exe45 = ["dep:tango-gamesupport-exe45"]
+gamesupport-exeoss = ["dep:tango-gamesupport-exeoss"]
+gamesupport-all = [
+    "gamesupport-bcc",
+    "gamesupport-bn1",
+    "gamesupport-bn2",
+    "gamesupport-bn3",
+    "gamesupport-bn4",
+    "gamesupport-bn5",
+    "gamesupport-bn5ds",
+    "gamesupport-bn6",
+    "gamesupport-exe45",
+    "gamesupport-exeoss",
+]
+
+[lints]
+workspace = true
+
+[package.metadata.cargo-machete]
+ignored = [
+    "tango-gamesupport-bcc",
+    "tango-gamesupport-bn1",
+    "tango-gamesupport-bn2",
+    "tango-gamesupport-bn3",
+    "tango-gamesupport-bn4",
+    "tango-gamesupport-bn5",
+    "tango-gamesupport-bn5ds",
+    "tango-gamesupport-bn6",
+    "tango-gamesupport-exe45",
+    "tango-gamesupport-exeoss",
+]

@@ -1,0 +1,28 @@
+[package]
+name = "tango-gamesupport"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+crc32fast.workspace = true
+image.workspace = true
+tango-match = { path = "../tango-match" }
+thiserror.workspace = true
+
+# The save-editor embedding API (the `ui` feature): SaveEditor and its
+# opaque envelopes. Game and Family stay independent of this feature.
+# Shape-oblivious —
+# the actual UI lives in the private tango-gamesupport-common-ui. Off for
+# headless consumers (engine hosts), which then link no
+# UI toolkit.
+iced = { workspace = true, optional = true }
+semver.workspace = true
+tango-patch = { workspace = true, features = ["package", "index"] }
+unic-langid = { workspace = true, optional = true }
+
+[features]
+ui = ["dep:iced", "dep:unic-langid"]
+
+[lints]
+workspace = true
