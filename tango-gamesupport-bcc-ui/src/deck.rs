@@ -1134,9 +1134,7 @@ mod legality_tests {
         let english: LanguageIdentifier = "en-US".parse().unwrap();
         let english_text = warnings.format(&english);
 
-        for language in [
-            "de-DE", "es-419", "fr-FR", "ja-JP", "nl-NL", "pt-BR", "ru-RU", "vi-VN", "zh-CN", "zh-TW",
-        ] {
+        for language in ["ja-JP", "zh-CN", "zh-TW"] {
             let language = language.parse().unwrap();
             for (localized, english) in warnings.format(&language).into_iter().zip(&english_text) {
                 assert_ne!(localized, *english);

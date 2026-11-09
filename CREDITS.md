@@ -15,13 +15,6 @@
 - Japanese: [weenie](https://github.com/bigfarts), [Nonstopmop](https://twitter.com/seventhfonist42), [dhenva](https://twitch.tv/dhenva)
 - Mandarin (mainland China): [weenie](https://github.com/bigfarts)
 - Mandarin (Taiwan): [weenie](https://github.com/bigfarts)
-- Spanish (Latin America): [Karate_Bugman](https://twitter.com/Karate_Bugman)
-- Portuguese (Brazil): [Darkgaia](https://ayo.so/darkgaiagames), [mushiguchi](https://twitter.com/mushiguchi)
-- French (France): [Sheriel Phoenix](https://twitter.com/Sheriel_Phoenix), [Justplay](https://twitter.com/justplayfly)
-- German (Germany): [KenDeep](https://twitch.tv/kendeep_fgc), [ChinaTV](https://twitter.com/ChinaTV9)
-- Vietnamese: [ExeDesmond](https://twitter.com/exedesmond), [ShironaNep](https://www.youtube.com/user/minhduc1411vip)
-- Russian (Russia): Passbyword, [Sest0E1emento5](https://www.youtube.com/channel/UCwpjuY9bYqNzsUG1QP50PLQ)
-- Dutch (Netherlands): [Virillion](https://twitter.com/Virillion)
 
 ## Art
 

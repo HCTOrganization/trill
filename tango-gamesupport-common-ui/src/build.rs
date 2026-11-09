@@ -529,9 +529,7 @@ mod tests {
             ]
         );
 
-        for language in [
-            "de-DE", "es-419", "fr-FR", "ja-JP", "nl-NL", "pt-BR", "ru-RU", "vi-VN", "zh-CN", "zh-TW",
-        ] {
+        for language in ["ja-JP", "zh-CN", "zh-TW"] {
             for (localized, english) in slot_warning_texts(&language.parse().unwrap())
                 .into_iter()
                 .zip(&english_texts)
@@ -578,9 +576,7 @@ mod tests {
         };
         let english_warnings = warnings.format(&english);
 
-        for language in [
-            "de-DE", "es-419", "fr-FR", "ja-JP", "nl-NL", "pt-BR", "ru-RU", "vi-VN", "zh-CN", "zh-TW",
-        ] {
+        for language in ["ja-JP", "zh-CN", "zh-TW"] {
             let language = language.parse().unwrap();
             assert_ne!(folder_not_full(&language, 29, 30), english_text);
             for (kind, english_reason) in kinds.iter().copied().zip(&english_reasons) {

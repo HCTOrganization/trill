@@ -10,9 +10,10 @@
 //!
 //! The answer is the browser's, matched against the locales the
 //! families actually carry, with an exact-tag pass before a
-//! language-only one so `pt-BR` prefers `pt-BR` over `pt-PT` but
-//! `de-AT` still lands on `de-DE`. No match falls back to en-US, which
-//! is also what an untranslated key does inside a bundle.
+//! language-only one so `zh-TW` prefers `zh-TW` over `zh-CN` but a
+//! browser set to plain `ja` still lands on `ja-JP`. No match falls
+//! back to en-US, which is also what an untranslated key does inside a
+//! bundle.
 
 use std::sync::LazyLock;
 
@@ -44,8 +45,8 @@ fn negotiate() -> unic_langid::LanguageIdentifier {
             return exact.clone();
         }
     }
-    // Region-blind second pass: a browser set to `de-AT` or plain `de`
-    // should still get the German fragments.
+    // Region-blind second pass: a browser set to plain `ja` or `zh`
+    // should still land on the Japanese or Chinese fragments.
     for want in &requested {
         if let Some(same_language) = SUPPORTED_LANGS.iter().find(|have| have.language == want.language) {
             return same_language.clone();

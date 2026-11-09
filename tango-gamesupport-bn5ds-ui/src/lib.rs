@@ -1154,9 +1154,7 @@ mod tests {
         );
         assert!(english_gauge.starts_with("MegaMan, P.HP+50:"));
         assert!(!english_gauge.contains("Party 1"));
-        for language in [
-            "de-DE", "es-419", "fr-FR", "ja-JP", "nl-NL", "pt-BR", "ru-RU", "vi-VN", "zh-CN", "zh-TW",
-        ] {
+        for language in ["ja-JP", "zh-CN", "zh-TW"] {
             let language = language.parse().unwrap();
             assert_ne!(
                 partycust_violation_text(

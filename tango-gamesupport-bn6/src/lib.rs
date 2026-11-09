@@ -201,15 +201,8 @@ pub static BN6F: Game = Game {
 macro_rules! family_translations {
     ($fam:literal) => {
         &[
-            ("de-DE", include_str!(concat!("../locales/de-DE/", $fam, ".ftl"))),
             ("en-US", include_str!(concat!("../locales/en-US/", $fam, ".ftl"))),
-            ("es-419", include_str!(concat!("../locales/es-419/", $fam, ".ftl"))),
-            ("fr-FR", include_str!(concat!("../locales/fr-FR/", $fam, ".ftl"))),
             ("ja-JP", include_str!(concat!("../locales/ja-JP/", $fam, ".ftl"))),
-            ("nl-NL", include_str!(concat!("../locales/nl-NL/", $fam, ".ftl"))),
-            ("pt-BR", include_str!(concat!("../locales/pt-BR/", $fam, ".ftl"))),
-            ("ru-RU", include_str!(concat!("../locales/ru-RU/", $fam, ".ftl"))),
-            ("vi-VN", include_str!(concat!("../locales/vi-VN/", $fam, ".ftl"))),
             ("zh-CN", include_str!(concat!("../locales/zh-CN/", $fam, ".ftl"))),
             ("zh-TW", include_str!(concat!("../locales/zh-TW/", $fam, ".ftl"))),
         ]

@@ -598,9 +598,7 @@ mod legality_tests {
         assert!(english.contains("0A"));
         assert!(english.contains("0C"));
 
-        for language in [
-            "de-DE", "es-419", "fr-FR", "ja-JP", "nl-NL", "pt-BR", "ru-RU", "vi-VN", "zh-CN", "zh-TW",
-        ] {
+        for language in ["ja-JP", "zh-CN", "zh-TW"] {
             assert_ne!(warnings.format(&language.parse().unwrap()).remove(0), english);
         }
     }
