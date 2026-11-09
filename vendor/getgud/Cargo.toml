@@ -1,0 +1,12 @@
+[package]
+name = "getgud"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+description = "Small, dependency-free core for rollback netcode in deterministic games"
+repository = "https://github.com/tangobattle/getgud"
+
+[dependencies]
+
+[lints]
+workspace = true

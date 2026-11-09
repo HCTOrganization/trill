@@ -1,0 +1,13 @@
+[package]
+name = "mgba"
+version = "4.0.32"
+edition = "2021"
+license = "MPL-2.0"
+
+[dependencies]
+log = "0.4"
+mgba-sys = { path = "mgba-sys" }
+thiserror = "1"
+
+[lints]
+workspace = true

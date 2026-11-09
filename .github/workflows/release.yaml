@@ -45,14 +45,11 @@ jobs:
       CMAKE_POLICY_VERSION_MINIMUM: 3.5
 
     steps:
-      # Windows caps paths at 260 characters, and libgit2 (what cargo
-      # checks git dependencies out with) refuses to write past that
-      # unless core.longpaths says otherwise. datachannel-facade nests
-      # libdatachannel two crates deep, and libdatachannel vendors
-      # nlohmann/json, whose benchmark-report fixtures have very long
-      # names — the worst lands at 266 characters under ~/.cargo/git and
-      # failed the checkout outright ("path too long; class=Filesystem").
-      # First step so the repo's own submodule checkout is covered too.
+      # Windows caps paths at 260 characters, and the libdatachannel/Mbed TLS
+      # submodules under vendor/datachannel-facade nest deeply enough to hit
+      # it: libdatachannel vendors nlohmann/json, whose benchmark-report
+      # fixtures have very long names. First step so the submodule checkout
+      # is covered too.
       - name: Allow long paths
         shell: bash
         run: |
@@ -60,6 +57,8 @@ jobs:
           git config --system core.longpaths true || true
 
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - run: git fetch --tags --force
 
@@ -126,6 +125,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - run: git fetch --tags --force
 
@@ -171,6 +172,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - run: git fetch --tags --force
 

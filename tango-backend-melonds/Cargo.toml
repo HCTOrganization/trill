@@ -12,8 +12,8 @@ license = "GPL-3.0-or-later"
 [dependencies]
 num-rational.workspace = true
 tango-match = { path = "../tango-match" }
-melonds = { git = "https://github.com/tangobattle/melonds-rs" }
-melonds-rollback = { git = "https://github.com/tangobattle/melonds-rollback" }
+melonds = { workspace = true }
+melonds-rollback = { workspace = true }
 
 [lints]
 workspace = true

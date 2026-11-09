@@ -19,6 +19,25 @@ members = [
     "tango-replay-renderer",
     "tango-session",
     "tango-ui",
+    # Third-party and formerly-extracted crates, vendored so the whole
+    # dependency graph resolves from this repository (see `vendor/`).
+    # Their own path dependencies (`mgba-sys`, `melonds-sys`,
+    # `libdatachannel`, `web-datachannel`, `libdatachannel-sys`) join the
+    # workspace automatically for the same reason the game crates do.
+    "vendor/bps",
+    "vendor/datachannel-facade",
+    "vendor/datachannel-wrapper",
+    "vendor/discord-ipc",
+    "vendor/encoder-facade",
+    "vendor/gamepad-facade",
+    "vendor/getgud",
+    "vendor/melonds-rollback",
+    "vendor/melonds-rs",
+    "vendor/mgba-rollback",
+    "vendor/mgba-rs",
+    "vendor/rennet",
+    "vendor/tango-patch",
+    "vendor/tango-signaling",
 ]
 # The per-game `tango-gamesupport-*` crates auto-join this workspace as
 # path dependencies rather than being listed above. Keep a plain root
@@ -46,19 +65,20 @@ anyhow = "1"
 async-trait = "0.1"
 base64 = "0.22"
 bincode = "1"
-bps = { git = "https://github.com/tangobattle/bps" }
+bps = { path = "vendor/bps" }
 bytemuck = "1"
 byteorder = "1"
 c2rust-bitfields = "0.22"
 chrono = { version = "0.4", default-features = false }
 clap = { version = "4", features = ["derive"] }
 crc32fast = "1"
-datachannel-wrapper = { git = "https://github.com/tangobattle/datachannel-wrapper" }
-encoder-facade = { git = "https://github.com/tangobattle/encoder-facade" }
+datachannel-wrapper = { path = "vendor/datachannel-wrapper" }
+discord-ipc = { path = "vendor/discord-ipc" }
+encoder-facade = { path = "vendor/encoder-facade" }
 fluent-templates = "0.14"
 futures = "0.3"
-gamepad-facade = { git = "https://github.com/tangobattle/gamepad-facade", default-features = false }
-getgud = { git = "https://github.com/tangobattle/getgud" }
+gamepad-facade = { path = "vendor/gamepad-facade", default-features = false }
+getgud = { path = "vendor/getgud" }
 iced = { version = "0.14", features = ["tokio", "image-without-codecs", "markdown", "canvas", "advanced"] }
 iced_graphics = { version = "0.14", features = ["geometry"] }
 iced_tiny_skia = { version = "0.14", features = ["geometry"] }
@@ -68,8 +88,10 @@ itertools = "0.13"
 log = "0.4"
 lucide-icons = { version = "1.16", features = ["iced"] }
 mailparse = "0.14"
-mgba = { git = "https://github.com/tangobattle/mgba-rs" }
-mgba-rollback = { git = "https://github.com/tangobattle/mgba-rollback" }
+melonds = { path = "vendor/melonds-rs" }
+melonds-rollback = { path = "vendor/melonds-rollback" }
+mgba = { path = "vendor/mgba-rs" }
+mgba-rollback = { path = "vendor/mgba-rollback" }
 ndarray = "0.15"
 num-derive = "0.4.2"
 num-rational = { version = "0.4", default-features = false, features = ["std"] }
@@ -78,7 +100,7 @@ prost = "0.14"
 prost-build = "0.14"
 rand = "0.8"
 rand_pcg = { version = "0.3", features = ["serde1"] }
-rennet = { git = "https://github.com/tangobattle/rennet" }
+rennet = { path = "vendor/rennet" }
 reqwest = { version = "0.11", default-features = false }
 semver = { version = "1", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
@@ -88,8 +110,8 @@ sha3 = "0.10"
 steamlocate = "2"
 subtle = "2"
 sweeten = "0.14"
-tango-patch = { git = "https://github.com/tangobattle/tango-patch" }
-tango-signaling = { git = "https://github.com/tangobattle/tango-signaling" }
+tango-patch = { path = "vendor/tango-patch" }
+tango-signaling = { path = "vendor/tango-signaling" }
 thiserror = "1"
 tiny-skia = "0.11"
 tokio = "1"

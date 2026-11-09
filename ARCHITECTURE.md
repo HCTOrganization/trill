@@ -60,6 +60,17 @@ crates own layouts, assets, custom edits, and structured validation findings.
 `-ui` crates render these models and format findings as warnings. These remain separate because the browser
 and headless consumers need parsing and emulation without the desktop UI.
 
+Emulator bindings (`mgba`, `melonds`), rollback (`getgud`, the
+`*-rollback` crates), transport (`rennet`, `tango-signaling`,
+`datachannel-wrapper`), encoding (`encoder-facade`), input
+(`gamepad-facade`), Discord presence (`discord-ipc`), patching
+(`tango-patch`), and byte patching (`bps`) live in `vendor/` as workspace
+members rather than in separate repositories. Each still owns its own
+layer: `tango-backend-*` adapts them to `tango-match`, and nothing above
+the backends names them. The emulator C cores are vendored beside their
+bindings; libdatachannel and Mbed TLS are submodules of
+`vendor/datachannel-facade`.
+
 ## Game registration and features
 
 `tango-library/src/game.rs` contains the one registration list. Each entry

@@ -10,6 +10,16 @@ Install Rust stable, a C/C++ compiler, CMake, Ninja, and Protocol Buffers
 built from source. Platform package lists and release setup are in
 [the native CI workflow](.github/workflows/ci.yaml).
 
+Emulator cores, networking, and the crates this project used to consume
+from separate repositories all live under `vendor/` and build as workspace
+members. Only libdatachannel and Mbed TLS remain submodules, so clone
+recursively (or initialize them afterwards):
+
+```sh
+git clone --recurse-submodules <repository-url>
+git submodule update --init --recursive   # in an existing checkout
+```
+
 ```sh
 cargo run --release --bin tango
 ```
@@ -36,6 +46,7 @@ and server requirements; see [its build instructions](tango-lite-web/README.md).
 | Sessions | `tango-session` | Single-player, optional netplay, training, replay drivers |
 | Match engine | `tango-match` | Backend interfaces, rollback coordination, audio, telemetry |
 | Emulators | `tango-backend-mgba`, `tango-backend-melonds` | GBA and DS implementations |
+| Vendored crates | `vendor` | Emulator bindings, transport, encoding, and the crates formerly extracted from this repository |
 | Matchmaking | `tango-lobby`, `tango-net-protocol` | Lobby state and wire messages |
 | Transport / platform | `tango-net`, `tango-platform` | Connections, reconnect, portable tasks and timers |
 | Replays | `tango-replay`, `tango-replay-renderer` | Recording format and video export |
@@ -49,7 +60,9 @@ and server requirements; see [its build instructions](tango-lite-web/README.md).
 Per-game crates join the workspace through path dependencies. A plain
 root build uses `default-members`, excluding the browser-only target.
 Use explicit packages when checking portable code; `--workspace` also
-selects the browser, which cannot compile for a native target.
+selects the browser, which cannot compile for a native target. Crates in
+`vendor` join the workspace the same way, so `--workspace` builds them
+too.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) traces session startup, netplay, and
 replay processing. [CONTRIBUTING.md](CONTRIBUTING.md) documents checks and

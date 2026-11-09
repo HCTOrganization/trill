@@ -1,0 +1,12 @@
+[package]
+name = "rennet"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+description = "Reliable, ordered delivery over an unreliable, unordered datagram channel — the tango live-match netplay protocol"
+repository = "https://github.com/tangobattle/rennet"
+
+[dependencies]
+
+[lints]
+workspace = true

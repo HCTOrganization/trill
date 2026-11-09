@@ -1,0 +1,27 @@
+# The facade is the root package; its two backends are path dependencies
+# beside it, so they join the tango workspace too.
+[package]
+name = "datachannel-facade"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+description = "One WebRTC data-channel API over libdatachannel natively and the browser on wasm."
+repository = "https://github.com/tangobattle/datachannel-facade"
+publish = false
+
+# `log` is used only from the target-specific backend modules, which the
+# unused-dependency audit does not follow into.
+[package.metadata.cargo-machete]
+ignored = ["log"]
+
+[lints]
+workspace = true
+
+[dependencies]
+log = "0.4"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+libdatachannel = { path = "libdatachannel", features = ["vendored"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+web-datachannel = { path = "web-datachannel" }

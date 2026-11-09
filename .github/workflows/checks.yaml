@@ -35,7 +35,12 @@ jobs:
     env:
       CMAKE_POLICY_VERSION_MINIMUM: 3.5
     steps:
+      # libdatachannel and Mbed TLS (under vendor/datachannel-facade) are
+      # this repository's only submodules; the emulator cores are vendored
+      # in-tree.
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: arduino/setup-protoc@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}

@@ -37,8 +37,8 @@ lipo -create target/{aarch64-apple-darwin,x86_64-apple-darwin}/release-dist/tang
 ffmpeg_version="8.1.2"
 
 mkdir -p tango_macos_workdir
-wget -O tango_macos_workdir/ffmpeg-arm64 "https://github.com/tangobattle/ffmpeg-build/releases/download/ffmpeg-${ffmpeg_version}/ffmpeg-macos-arm64"
-wget -O tango_macos_workdir/ffmpeg-x64 "https://github.com/tangobattle/ffmpeg-build/releases/download/ffmpeg-${ffmpeg_version}/ffmpeg-macos-x86_64"
+wget -O tango_macos_workdir/ffmpeg-arm64 "https://github.com/HCTOrganization/ffmpeg-build/releases/download/ffmpeg-${ffmpeg_version}/ffmpeg-macos-arm64"
+wget -O tango_macos_workdir/ffmpeg-x64 "https://github.com/HCTOrganization/ffmpeg-build/releases/download/ffmpeg-${ffmpeg_version}/ffmpeg-macos-x86_64"
 lipo -create tango_macos_workdir/ffmpeg-{arm64,x64} -output Tango.app/Contents/MacOS/ffmpeg
 chmod a+x Tango.app/Contents/MacOS/ffmpeg
 

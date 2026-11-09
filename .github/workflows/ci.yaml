@@ -35,15 +35,19 @@ jobs:
 
     steps:
       # See release.yaml: libdatachannel's vendored nlohmann/json fixtures
-      # run past Windows' 260-character path cap under ~/.cargo/git, and
-      # the checkout fails outright without this.
+      # run past Windows' 260-character path cap, and the submodule checkout
+      # fails outright without this.
       - name: Allow long paths
         shell: bash
         run: |
           git config --global core.longpaths true
           git config --system core.longpaths true || true
 
+      # libdatachannel and Mbed TLS are submodules of this repository (see
+      # vendor/datachannel-facade); the emulator cores are vendored in-tree.
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -80,6 +84,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -177,6 +183,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3

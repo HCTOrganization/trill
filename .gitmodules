@@ -1,0 +1,6 @@
+[submodule "vendor/datachannel-facade/libdatachannel/libdatachannel-sys/libdatachannel"]
+	path = vendor/datachannel-facade/libdatachannel/libdatachannel-sys/libdatachannel
+	url = https://github.com/paullouisageneau/libdatachannel
+[submodule "vendor/datachannel-facade/libdatachannel/libdatachannel-sys/mbedtls"]
+	path = vendor/datachannel-facade/libdatachannel/libdatachannel-sys/mbedtls
+	url = https://github.com/Mbed-TLS/mbedtls.git

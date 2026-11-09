@@ -1,0 +1,18 @@
+[package]
+name = "datachannel-wrapper"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+
+[dependencies]
+# The cross-platform data-channel API. This crate adds only the async
+# shape on top; which backend is underneath is the facade's business.
+datachannel-facade = { path = "../datachannel-facade" }
+# Every queue here is fed by a callback with nowhere to wait, so they're
+# `futures`' unbounded channels: no runtime to find, nothing that blocks,
+# and the same code on both targets.
+futures = "0.3"
+
+[lints]
+workspace = true
+

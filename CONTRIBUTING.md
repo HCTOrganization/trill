@@ -2,6 +2,14 @@
 
 ## Checks
 
+Initialize the submodules once per checkout. Only libdatachannel and Mbed
+TLS are submodules; every other dependency builds from `vendor/` or
+crates.io.
+
+```sh
+git submodule update --init --recursive
+```
+
 Run these from the repository root. Python 3.11+ is needed only for the
 workspace convention check. Use the checked-in `Cargo.lock`; avoid
 updating dependencies as part of unrelated changes.
@@ -136,6 +144,13 @@ with `dependency.workspace = true`, adding their own features and
 `optional = true` where needed. Preserve `default-features` settings:
 Cargo adds workspace features to member features, and changing defaults
 can accidentally pull native code into a browser build.
+
+Crates that were once separate repositories live in `vendor/` and are
+workspace members, so they resolve and build from this repository alone.
+Change them in place when behavior must change, keeping their manifests
+close to upstream; their licenses stay in their own directories. Only
+libdatachannel and Mbed TLS, both third-party C/C++ libraries under
+`vendor/datachannel-facade`, remain git submodules.
 
 When adding a game, register its families in
 `tango-library/src/game.rs` and add the corresponding `gamesupport-*`

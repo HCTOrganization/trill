@@ -1,0 +1,81 @@
+[package]
+name = "gamepad-facade"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+description = "One gamepad-input API over SDL3 natively and the browser Gamepad API on wasm."
+repository = "https://github.com/tangobattle/gamepad-facade"
+publish = false
+
+[dependencies]
+log = "0.4"
+
+# --- native (SDL3) backend -------------------------------------------------
+#
+# SDL3, built from source and statically linked, but trimmed down to
+# just the gamepad path. `sdl3` itself only exposes the build knobs; the
+# subsystem toggles live on `sdl3-sys` below.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+sdl3 = { version = "0.18", default-features = false, features = ["build-from-source-static"], optional = true }
+# Trim the vendored SDL3 build to gamepad-only. `no-default-subsystems`
+# turns every subsystem OFF (audio/video/render/gpu/camera/joystick/
+# haptic/hidapi/power/sensor/dialog/tray); we then re-enable just the
+# joystick subsystem — the gamepad API is built on top of it, there is
+# no separate `SDL_GAMEPAD` flag — plus HIDAPI, which is what gives good
+# PS4/5, Switch Pro, and Xbox-over-Bluetooth coverage. `sdl-joystick` /
+# `sdl-hidapi` win over the `no-sdl-*` flags because sdl3-sys emits the
+# CMake `=ON` define after the `=OFF` one. Cargo feature unification
+# folds these onto the same `sdl3-sys` that `sdl3` already builds, so
+# this is the whole trim: no fork, no patched build script.
+#
+# Dropping video is the big payoff — it removes the X11/Wayland build
+# dependency on Linux and the Metal/Cocoa link on macOS. Nothing here
+# ever instantiates an audio/video/render subsystem, so the compiled-out
+# symbols are never referenced and static linking stays clean.
+sdl3-sys = { version = "0.6", default-features = false, optional = true, features = [
+    "no-default-subsystems",
+    "sdl-joystick",
+    "sdl-hidapi",
+    # Turning the video subsystem off is not enough on its own: SDL's
+    # cmake still fails a unix build outright when neither X11 nor
+    # Wayland development libraries are present, on the assumption that
+    # a machine without them can't have wanted a windowless SDL. This
+    # is the documented way to say we did mean it -- without it, a
+    # Linux CI image needs the whole X11/Wayland dev stack installed to
+    # build a gamepad library that never opens a window.
+    "sdl-unix-console-build",
+] }
+# Lets the `!Send` SDL handles (Sdl, EventPump, GamepadSubsystem) live in
+# `Send` globals: SendWrapper is Send + Sync but panics if the inner
+# value is dereferenced (or dropped) from any thread other than the one
+# that created it — exactly the main-thread-only guarantee SDL3 needs, so
+# we don't have to hand-roll an `unsafe impl Send` + thread-id check.
+send_wrapper = { version = "0.6", optional = true }
+
+# --- browser backend -------------------------------------------------------
+#
+# Neither optional nor feature-gated: on wasm32 there is exactly one way
+# to read a gamepad, so there is no choice worth exposing.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+js-sys = "0.3"
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = [
+    "Gamepad",
+    "GamepadButton",
+    "GamepadMappingType",
+    "Navigator",
+    "Window",
+] }
+
+[features]
+# On by default so a native build gets real gamepad support without
+# opting in. Turning it off drops SDL from the link entirely and leaves
+# the API in place reporting no gamepads — useful for a host that wants
+# to skip the vendored SDL build. Ignored on wasm32, which never links
+# SDL either way.
+default = ["sdl3"]
+sdl3 = ["dep:sdl3", "dep:sdl3-sys", "dep:send_wrapper"]
+
+[lints]
+workspace = true
+
