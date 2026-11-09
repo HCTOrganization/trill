@@ -5,6 +5,13 @@ on:
     tags:
       - "v*.*.*"
 
+# The default GITHUB_TOKEN is read-only in this organization, and every
+# job that publishes a release asset needs to write repository contents.
+# Each such job opts in explicitly; nothing else here needs more than
+# read.
+permissions:
+  contents: read
+
 jobs:
   create-release:
     runs-on: ubuntu-22.04
@@ -41,6 +48,9 @@ jobs:
   release-win32-x64:
     runs-on: windows-2022
     needs: create-release
+    # Uploads the installer + .pdb to the release create-release made.
+    permissions:
+      contents: write
     env:
       CMAKE_POLICY_VERSION_MINIMUM: 3.5
 
@@ -120,6 +130,9 @@ jobs:
   release-mac-universal:
     runs-on: macos-15
     needs: create-release
+    # Uploads the universal .dmg to the release create-release made.
+    permissions:
+      contents: write
     env:
       CMAKE_POLICY_VERSION_MINIMUM: 3.5
 
@@ -167,6 +180,10 @@ jobs:
     # and stays runnable on the broadest spread of user distributions.
     runs-on: ubuntu-22.04
     needs: create-release
+    # Uploads the AppImage + .debug sidecar to the release create-release
+    # made.
+    permissions:
+      contents: write
     env:
       CMAKE_POLICY_VERSION_MINIMUM: 3.5
 
