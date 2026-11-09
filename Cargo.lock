@@ -8056,7 +8056,7 @@ dependencies = [
 
 [[package]]
 name = "trill"
-version = "5.1.49"
+version = "5.2.0-prerelease-261109-2221"
 dependencies = [
  "anyhow",
  "arboard",
