@@ -1,6 +1,6 @@
 [package]
 name = "trill"
-version = "5.2.0-prerelease-261109-2221"
+version = "5.2.0-prerelease-261110-2338"
 edition = "2021"
 license = "GPL-3.0-or-later"
 publish = false
