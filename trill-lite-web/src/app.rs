@@ -42,7 +42,13 @@ pub fn App() -> Element {
     let mut link_snapshot = use_signal(Snapshot::default);
     let mut engine_status = use_signal(|| None::<engine::Status>);
     let nickname = use_signal(|| crate::storage::prefs::get("nickname").unwrap_or_default());
-    let code = use_signal(|| crate::storage::prefs::get("code").unwrap_or_default());
+    let code = use_signal(|| {
+        // Drop a code persisted by an older build: only the canonical
+        // numeric form is dialable now.
+        crate::storage::prefs::get("code")
+            .and_then(|code| trill_lobby::randomcode::canonical(code.trim()))
+            .unwrap_or_default()
+    });
     // The one place a failure that isn't a session's own gets said out
     // loud: a replay that won't open, usually because a ROM is missing.
     let mut notice = use_signal(|| None::<String>);

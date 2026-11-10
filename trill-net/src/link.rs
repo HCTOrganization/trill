@@ -86,8 +86,8 @@ impl DirectRole {
     ///   the user didn't specify one
     ///
     /// `None` for anything else, including input without the leading
-    /// slash: that is a matchmaking code, which can legitimately contain
-    /// letters, digits, and the random-code separators.
+    /// slash: that is a matchmaking code, which is a numeric
+    /// (zero-padded) id.
     pub fn parse_command(input: &str) -> Option<Self> {
         if !input.starts_with('/') {
             return None;

@@ -215,7 +215,8 @@ match-type policy. Hosts supply the per-family memory from the config's
 `last_match_type_per_family` and record each pick there.
 
 `trill_lobby::LinkIdent::parse` turns what the user typed into a
-matchmaking code or a `/host`/`/connect` direct role.
+matchmaking code (eight digits, left-padded with `0` when shorter, with
+blocked digit sequences remapped) or a `/host`/`/connect` direct role.
 `trill-net::open_channels` performs every bring-up: signaling rendezvous or
 direct host/connect, channel bundling (including which side offered, and
 whether ICE settled on a relay), and version negotiation. It is used by

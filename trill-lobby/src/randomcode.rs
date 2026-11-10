@@ -1,720 +1,197 @@
-//! Link-code generator. Builds memorable `<adjective>-<word>-<noun>`
-//! handles per locale so users can dictate a code to a friend out
-//! loud.
+//! Link-code generator. Produces a uniformly random numeric code for a
+//! matchmaking rendezvous. Digits are easy to read out and retype, and
+//! shorter input is accepted and left-padded with `0` (see
+//! [`LinkIdent::parse`](crate::LinkIdent::parse)).
 
 use rand::Rng;
-use std::sync::LazyLock;
 
-struct Choices {
-    pub starts: &'static [&'static str],
-    pub middles: &'static [&'static str],
-    pub ends: &'static [&'static str],
+/// Digits in a matchmaking link code. Also the length a typed code is
+/// padded up to.
+pub const LINK_CODE_DIGITS: usize = 8;
+
+/// Digit sequences never used as-is: values that read as something
+/// unpleasant out loud, paired with the value that replaces them wherever
+/// they appear in a code. Written in hex so the source doesn't spell them
+/// out either.
+const BLOCKED_CODES: [(u64, u64); 7] = [
+    (0x2304, 0x2305),
+    (0x1_1B4B, 0x1_1B4C),
+    (0x1_BF52, 0x1_BF53),
+    (0xE_3F0B, 0xE_3F0C),
+    (0x1D_4B42, 0x1D_4B43),
+    (0x12F_81AC, 0x12F_81AD),
+    (0x174_D093, 0x174_D094),
+];
+
+/// Codes a blocked match may be swapped for wholesale, half the time.
+const WISHED_CODES: [u64; 9] = [
+    19_871_217, 20_010_321, 20_030_429, 20_030_717, 20_061_214, 20_160_624, 20_260_327, 20_261_108, 72_794_137,
+];
+
+/// Chance a blocked match swaps the whole code for a wished one, instead
+/// of only replacing the offending digits.
+const WISHED_CHANCE: f64 = 0.5;
+
+/// Whether `code` contains any blocked digit sequence.
+fn contains_blocked(code: &str) -> bool {
+    BLOCKED_CODES
+        .iter()
+        .any(|&(blocked, _)| code.contains(&blocked.to_string()))
 }
 
-static CHOICES: LazyLock<std::collections::HashMap<&'static str, Choices>> = LazyLock::new(|| {
-    std::collections::HashMap::from([
-        (
-            "en",
-            Choices {
-                starts: &[
-                    "adjective",
-                    "agameof",
-                    "alpha",
-                    "anti",
-                    "availableto",
-                    "awfullyhot",
-                    "awhisperof",
-                    "bad",
-                    "balanced",
-                    "beholdthe",
-                    "better",
-                    "big",
-                    "bingussed",
-                    "blind",
-                    "boneless",
-                    "boosted",
-                    "bottom",
-                    "bubbly",
-                    "bugged",
-                    "central",
-                    "chilly",
-                    "chonky",
-                    "cobbing",
-                    "code",
-                    "cold",
-                    "compiled",
-                    "cool",
-                    "corny",
-                    "cursed",
-                    "dancing",
-                    "dang",
-                    "dark",
-                    "deleted",
-                    "electric",
-                    "endless",
-                    "epic",
-                    "error",
-                    "famous",
-                    "feedthe",
-                    "fistfullof",
-                    "flying",
-                    "free",
-                    "ghostly",
-                    "giga",
-                    "goodluck",
-                    "harbingerof",
-                    "heavy",
-                    "hello",
-                    "helpme",
-                    "herecomes",
-                    "herecomes",
-                    "higsbys",
-                    "hot",
-                    "hyper",
-                    "im",
-                    "impossible",
-                    "infamous",
-                    "intense",
-                    "invisible",
-                    "itsme",
-                    "jackin",
-                    "lacking",
-                    "legsgo",
-                    "licenseto",
-                    "lookup",
-                    "lucky",
-                    "lv100",
-                    "mega",
-                    "moon",
-                    "murky",
-                    "nebula",
-                    "net",
-                    "new",
-                    "nice",
-                    "nicebig",
-                    "no",
-                    "nonstop",
-                    "official",
-                    "old",
-                    "one",
-                    "online",
-                    "open",
-                    "overwhelming",
-                    "player",
-                    "pocketfullof",
-                    "poggy",
-                    "popped",
-                    "protect",
-                    "rad",
-                    "relaxed",
-                    "returnof",
-                    "revengeofthe",
-                    "risen",
-                    "risky",
-                    "running",
-                    "scary",
-                    "shining",
-                    "shrimpy",
-                    "spectacular",
-                    "spiffy",
-                    "spooky",
-                    "starforce",
-                    "stolen",
-                    "sus",
-                    "sword",
-                    "team",
-                    "techno",
-                    "the",
-                    "thefinal",
-                    "thesearchfor",
-                    "thicc",
-                    "thick",
-                    "throwthe",
-                    "top",
-                    "totallyaccurate",
-                    "unhinged",
-                    "unlikely",
-                    "uwu",
-                    "verbing",
-                    "veteran",
-                    "vibing",
-                    "weird",
-                    "whohere",
-                    "winking",
-                    "yoinky",
-                ],
-                middles: &[
-                    "airhockey",
-                    "airraid",
-                    "airshot",
-                    "airspin",
-                    "alpaca",
-                    "alpha",
-                    "antidmg",
-                    "antinavi",
-                    "antirecov",
-                    "antisword",
-                    "anubis",
-                    "apple",
-                    "aquadrgn",
-                    "aquasword",
-                    "areagrab",
-                    "assnsword",
-                    "aurahead",
-                    "baby",
-                    "balance",
-                    "balanced",
-                    "bambsword",
-                    "barrier",
-                    "bass",
-                    "bassanly",
-                    "bcc",
-                    "bdt",
-                    "bigbomb",
-                    "bighook",
-                    "billy",
-                    "bingus",
-                    "blackbomb",
-                    "blast",
-                    "blues",
-                    "bogos",
-                    "bomboy",
-                    "bombcorn",
-                    "boomer",
-                    "boyfriends",
-                    "browser",
-                    "brs",
-                    "bubble",
-                    "bubbleman",
-                    "bugbomb",
-                    "bugfix",
-                    "bugfrag",
-                    "bunny",
-                    "burrito",
-                    "busterup",
-                    "cannon",
-                    "canodumb",
-                    "cat",
-                    "charge",
-                    "chicken",
-                    "chiptrader",
-                    "chonk",
-                    "circlegun",
-                    "circles",
-                    "circus",
-                    "cob",
-                    "coffeepot",
-                    "colarmy",
-                    "coldbear",
-                    "coldman",
-                    "colonel",
-                    "colorpoint",
-                    "command",
-                    "content",
-                    "cornshot",
-                    "cowboy",
-                    "crackshot",
-                    "crossdivide",
-                    "cucumber",
-                    "damage",
-                    "damnswrd",
-                    "daniel",
-                    "digeridoo",
-                    "discord",
-                    "dive",
-                    "dog",
-                    "dollthunder",
-                    "donut",
-                    "doubleshot",
-                    "drcossak",
-                    "drillarm",
-                    "duo",
-                    "dust",
-                    "eguchi",
-                    "eleball",
-                    "elec",
-                    "elecdrgb",
-                    "elecpulse",
-                    "elecsword",
-                    "element",
-                    "elemtrap",
-                    "energybomb",
-                    "erase",
-                    "error",
-                    "falzar",
-                    "fan",
-                    "fanfare",
-                    "fastgauge",
-                    "firebrn",
-                    "firehit",
-                    "firesword",
-                    "fish",
-                    "fishanly",
-                    "flashbomb",
-                    "friday",
-                    "fullcust",
-                    "geddon",
-                    "golemhit",
-                    "grabbanish",
-                    "gregar",
-                    "ground",
-                    "guardian",
-                    "gundels",
-                    "havefun",
-                    "heat",
-                    "hiboomer",
-                    "holypanel",
-                    "hub",
-                    "hubbatch",
-                    "humor",
-                    "ice",
-                    "iceball",
-                    "iceseed",
-                    "imfish",
-                    "iminthecode",
-                    "invisible",
-                    "ironshell",
-                    "judge",
-                    "justiceone",
-                    "lan",
-                    "lance",
-                    "landing",
-                    "lifeaura",
-                    "lifesync",
-                    "lilboiler",
-                    "machgun",
-                    "magcoil",
-                    "magnum",
-                    "man",
-                    "meaman",
-                    "rockman",
-                    "melody",
-                    "meteorknuckle",
-                    "meteors",
-                    "mettaur",
-                    "mine",
-                    "minibomb",
-                    "monday",
-                    "moloko",
-                    "moon",
-                    "moonblade",
-                    "mrfamous",
-                    "muramasa",
-                    "navi",
-                    "navicust",
-                    "needle",
-                    "neovariable",
-                    "netbattle",
-                    "netbattler",
-                    "nightmare",
-                    "noun",
-                    "one",
-                    "operator",
-                    "pengi",
-                    "permahole",
-                    "pet",
-                    "pirate",
-                    "poutine",
-                    "prinkus",
-                    "proto",
-                    "qbot",
-                    "qforce",
-                    "quaker",
-                    "rabbit",
-                    "recovery",
-                    "reflector",
-                    "riskyhoney",
-                    "rock",
-                    "rockcube",
-                    "roll",
-                    "rollinglog",
-                    "routine",
-                    "rush",
-                    "sanctuary",
-                    "sand",
-                    "sandworm",
-                    "sensor",
-                    "sequel",
-                    "shark",
-                    "shield",
-                    "shrubby",
-                    "silence",
-                    "skill",
-                    "slash",
-                    "slowgauge",
-                    "snake",
-                    "spout",
-                    "spreadr",
-                    "starfish",
-                    "static",
-                    "stepsword",
-                    "stevejobs",
-                    "suprvulc",
-                    "trill",
-                    "tankcan",
-                    "tengu",
-                    "thawk",
-                    "thegiantfist",
-                    "thunder",
-                    "timpani",
-                    "toiletmet",
-                    "tomahawk",
-                    "tornado",
-                    "trainarrow",
-                    "tripleshot",
-                    "uninstall",
-                    "uwu",
-                    "vdoll",
-                    "vulcan",
-                    "wavearm",
-                    "whitecap",
-                    "widesht",
-                    "widesword",
-                    "win",
-                    "wind",
-                    "windrack",
-                    "wood",
-                    "wooddrgn",
-                    "www",
-                    "yoyo",
-                    "zenny",
-                    "zero",
-                ],
-                ends: &[
-                    "6",
-                    "aaaaaa",
-                    "alpha",
-                    "amogus",
-                    "angy",
-                    "applm",
-                    "area",
-                    "aura",
-                    "banned",
-                    "battle",
-                    "beastmode",
-                    "bimbus",
-                    "bingus",
-                    "binted",
-                    "blessing",
-                    "blubblub",
-                    "bot",
-                    "burrito",
-                    "chip",
-                    "chonked",
-                    "clowntown",
-                    "cob",
-                    "cobbers",
-                    "combo",
-                    "congratulations",
-                    "cornfusion",
-                    "cornout",
-                    "crasher",
-                    "damn",
-                    "data",
-                    "denizen",
-                    "eguchiwut",
-                    "endofstring",
-                    "energy",
-                    "error",
-                    "exe",
-                    "execute",
-                    "experience",
-                    "extra",
-                    "faked",
-                    "fartspin",
-                    "forme",
-                    "fortnite",
-                    "frenzy",
-                    "gauntlet",
-                    "ggswp",
-                    "grandprix",
-                    "greatplay",
-                    "hamachi",
-                    "heehoo",
-                    "helpimtrappedinhere",
-                    "hour",
-                    "huh",
-                    "hype",
-                    "impression",
-                    "isa",
-                    "isbalanced",
-                    "issue",
-                    "iswinning",
-                    "jello",
-                    "legabed",
-                    "letmeout",
-                    "license",
-                    "lilguy",
-                    "loicense",
-                    "longsword",
-                    "loverockman",
-                    "man",
-                    "megalegs",
-                    "meme",
-                    "milk",
-                    "minna",
-                    "moi",
-                    "mojo",
-                    "occurroico",
-                    "omega",
-                    "parttwo",
-                    "party",
-                    "pause",
-                    "power",
-                    "powerhour",
-                    "progchamp",
-                    "programadvance",
-                    "ratioed",
-                    "reg",
-                    "rollback",
-                    "rotango",
-                    "sfboy",
-                    "shmooving",
-                    "sickos",
-                    "slimetier",
-                    "snapped",
-                    "solution",
-                    "sp",
-                    "spam",
-                    "sploinky",
-                    "sprite",
-                    "stevejobs",
-                    "strategy",
-                    "swag",
-                    "swaggums",
-                    "swarm",
-                    "symeseus",
-                    "tag",
-                    "technology",
-                    "tfc",
-                    "thunder",
-                    "tier",
-                    "tiltcontrols",
-                    "time",
-                    "toptier",
-                    "ultrafiesta",
-                    "unchained",
-                    "uninstalled",
-                    "unlegs",
-                    "uwu",
-                    "vbalink",
-                    "victor",
-                    "wavedash",
-                    "wswalk",
-                    "x2",
-                    "yeastmode",
-                    "yeet",
-                    "youareworthy",
-                    "yourewinner",
-                    "yum",
-                ],
-            },
-        ),
-        (
-            "ja",
-            Choices {
-                starts: &[
-                    "abunai",
-                    "anoo",
-                    "bokuno",
-                    "dareka",
-                    "haroharo",
-                    "hazimete",
-                    "hontouno",
-                    "ii",
-                    "intaanetto",
-                    "itiban",
-                    "mada",
-                    "maji",
-                    "makenai",
-                    "masaka",
-                    "meta",
-                    "mettya",
-                    "metyakuyta",
-                    "minna",
-                    "muzukasii",
-                    "mou",
-                    "naisu",
-                    "nee",
-                    "ohayou",
-                    "oreno",
-                    "sasuga",
-                    "sausage",
-                    "singuru",
-                    "sugee",
-                    "sugoi",
-                    "sugu",
-                    "tasikani",
-                    "tokorode",
-                    "toriaezu",
-                    "toripuru",
-                    "tuyoi",
-                    "tuyosugiru",
-                    "wagahaiha",
-                    "yahari",
-                    "yoi",
-                    "yorosiku",
-                    "zannen",
-                    "zenzen",
-                    "zibunno",
-                    "zituwa",
-                ],
-                middles: &[
-                    "arigatou",
-                    "basutaa",
-                    "batoru",
-                    "dekao",
-                    "dhuuo",
-                    "doyoubi",
-                    "eguti",
-                    "eguze",
-                    "faruzaa",
-                    "furusinkuro",
-                    "enzan",
-                    "hontounotikara",
-                    "geemu",
-                    "guranpuri",
-                    "gureiga",
-                    "iiwake",
-                    "ikkai",
-                    "kasutamu",
-                    "kasutamaizaa",
-                    "kayoubi",
-                    "kimoti",
-                    "koonpaathii",
-                    "koonsyotto",
-                    "mainkurafuto",
-                    "masutazukurasu",
-                    "meizin",
-                    "mondai",
-                    "neko",
-                    "netto",
-                    "nige",
-                    "nontan",
-                    "onegai",
-                    "rokkuman",
-                    "siniakurasu",
-                    "susi",
-                    "sutegapanesuti",
-                    "syoubu",
-                    "taisen",
-                    "trill",
-                    "tengu",
-                    "tikara",
-                    "tisao",
-                    "tyouzetu",
-                    "waburuwiisuto",
-                ],
-                ends: &[
-                    "bakari",
-                    "daizyoubu",
-                    "dake",
-                    "dearu",
-                    "desu",
-                    "faito",
-                    "gogogo",
-                    "gozaimasu",
-                    "hazimemasite",
-                    "hazu",
-                    "ikanai",
-                    "ikenai",
-                    "itadakimasu",
-                    "kasutamaizu",
-                    "kudasai",
-                    "kure",
-                    "kusa",
-                    "makenai",
-                    "maketa",
-                    "miseteyaro",
-                    "mitetekure",
-                    "nai",
-                    "onegai",
-                    "oomaigaa",
-                    "sikatanai",
-                    "simasu",
-                    "simasyou",
-                    "sitteruno",
-                    "sugee",
-                    "sugiru",
-                    "sukanai",
-                    "syouganai",
-                    "taisen",
-                    "taisensimasyou",
-                    "tasukete",
-                    "tenkyuu",
-                    "tigau",
-                    "uwaa",
-                    "wakaranai",
-                    "warota",
-                    "yabe",
-                    "yaritai",
-                    "yaritakunai",
-                    "yaru",
-                    "yatta",
-                    "ze",
-                    "zyanai",
-                ],
-            },
-        ),
-        // (
-        //     "es",
-        //     Choices {
-        //         starts: &[
-        //             "bassado",
-        //             "hay",
-        //             "hombre",
-        //             "jugadorzero",
-        //             "mi",
-        //             "orgullosamente",
-        //             "princessa",
-        //             "reskek",
-        //             "serenito",
-        //             "sospechoso",
-        //             "usando",
-        //         ],
-        //         middles: &[
-        //             "alguien", "bn3", "es", "estillo", "jueves", "roca", "mandalo", "mi",
-        //             "pride", "ribbita",
-        //         ],
-        //         ends: &[
-        //             "adios",
-        //             "brazil",
-        //             "chiposcuro",
-        //             "detras",
-        //             "ejecutable",
-        //             "ejecucao",
-        //             "facha",
-        //             "meta",
-        //             "vainilla",
-        //         ],
-        //     }
-        // )
-    ])
-});
+/// Wished codes that don't themselves carry a blocked sequence: the random
+/// branch must never hand one back.
+fn clean_wished_codes() -> Vec<String> {
+    WISHED_CODES
+        .iter()
+        .map(|&code| format!("{code:0width$}", width = LINK_CODE_DIGITS))
+        .filter(|code| !contains_blocked(code))
+        .collect()
+}
 
-pub fn generate(lang: &unic_langid::LanguageIdentifier) -> String {
-    let mut thread_rng = rand::thread_rng();
-
-    let mut lang_code = lang.language.as_str();
-    if !CHOICES.contains_key(&lang_code) {
-        lang_code = "en";
+/// Replace blocked digit sequences in `code`. Half the time the whole code
+/// becomes one of the wished codes instead.
+fn substitute(code: String) -> String {
+    if !contains_blocked(&code) {
+        return code;
     }
 
-    // 1-in-5 we pull from a different locale for variety. Pick a
-    // random non-current locale by sampling an index from the
-    // filtered key set.
-    if thread_rng.gen_range(0..5) == 0 {
-        let others: Vec<&'static str> = CHOICES.keys().copied().filter(|k| *k != lang_code).collect();
-        if !others.is_empty() {
-            lang_code = others[thread_rng.gen_range(0..others.len())];
+    let mut rng = rand::thread_rng();
+    let wished = clean_wished_codes();
+    if !wished.is_empty() && rng.gen_bool(WISHED_CHANCE) {
+        return wished[rng.gen_range(0..wished.len())].clone();
+    }
+
+    let mut code = code;
+    for &(blocked, replacement) in &BLOCKED_CODES {
+        code = code.replace(&blocked.to_string(), &replacement.to_string());
+    }
+    // A replacement can't normally reintroduce a blocked sequence, but the
+    // whole point is to never emit one: fall back to a wished code if it did.
+    if contains_blocked(&code) && !wished.is_empty() {
+        return wished[rng.gen_range(0..wished.len())].clone();
+    }
+    code
+}
+
+/// A fresh random link code: exactly [`LINK_CODE_DIGITS`] digits, with
+/// leading zeros preserved. Never contains a blocked sequence.
+pub fn generate() -> String {
+    let code = rand::thread_rng().gen_range(0..10u64.pow(LINK_CODE_DIGITS as u32));
+    substitute(format!("{code:0width$}", width = LINK_CODE_DIGITS))
+}
+
+/// Canonicalize a typed matchmaking code: 1..=[`LINK_CODE_DIGITS`] ASCII
+/// digits, left-padded with `0` to exactly [`LINK_CODE_DIGITS`]. A blocked
+/// digit sequence in the result is replaced — half the time by swapping
+/// the whole code for a wished code. `None` for anything else — malformed
+/// input is never reinterpreted.
+pub fn canonical(input: &str) -> Option<String> {
+    if input.is_empty() || input.len() > LINK_CODE_DIGITS || !input.bytes().all(|b| b.is_ascii_digit()) {
+        return None;
+    }
+    let code: u64 = input.parse().ok()?;
+    Some(substitute(format!("{code:0width$}", width = LINK_CODE_DIGITS)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn generated_codes_are_eight_digits() {
+        for _ in 0..64 {
+            let code = generate();
+            assert_eq!(code.len(), LINK_CODE_DIGITS);
+            assert!(code.bytes().all(|b| b.is_ascii_digit()));
         }
     }
 
-    let choices = CHOICES.get(lang_code).unwrap();
-    format!(
-        "{}-{}-{}",
-        choices.starts[thread_rng.gen_range(0..choices.starts.len())],
-        choices.middles[thread_rng.gen_range(0..choices.middles.len())],
-        choices.ends[thread_rng.gen_range(0..choices.ends.len())]
-    )
+    #[test]
+    fn canonical_pads_short_codes_and_rejects_bad_input() {
+        assert_eq!(canonical("1234").as_deref(), Some("00001234"));
+        assert_eq!(canonical("00001234").as_deref(), Some("00001234"));
+        assert_eq!(canonical("0").as_deref(), Some("00000000"));
+        assert!(canonical("").is_none());
+        assert!(canonical("123456789").is_none());
+        assert!(canonical("12a4").is_none());
+        assert!(canonical("-1234").is_none());
+    }
+
+    #[test]
+    fn blocked_sequences_are_replaced_wherever_they_appear() {
+        let wished = clean_wished_codes();
+        for &(blocked, replacement) in &BLOCKED_CODES {
+            let pattern = blocked.to_string();
+            let replacement = replacement.to_string();
+            let room = LINK_CODE_DIGITS - pattern.len();
+            for lead in 0..=room {
+                let code = format!("{}{pattern}{}", "3".repeat(lead), "0".repeat(room - lead));
+                let in_place = format!("{}{replacement}{}", "3".repeat(lead), "0".repeat(room - lead));
+                let out = canonical(&code).expect("eight digits is submittable");
+                assert_eq!(out.len(), LINK_CODE_DIGITS);
+                assert!(!contains_blocked(&out), "{out} still carries a blocked sequence");
+                assert!(
+                    out == in_place || wished.contains(&out),
+                    "{out} is neither {in_place} nor a wished code"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn padding_can_expose_a_blocked_sequence() {
+        let wished = clean_wished_codes();
+        for &(blocked, replacement) in &BLOCKED_CODES {
+            let padded = format!("{blocked:0width$}", width = LINK_CODE_DIGITS);
+            let in_place = padded.replacen(&blocked.to_string(), &replacement.to_string(), 1);
+            let out = canonical(&blocked.to_string()).expect("a bare sequence is submittable");
+            assert_ne!(out, padded);
+            assert!(!contains_blocked(&out), "{out} still carries a blocked sequence");
+            assert!(out == in_place || wished.contains(&out));
+        }
+    }
+
+    #[test]
+    fn generated_codes_never_contain_a_blocked_sequence() {
+        for _ in 0..1_000 {
+            assert!(!contains_blocked(&generate()));
+        }
+    }
+
+    #[test]
+    fn wished_codes_are_clean() {
+        let wished = clean_wished_codes();
+        assert!(!wished.is_empty());
+        assert!(wished
+            .iter()
+            .all(|code| code.len() == LINK_CODE_DIGITS && !contains_blocked(code)));
+    }
+
+    #[test]
+    fn blocked_matches_use_both_branches() {
+        let wished = clean_wished_codes();
+        let &(blocked, replacement) = BLOCKED_CODES
+            .iter()
+            .find(|&&(blocked, _)| blocked.to_string().len() < LINK_CODE_DIGITS)
+            .expect("a sequence shorter than a code");
+        let pattern = blocked.to_string();
+        let pad = "0".repeat(LINK_CODE_DIGITS - pattern.len());
+        let code = format!("{pattern}{pad}");
+        let in_place = format!("{replacement}{pad}");
+        assert!(
+            !wished.contains(&in_place),
+            "pick a code whose in-place result differs from every wished code"
+        );
+
+        let (mut saw_in_place, mut saw_wished) = (false, false);
+        for _ in 0..128 {
+            let out = canonical(&code).expect("valid code");
+            assert!(!contains_blocked(&out));
+            saw_in_place |= out == in_place;
+            saw_wished |= wished.contains(&out);
+        }
+        assert!(saw_in_place, "the in-place branch never ran");
+        assert!(saw_wished, "the wished-code branch never ran");
+    }
 }

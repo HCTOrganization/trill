@@ -8631,7 +8631,6 @@ dependencies = [
  "trill-net-protocol",
  "trill-platform",
  "trill-signaling",
- "unic-langid",
  "web-time",
  "zstd",
 ]

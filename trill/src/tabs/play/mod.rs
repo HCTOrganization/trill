@@ -257,8 +257,10 @@ impl State {
 
     /// Prefill the link-code input from an external source — the CLI
     /// `Join <code>` argument or a `trill://join/<code>` deep link.
+    /// Shorter digit strings are canonicalized so the field matches what
+    /// we'll actually dial; anything else is kept as typed.
     pub fn adopt_link_code(&mut self, code: String) {
-        self.link_code = code;
+        self.link_code = crate::netplay::randomcode::canonical(code.trim()).unwrap_or(code);
     }
 
     /// Play the family-switch entrance: a family change replaces the
@@ -283,18 +285,17 @@ impl State {
             Message::LinkCodeChanged(s) => {
                 // Direct-TCP commands (/host, /connect) need slashes,
                 // spaces, dots, colons, brackets — pass them through.
-                // Link codes are lowercased as typed: matchmaking is
-                // case-sensitive, so this keeps a code read aloud or
-                // retyped from a screenshot from missing its lobby.
-                let filtered: String = if s.starts_with('/') {
-                    s
+                // Matchmaking codes are up to 8 digits and are
+                // left-padded with `0` when dialed, so anything else
+                // typed into that field is dropped.
+                self.link_code = if s.starts_with('/') {
+                    s.chars().take(100).collect()
                 } else {
                     s.chars()
-                        .filter(|c| c.is_ascii_alphanumeric() || *c == '-')
-                        .map(|c| c.to_ascii_lowercase())
+                        .filter(char::is_ascii_digit)
+                        .take(crate::netplay::randomcode::LINK_CODE_DIGITS)
                         .collect()
                 };
-                self.link_code = filtered.chars().take(100).collect();
                 None
             }
             Message::CopyText(s) => {
@@ -306,8 +307,8 @@ impl State {
             }
             Message::FightPressed => {
                 // An empty bar means "just get me a lobby": generate a
-                // fresh random adjective-word-noun code and connect with
-                // it directly. The code deliberately skips the input —
+                // fresh random eight-digit code and connect with it
+                // directly. The code deliberately skips the input —
                 // the outgoing strip still renders through the first
                 // half of the band morph, so the lobby's connection
                 // line (which masks in streamer mode) should be the
@@ -318,7 +319,7 @@ impl State {
                     .link_code
                     .trim()
                     .is_empty()
-                    .then(|| crate::netplay::randomcode::generate(&config.language));
+                    .then(|| crate::netplay::randomcode::generate());
                 // The Fight CTA is gated at the view layer to require
                 // an empty or submittable link code, so reaching this
                 // handler with a malformed one is a stale message +

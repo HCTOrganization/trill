@@ -59,7 +59,7 @@ play-play = 開始遊戲
 play-version-placeholder = —
 
 # Play bottom strip
-play-link-code = 連線代碼（留空則隨機產生）
+play-link-code = 連線代碼（8 位數字，留空則隨機產生）
 play-link-code-random = 隨機連線代碼
 play-training = 訓練
 training-pip = 對手畫面

@@ -161,7 +161,8 @@ pub use trill_net::connect::Status;
 /// play-tab's connect action, so consumers (UI header, status
 /// line, replay filenames) can render or
 /// dispatch on the actual structure rather than re-parsing a
-/// flat string. Matchmaking carries the raw user-supplied code;
+/// flat string. Matchmaking carries the canonical user-supplied code
+/// (eight digits, left-padded with `0`);
 /// `Direct` carries the parsed `DirectRole` describing whether
 /// we host or dial.
 #[derive(Debug, Clone)]
@@ -171,17 +172,23 @@ pub enum LinkIdent {
 }
 
 impl LinkIdent {
-    /// Resolve trimmed link-code input into something to dial: a
-    /// `/`-prefixed direct command (see [`DirectRole::parse_command`]) or
-    /// a matchmaking code. `None` when the input isn't submittable: empty,
-    /// or a malformed direct command.
+    /// Resolve link-code input into something to dial: a `/`-prefixed
+    /// direct command (see [`DirectRole::parse_command`]) or a
+    /// matchmaking code. Matchmaking codes are
+    /// [`LINK_CODE_DIGITS`](randomcode::LINK_CODE_DIGITS) digits; a
+    /// shorter digit string is left-padded with `0`, so `42` and
+    /// `00000042` reach the same rendezvous, and a blocked digit
+    /// sequence is replaced wherever it appears (see [`randomcode`]).
+    /// `None` when the input isn't submittable: empty, a malformed direct
+    /// command, or anything that isn't 1–8 digits.
     pub fn parse(input: &str) -> Option<Self> {
+        let input = input.trim();
         if input.is_empty() {
             None
         } else if input.starts_with('/') {
             DirectRole::parse_command(input).map(LinkIdent::Direct)
         } else {
-            Some(LinkIdent::Matchmaking(input.to_string()))
+            randomcode::canonical(input).map(LinkIdent::Matchmaking)
         }
     }
 
@@ -203,6 +210,7 @@ impl LinkIdent {
 /// [`State::take_pre_match`]).
 #[derive(Clone)]
 pub struct MatchmakingParams {
+    /// Canonical eight-digit code — see [`LinkIdent::parse`].
     pub link_code: String,
     pub endpoint: String,
     /// `None` = auto (ICE picks), `Some(true)` = relay only,
@@ -283,9 +291,17 @@ mod tests {
     fn link_ident_parses_codes_and_direct_commands() {
         assert!(LinkIdent::parse("").is_none());
         assert!(matches!(
-            LinkIdent::parse("abc-def"),
-            Some(LinkIdent::Matchmaking(code)) if code == "abc-def"
+            LinkIdent::parse("1234"),
+            Some(LinkIdent::Matchmaking(code)) if code == "00001234"
         ));
+        assert!(matches!(
+            LinkIdent::parse("12345678"),
+            Some(LinkIdent::Matchmaking(code)) if code == "12345678"
+        ));
+        assert!(LinkIdent::parse(" 42 ").is_some());
+        assert!(LinkIdent::parse("abc-def").is_none());
+        assert!(LinkIdent::parse("123456789").is_none());
+        assert!(LinkIdent::parse("12a4").is_none());
         assert!(matches!(
             LinkIdent::parse("/host"),
             Some(LinkIdent::Direct(DirectRole::Host { port })) if port == trill_net::DEFAULT_LOCAL_PORT

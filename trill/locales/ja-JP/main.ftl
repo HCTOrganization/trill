@@ -59,7 +59,7 @@ play-play = プレイ
 play-version-placeholder = —
 
 # Play bottom strip
-play-link-code = リンクコード（空欄でランダム生成）
+play-link-code = リンクコード（8桁の数字・空欄でランダム生成）
 play-link-code-random = ランダムリンクコード
 play-training = トレーニング
 training-pip = 相手の画面

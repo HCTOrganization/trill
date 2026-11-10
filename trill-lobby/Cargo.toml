@@ -33,7 +33,6 @@ thiserror.workspace = true
 # tokio for on either target.
 tokio = { workspace = true, features = ["sync", "macros"] }
 tokio-util.workspace = true
-unic-langid.workspace = true
 web-time.workspace = true
 zstd.workspace = true
 

@@ -53,17 +53,24 @@ fn Dial(snapshot: Snapshot, loadout: ReadSignal<Loadout>, nickname: Signal<Strin
         div { class: "card",
             h2 { "Link code" }
             div { class: "muted",
-                "Both players type the same code. Whoever gets there first waits."
+                "Both players type the same 8-digit code; shorter input is padded with zeros. Whoever gets there first waits."
             }
             input {
                 r#type: "text",
                 autocapitalize: "none",
                 autocomplete: "off",
                 spellcheck: "false",
-                placeholder: "e.g. yellow-mettaur-42",
+                placeholder: "e.g. 12345678",
                 value: "{code}",
                 oninput: move |event| {
-                    let value = event.value();
+                    // Matchmaking codes are up to 8 digits; drop anything
+                    // else rather than mangling the code.
+                    let value: String = event
+                        .value()
+                        .chars()
+                        .filter(char::is_ascii_digit)
+                        .take(trill_lobby::randomcode::LINK_CODE_DIGITS)
+                        .collect();
                     crate::storage::prefs::set("code", &value);
                     code.set(value);
                 },

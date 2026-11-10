@@ -219,6 +219,11 @@ fn verdict(handle: &Handle, link: &Link) -> Option<Verdict> {
 /// Dial a link code. The bring-up reports its own progress, including
 /// its own failure, so there is nothing to route back here.
 pub fn connect(handle: &Handle, link_code: String, nickname: String) {
+    // Dial the canonical form so `42` and `00000042` reach the same
+    // rendezvous.
+    let Some(LinkIdent::Matchmaking(link_code)) = LinkIdent::parse(link_code.trim()) else {
+        return;
+    };
     let Some(endpoint) = crate::library::with(&handle.library, |library| {
         library.config.borrow().matchmaking_endpoint.clone()
     }) else {
@@ -463,8 +468,7 @@ fn frame_delay(handle: &Handle) -> u32 {
     trill_session::pvp::initial_frame_delay(median, trill_session::pvp::DEFAULT_FRAME_DELAY)
 }
 
-/// A fresh random link code, in the user's language, for the "make me
-/// one" button.
+/// A fresh random eight-digit link code for the "make me one" button.
 pub fn random_code() -> String {
-    trill_lobby::randomcode::generate(&trill_library::lang::FALLBACK_LANG)
+    trill_lobby::randomcode::generate()
 }
