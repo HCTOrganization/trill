@@ -84,7 +84,7 @@ fn streamer_masked_chart<'a>(lang: &'a LanguageIdentifier) -> Element<'a, Messag
 
 /// Quiet, non-CTA styling for the two build choices in the matchup pane.
 /// The checked dot uses the app's selection gold; the ring and hover remain
-/// neutral so this small selector does not read as another green action.
+/// neutral so this small selector does not read as another accent action.
 fn build_selector_radio(theme: &iced::Theme, status: iced::widget::radio::Status) -> iced::widget::radio::Style {
     let hovered = matches!(status, iced::widget::radio::Status::Hovered { .. });
     iced::widget::radio::Style {

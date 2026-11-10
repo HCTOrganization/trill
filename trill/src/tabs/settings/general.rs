@@ -22,7 +22,7 @@ fn accent_choice(lang: &LanguageIdentifier, accent: config::AccentColor) -> Choi
     Choice::new(
         accent,
         match accent {
-            config::AccentColor::TrillGreen => t!(lang, "settings-accent-trill-green"),
+            config::AccentColor::DinosaurOrange => t!(lang, "settings-accent-dinosaur-orange"),
             config::AccentColor::MegaManBlue => t!(lang, "settings-accent-rockman-blue"),
             config::AccentColor::BluesRed => t!(lang, "settings-accent-blues-red"),
             config::AccentColor::RollPink => t!(lang, "settings-accent-roll-pink"),
@@ -80,7 +80,7 @@ pub(super) fn settings_general<'a>(lang: &'a LanguageIdentifier, config: &'a con
                 }),
                 option_row::<Message>(t!(lang, "settings-accent"), {
                     let options = vec![
-                        accent_choice(lang, config::AccentColor::TrillGreen),
+                        accent_choice(lang, config::AccentColor::DinosaurOrange),
                         accent_choice(lang, config::AccentColor::MegaManBlue),
                         accent_choice(lang, config::AccentColor::BluesRed),
                         accent_choice(lang, config::AccentColor::RollPink),

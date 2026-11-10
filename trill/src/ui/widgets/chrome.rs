@@ -563,7 +563,7 @@ pub fn panel(theme: &Theme) -> iced::widget::container::Style {
     let primary = theme.palette().primary;
     // Slightly lifted plate. On dark, lift through [`plate_lift`]
     // so the card reads above the body without taking on the
-    // accent's hue — the green lives in the frame, not the fill.
+    // accent's hue — the accent lives in the frame, not the fill.
     // On light, go toward white so the card looks like paper on
     // parchment.
     let plate = if p.is_dark {

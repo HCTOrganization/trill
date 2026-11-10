@@ -9,8 +9,8 @@ with open(os.path.join(os.path.dirname(__file__), "..", "trill", "Cargo.toml")) 
 
 version = semver.Version.parse(cargo_toml["package"]["version"])
 
-%>!define NAME "Trill"
-!define REGPATH_UNINSTSUBKEY "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\<%text>$</%text>{NAME}"
+%>!define NAME "Trill 5"
+!define REGPATH_UNINSTSUBKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\<%text>$</%text>{NAME}"
 
 LoadLanguageFile "<%text>$</%text>{NSISDIR}\Contrib\Language files\English.nlf"
 LoadLanguageFile "<%text>$</%text>{NSISDIR}\Contrib\Language files\Japanese.nlf"
@@ -24,7 +24,7 @@ OutFile "installer.exe"
 VIProductVersion "${version.major}.${version.minor}.${version.patch}.0"
 VIAddVersionKey "ProductName" "<%text>$</%text>{NAME}"
 VIAddVersionKey "FileVersion" "${version.major}.${version.minor}.${version.patch}.0"
-VIAddVersionKey "FileDescription" "Trill Installer"
+VIAddVersionKey "FileDescription" "Trill 5 Installer"
 VIAddVersionKey "LegalCopyright" "© Copyright The Trill Developers"
 
 SetCompressor /solid /final lzma
@@ -41,22 +41,13 @@ ShowInstDetails nevershow
 ShowUninstDetails nevershow
 BrandingText " "
 
-InstallDir ""
+InstallDir "$LocalAppData\Programs\Trill5"
 InstallDirRegKey HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "UninstallString"
 
-!include LogicLib.nsh
-!include WinCore.nsh
 !include FileFunc.nsh
 
 Function .onInit
     SetShellVarContext Current
-
-    <%text>$</%text>{If} $INSTDIR == ""
-        GetKnownFolderPath $INSTDIR <%text>$</%text>{FOLDERID_UserProgramFiles}
-        StrCmp $INSTDIR "" 0 +2
-        StrCpy $INSTDIR "$LocalAppData\\Programs"
-        StrCpy $INSTDIR "$INSTDIR\\$(^Name)"
-    <%text>$</%text>{EndIf}
 
     ; Clean up a prior install before laying down new files, so any
     ; component dropped between versions doesn't linger. Run the old
@@ -65,8 +56,8 @@ Function .onInit
     ; _?=$INSTDIR makes it run in place so ExecWait actually blocks
     ; until it finishes instead of returning while a self-copy in $TEMP
     ; races our file writes. Skipped on a fresh install.
-    IfFileExists "$INSTDIR\\uninstall.exe" 0 +2
-        ExecWait '"$INSTDIR\\uninstall.exe" /S _?=$INSTDIR'
+    IfFileExists "$INSTDIR\uninstall.exe" 0 +2
+        ExecWait '"$INSTDIR\uninstall.exe" /S _?=$INSTDIR'
 FunctionEnd
 
 Function un.onInit
@@ -81,12 +72,12 @@ LangString MessageDeleteConfig <%text>$</%text>{LANG_TRADCHINESE} "您是否也�
 Function un.onGUIInit
     MessageBox MB_YESNO "$(MessageDeleteConfig)" /SD IDNO IDYES true IDNO false
     true:
-        Delete "$APPDATA\\hikaricalyx\\trill\\config\\config.json"
+        Delete "$APPDATA\hikaricalyx\trill\config\config.json"
     false:
 FunctionEnd
 
 Function .onInstSuccess
-    Exec "$INSTDIR\\trill.exe"
+    Exec "$INSTDIR\trill.exe"
 FunctionEnd
 
 Section
@@ -96,9 +87,9 @@ Section
     File "libGLESv2.dll"
     File "ffmpeg.exe"
     File "trill.exe"
-    WriteUninstaller "$INSTDIR\\uninstall.exe"
+    WriteUninstaller "$INSTDIR\uninstall.exe"
     WriteRegStr HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "DisplayName" "<%text>$</%text>{NAME}"
-    WriteRegStr HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "DisplayIcon" "$INSTDIR\\trill.exe,0"
+    WriteRegStr HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "DisplayIcon" "$INSTDIR\trill.exe,0"
     WriteRegStr HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "Publisher" "The Trill Developers"
     WriteRegStr HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "InstallLocation" "$INSTDIR"
 
@@ -109,8 +100,8 @@ Section
     WriteRegDWORD HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "VersionMinor" "$0"
 
     WriteRegStr HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "DisplayVersion" "{version}"
-    WriteRegStr HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "UninstallString" '"$INSTDIR\\uninstall.exe"'
-    WriteRegStr HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "QuietUninstallString" '"$INSTDIR\\uninstall.exe" /S'
+    WriteRegStr HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
+    WriteRegStr HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "QuietUninstallString" '"$INSTDIR\uninstall.exe" /S'
 
     <%text>$</%text>{GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
     IntFmt $0 "0x%08X" $0
@@ -118,23 +109,23 @@ Section
 
     WriteRegDWORD HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "NoModify" 1
     WriteRegDWORD HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}" "NoRepair" 1
-    CreateShortcut "$SMPROGRAMS\\Trill.lnk" "$INSTDIR\\trill.exe"
-    CreateShortcut "$DESKTOP\\Trill.lnk" "$INSTDIR\\trill.exe"
+    CreateShortcut "$SMPROGRAMS\Trill 5.lnk" "$INSTDIR\trill.exe"
+    CreateShortcut "$DESKTOP\Trill 5.lnk" "$INSTDIR\trill.exe"
 SectionEnd
 
 Section "uninstall"
     SetDetailsPrint none
-    Delete "$DESKTOP\\Trill.lnk"
-    Delete "$SMPROGRAMS\\Trill.lnk"
-    Delete "$INSTDIR\\libEGL.dll"
-    Delete "$INSTDIR\\libGLESv2.dll"
+    Delete "$DESKTOP\Trill 5.lnk"
+    Delete "$SMPROGRAMS\Trill 5.lnk"
+    Delete "$INSTDIR\libEGL.dll"
+    Delete "$INSTDIR\libGLESv2.dll"
     ; The melonDS core is linked into trill.exe now, but earlier versions
     ; installed it alongside; deleting a file that isn't there is a no-op,
     ; so this stays behind to clean up after them.
-    Delete "$INSTDIR\\melonds_shim.dll"
-    Delete "$INSTDIR\\ffmpeg.exe"
-    Delete "$INSTDIR\\trill.exe"
-    Delete "$INSTDIR\\uninstall.exe"
+    Delete "$INSTDIR\melonds_shim.dll"
+    Delete "$INSTDIR\ffmpeg.exe"
+    Delete "$INSTDIR\trill.exe"
+    Delete "$INSTDIR\uninstall.exe"
     RMDir $INSTDIR
     DeleteRegKey HKCU "<%text>$</%text>{REGPATH_UNINSTSUBKEY}"
 SectionEnd

@@ -13,14 +13,10 @@
 use crate::config;
 use iced::Theme;
 
-/// The default accent color — primary CTA buttons, the active tab
-/// chip, panel frames, the cyberworld backdrop, markdown link color
-/// in the About panel, etc. Same green the legacy egui app uses,
-/// kept in one const so we never accidentally drift to a different
-/// shade. (The Legacy Collection restyle briefly ran the PET cyan
-/// here; the structure stayed, the color came back home — and now
-/// also anchors `success` when the user picks a different accent
-/// for the chrome.)
+/// Trill's brand green, the color the legacy egui app ran. It anchors
+/// `success` in both palettes so "it worked" stays green no matter
+/// which accent the chrome wears; the chrome accent itself comes from
+/// [`accent_color`] (dinosaur orange by default).
 pub const TRILL_GREEN: iced::Color =
     iced::Color::from_rgb(0x4c as f32 / 255.0, 0xaf as f32 / 255.0, 0x50 as f32 / 255.0);
 
@@ -29,10 +25,11 @@ pub const TRILL_GREEN: iced::Color =
 /// charcoal; light mode needs deeper shades of the same identity or
 /// the frames/glows wash out on cream (the LC restyle learned this
 /// with its pale PET cyan — hence the deeper `LIGHT_CYAN` twin).
-/// Green is the exception: the Trill green reads on both.
+/// Dinosaur orange is the exception: it is vivid enough to glow on
+/// charcoal and still read on cream, so it gets one shade for both.
 pub fn accent_color(accent: config::AccentColor, dark: bool) -> iced::Color {
     let rgb = match (accent, dark) {
-        (config::AccentColor::TrillGreen, _) => (0x4c, 0xaf, 0x50),
+        (config::AccentColor::DinosaurOrange, _) => (0xff, 0x5a, 0x00),
         // The blue bomber's azure — bright enough to glow on
         // charcoal; cobalt in daylight.
         (config::AccentColor::MegaManBlue, true) => (0x4d, 0xa6, 0xff),
@@ -60,11 +57,11 @@ pub fn theme_for(config: &config::Config) -> Theme {
     // Trill palettes — these aren't tweaks of iced's stock Light /
     // Dark anymore. The dark variant keeps the Battle Network
     // Legacy Collection structure (glowing panel frames, gold
-    // selection, the drawn cyberworld backdrop) but runs it in
-    // Trill's own green on the original deep navy — a bluer
-    // "PET blue" base was tried twice and clashes with the green
-    // chrome. Light is a warm cream + slate set tuned to feel like
-    // the same UI under daylight, not a separate identity.
+    // selection, the drawn cyberworld backdrop) but runs it in the
+    // accent on the original deep navy — a bluer "PET blue" base was
+    // tried twice and clashes with the accent chrome. Light is a warm
+    // cream + slate set tuned to feel like the same UI under daylight,
+    // not a separate identity.
     match config.theme {
         config::ThemeMode::Light => Theme::custom(
             "Trill Light".to_string(),
@@ -88,9 +85,9 @@ pub fn theme_for(config: &config::Config) -> Theme {
                 // chrome), then green-black ("way too green
                 // everywhere") — the lesson both times: the base
                 // shouldn't carry the accent's hue at all, just sit
-                // dark and let the green chrome and gold selection
+                // dark and let the accent chrome and gold selection
                 // be the color. Still darker than stock iced Dark
-                // (0x2b2d31) so the neon green actually glows.
+                // (0x2b2d31) so the accent actually glows.
                 background: iced::Color::from_rgb(0x0e as f32 / 255.0, 0x10 as f32 / 255.0, 0x11 as f32 / 255.0),
                 // Neutral off-white to match — any tinted white
                 // (the old cyan, then green) casts its hue onto

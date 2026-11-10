@@ -111,8 +111,12 @@ pub enum ThemeMode {
 /// this enum is just the persisted choice.
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Default, Debug)]
 pub enum AccentColor {
+    /// Was `TrillGreen` while the default ran Trill's own green, and
+    /// `TangoGreen` before that; the aliases keep existing configs
+    /// loading.
+    #[serde(alias = "TrillGreen", alias = "TangoGreen")]
     #[default]
-    TrillGreen,
+    DinosaurOrange,
     MegaManBlue,
     BluesRed,
     RollPink,

@@ -72,7 +72,7 @@ pub fn copy_icon_button<'a, M: Clone + 'a>(
 /// The Legacy Collection's selection gold — BNLC paints the picked
 /// list row / focused thumbnail in this yellow with dark ink text.
 /// Used by [`list_item`] for selected rows so "what you've picked"
-/// reads in a different register from the green chrome.
+/// reads in a different register from the accent chrome.
 pub const SELECT_YELLOW: iced::Color =
     iced::Color::from_rgb(0xff as f32 / 255.0, 0xd2 as f32 / 255.0, 0x3d as f32 / 255.0);
 
@@ -436,9 +436,9 @@ pub fn pill_tab_style(active: bool) -> impl Fn(&Theme, button::Status) -> button
             } else {
                 (0.65, 18.0)
             };
-            // Contrast-aware text — white on Trill green, navy ink
-            // if the accent ever goes light again (see
-            // [`on_accent`]).
+            // Contrast-aware text — white on the dark accents (see
+            // [`on_accent`]), navy ink if the accent ever goes light
+            // again.
             (Some(grad), on_accent(primary), g, b)
         } else {
             let hover = matches!(status, button::Status::Hovered);
@@ -598,12 +598,12 @@ pub fn mix(a: iced::Color, b: iced::Color, t: f32) -> iced::Color {
 /// The tone dark-theme control plates (buttons, inputs, pickers,
 /// checkbox boxes, slider rails) are lifted toward: the neutral
 /// text white warmed with a whisper (~18%) of the accent, so
-/// plates read as neutral gray with a hint of the chrome's green
+/// plates read as neutral gray with a hint of the chrome's accent
 /// rather than as colored surfaces. Both stronger recipes failed
 /// on sight: lifting toward a tinted text color cast every control
 /// blue, and lifting toward a heavy accent mix turned the whole UI
-/// green. Light theme keeps its white/parchment lifts and doesn't
-/// use this.
+/// into the accent color. Light theme keeps its white/parchment
+/// lifts and doesn't use this.
 pub fn plate_lift(theme: &Theme) -> iced::Color {
     mix(theme.palette().primary, theme.palette().text, 0.82)
 }
@@ -619,11 +619,11 @@ pub const ACCENT_INK: iced::Color =
 /// Shared chunky-button kernel — gradient fill in the given accent
 /// color, accent-tinted glow shadow, hover/press/disabled state
 /// math. The shape (radius, border width, white text) is identical
-/// across CTAs so `primary_button` (primary green) and
+/// across CTAs so `primary_button` (the primary accent) and
 /// `danger_button` (red) read as the same widget family in
 /// different moods.
 pub fn tinted_button(theme: &Theme, status: button::Status, accent: iced::Color) -> button::Style {
-    // Disabled drops the accent entirely — no green/red glow, no
+    // Disabled drops the accent entirely — no accent glow, no
     // gradient, no shadow. Flat de-saturated plate + dim text reads
     // as "this is OFF" loud and clear instead of "this is just a
     // dimmer version of the active button".
@@ -665,8 +665,8 @@ pub fn tinted_button(theme: &Theme, status: button::Status, accent: iced::Color)
                 .add_stop(0.0, top)
                 .add_stop(1.0, bottom),
         ))),
-        // White on the dark accents (green, red), ink if a light
-        // one ever lands here — see [`on_accent`].
+        // White on the dark accents (dinosaur orange, red), ink if a
+        // light one ever lands here — see [`on_accent`].
         text_color: on_accent(accent),
         border: iced::Border {
             radius: tech_radius(10.0),
@@ -687,7 +687,7 @@ pub fn tinted_button(theme: &Theme, status: button::Status, accent: iced::Color)
 
 /// Standard primary call-to-action — Play, Fight, Watch, Update
 /// Now, Ready confirms, etc. Gradient fill in palette primary
-/// with a green-tinted glow shadow.
+/// with an accent-tinted glow shadow.
 pub fn primary_button(theme: &Theme, status: button::Status) -> button::Style {
     tinted_button(theme, status, theme.palette().primary)
 }
@@ -971,7 +971,7 @@ pub fn tech_radius(r: f32) -> iced::border::Radius {
 
 /// Readable text color for a plate filled with `accent`: navy ink
 /// on light accents (the selection gold), white on dark ones
-/// (Trill green, danger red). Keeps `tinted_button` / the active
+/// (the accent, danger red). Keeps `tinted_button` / the active
 /// tab pill legible no matter which accent the palette hands them.
 pub fn on_accent(accent: iced::Color) -> iced::Color {
     let luma = 0.299 * accent.r + 0.587 * accent.g + 0.114 * accent.b;
