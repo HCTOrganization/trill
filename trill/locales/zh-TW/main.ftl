@@ -59,13 +59,13 @@ play-play = 開始遊戲
 play-version-placeholder = —
 
 # Play bottom strip
-play-link-code = 連線代碼（8 位數字，留空則隨機產生）
-play-link-code-set = 輸入配對代碼
-play-link-code-start = 按 START 開啟
+play-link-code-start = 點擊「戰鬥」或按 START 開啟配對
 play-link-code-title = 請輸入配對代碼
 play-link-code-ok = OK
 play-link-code-randomize = 隨機
 play-link-code-hint = [上/下] 切換數字　[左/右] 切換位置
+play-link-code-blank = 保持全 0 時按 OK 會隨機產生編碼
+play-link-code-replaced = 偵測到不適當的配對編碼。已替換成其它編碼。
 play-link-code-random = 隨機連線代碼
 play-training = 訓練
 training-pip = 對手畫面

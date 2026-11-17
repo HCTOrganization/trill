@@ -46,20 +46,23 @@ pub enum Message {
     /// surfaces by polling, and nothing on the menu redraws on its
     /// own, so the App ticks this while the strip is on screen.
     PollGamepad,
-    /// Open the code-entry modal (the strip's code button, or START).
-    LinkCodeModalOpen,
-    /// Close it and drop the draft (B, or a click on the backdrop).
+    /// Close it and drop the draft (B, the header's X, or a click on
+    /// the backdrop).
     LinkCodeModalClose,
     /// Put the cursor on this digit (clicking one).
     LinkCodeCursorSet(usize),
     /// Refill the field from a fresh random code.
     LinkCodeRandomize,
-    /// Accept the draft as the strip's code.
+    /// Accept the draft: the connection starts from here (see
+    /// [`State::confirm_link_code`]).
     LinkCodeConfirm,
     /// Copy plain text to the clipboard — the lobby's copy-link-code
     /// button. Carries the real code even when streamer mode masks it
     /// on screen.
     CopyText(String),
+    /// The strip's Fight CTA: opens the code-entry modal (the pad's
+    /// START does the same). The connection itself comes from the
+    /// modal's OK — see [`Message::LinkCodeConfirm`].
     FightPressed,
     Disconnect,
     /// Lobby UI: user picked a different match type. App routes
@@ -178,23 +181,43 @@ impl Default for State {
 struct LinkCodeModal {
     digits: [u8; LINK_CODE_DIGITS],
     cursor: usize,
+    /// The last OK found a blocked code and swapped in the replacement.
+    /// The modal stays open on the replacement (and says so) so the
+    /// player can see — and share — the code a second OK will dial.
+    /// Any edit clears it.
+    replaced: bool,
 }
 
 impl LinkCodeModal {
     /// Seed the draft from the strip's current code (all zeros when it
     /// has none, or holds a `/`-command the field can't represent).
     fn from_code(code: &str) -> Self {
-        let mut digits = [0u8; LINK_CODE_DIGITS];
+        let mut modal = Self {
+            digits: [0u8; LINK_CODE_DIGITS],
+            cursor: 0,
+            replaced: false,
+        };
         if let Some(code) = crate::netplay::randomcode::canonical(code.trim()) {
-            for (slot, byte) in digits.iter_mut().zip(code.bytes()) {
-                *slot = byte - b'0';
-            }
+            modal.set_code(&code);
         }
-        Self { digits, cursor: 0 }
+        modal
     }
 
     fn code(&self) -> String {
         self.digits.iter().map(|d| char::from(b'0' + d)).collect()
+    }
+
+    /// Overwrite the field from a canonical eight-digit code.
+    fn set_code(&mut self, code: &str) {
+        for (slot, byte) in self.digits.iter_mut().zip(code.bytes()) {
+            *slot = byte.saturating_sub(b'0').min(9);
+        }
+    }
+
+    /// Whether the draft is still the untouched all-zero field — the
+    /// modal's "no code picked yet" state, which dials a random code.
+    fn is_blank(&self) -> bool {
+        self.digits.iter().all(|d| *d == 0)
     }
 
     /// Step the digit under the cursor, wrapping 9 ↔ 0 so a fat finger
@@ -202,6 +225,7 @@ impl LinkCodeModal {
     fn step(&mut self, by: i8) {
         let digit = i16::from(self.digits[self.cursor]) + i16::from(by);
         self.digits[self.cursor] = digit.rem_euclid(10) as u8;
+        self.replaced = false;
     }
 
     fn move_cursor(&mut self, by: i8) {
@@ -209,17 +233,27 @@ impl LinkCodeModal {
         self.cursor = cursor.clamp(0, (LINK_CODE_DIGITS - 1) as i16) as usize;
     }
 
+    /// Type a numeral straight into the field, the way a text box would:
+    /// it lands on the cursor cell and the cursor steps to the next one.
+    fn type_digit(&mut self, digit: u8) {
+        self.digits[self.cursor] = digit.min(9);
+        self.cursor = (self.cursor + 1).min(LINK_CODE_DIGITS - 1);
+        self.replaced = false;
+    }
+
+    /// Backspace: clear the previous cell and step back onto it.
+    fn erase(&mut self) {
+        self.cursor = self.cursor.saturating_sub(1);
+        self.digits[self.cursor] = 0;
+        self.replaced = false;
+    }
+
     /// Fill the field from a fresh random code, cursor back at the
     /// start so the next press adjusts the first digit.
     fn randomize(&mut self) {
-        for (slot, byte) in self
-            .digits
-            .iter_mut()
-            .zip(crate::netplay::randomcode::generate().bytes())
-        {
-            *slot = byte - b'0';
-        }
+        self.set_code(&crate::netplay::randomcode::generate());
         self.cursor = 0;
+        self.replaced = false;
     }
 }
 
@@ -262,10 +296,11 @@ impl LinkActions {
 pub enum Effect {
     /// Kick off netplay. The `LinkIdent` variant tells the app
     /// handler whether to route via matchmaking signaling or direct
-    /// TCP transport. `copy_code` is `Some` when Fight auto-generated
-    /// the code for an empty input — the App puts it straight on the
-    /// clipboard so the host can paste it to their opponent without
-    /// hunting for the lobby's copy button.
+    /// TCP transport. `copy_code` is `Some` when the modal's OK found
+    /// an untouched all-zero field and generated a code on the spot —
+    /// the App puts it straight on the clipboard so the host can paste
+    /// it to their opponent without hunting for the lobby's copy
+    /// button.
     Connect {
         ident: crate::netplay::LinkIdent,
         copy_code: Option<String>,
@@ -401,9 +436,28 @@ impl State {
 
     /// Fold one physical input event into the strip's edge detection.
     /// With the modal closed only START acts (it opens the modal —
-    /// the pad's way in); open, the d-pad edits digit/cursor, A or
-    /// START accepts, and B dismisses.
-    fn link_code_input(&mut self, ev: &crate::platform::input::Event, config: &config::Config) {
+    /// the pad's way in); open, numerals/backspace type straight into
+    /// the field, the d-pad edits digit/cursor, A or START accepts,
+    /// and B dismisses. Returns the connect effect when an accept lands.
+    fn link_code_input(
+        &mut self,
+        ev: &crate::platform::input::Event,
+        config: &config::Config,
+        scanners: &Catalog,
+        loadout: &Selection,
+    ) -> Option<Effect> {
+        // A held key repeats its press, and a repeat must not retype
+        // into the field — so note whether this key was already down
+        // before folding the event in.
+        let repeat = match ev {
+            crate::platform::input::Event::Key {
+                physical,
+                pressed: true,
+            } => self.link_held.is_active(&crate::platform::input::PhysicalInput::Key(
+                crate::platform::input::KeyPhysical(*physical),
+            )),
+            _ => false,
+        };
         self.link_held.apply(ev);
         let now = LinkActions::read(&config.input_mapping, &self.link_held);
         let before = std::mem::replace(&mut self.link_actions, now);
@@ -414,17 +468,31 @@ impl State {
             if pressed(now.start, before.start) {
                 self.open_link_code_modal();
             }
-            return;
+            return None;
         }
-        if pressed(now.a, before.a) || pressed(now.start, before.start) {
-            if let Some(modal) = self.link_code_modal.take() {
-                self.link_code = modal.code();
+        if !repeat {
+            if let crate::platform::input::Event::Key {
+                physical,
+                pressed: true,
+            } = ev
+            {
+                if let Some(digit) = typed_digit(physical) {
+                    if let Some(modal) = self.link_code_modal.as_mut() {
+                        modal.type_digit(digit);
+                    }
+                    return None;
+                }
+                if is_backspace(physical) {
+                    if let Some(modal) = self.link_code_modal.as_mut() {
+                        modal.erase();
+                    }
+                    return None;
+                }
             }
-            return;
         }
         if pressed(now.b, before.b) {
             self.link_code_modal = None;
-            return;
+            return None;
         }
         if let Some(modal) = self.link_code_modal.as_mut() {
             if pressed(now.up, before.up) {
@@ -440,6 +508,60 @@ impl State {
                 modal.move_cursor(1);
             }
         }
+        if pressed(now.a, before.a) || pressed(now.start, before.start) {
+            return self.confirm_link_code(scanners, loadout);
+        }
+        None
+    }
+
+    /// The modal's OK. A blocked code is swapped for its replacement and
+    /// the modal stays open on the result (with the tip explaining why),
+    /// so the player sees — and can share — the code they will actually
+    /// host; a second OK dials it. An untouched all-zero field means
+    /// "just get me a lobby" and dials a fresh random code, as the empty
+    /// strip used to.
+    fn confirm_link_code(&mut self, scanners: &Catalog, loadout: &Selection) -> Option<Effect> {
+        let modal = self.link_code_modal.as_ref()?;
+        let typed = modal.code();
+        let canonical = crate::netplay::randomcode::canonical(&typed)?;
+        if canonical != typed {
+            if let Some(modal) = self.link_code_modal.as_mut() {
+                modal.set_code(&canonical);
+                modal.cursor = 0;
+                modal.replaced = true;
+            }
+            // Keep the strip in step with what the modal now shows, so
+            // closing and reopening doesn't quietly revert to the
+            // blocked number that was typed.
+            self.link_code = canonical;
+            return None;
+        }
+        // The strip's CTA is disabled until the patch is ready, but
+        // START can open the modal regardless — don't commit to a match
+        // this side can't run.
+        if !loadout.patch_ready(scanners) {
+            return None;
+        }
+        let generated = self.link_code_modal.as_ref().is_some_and(LinkCodeModal::is_blank);
+        let code = if generated {
+            crate::netplay::randomcode::generate()
+        } else {
+            canonical
+        };
+        self.link_code_modal = None;
+        if generated {
+            // Never render a Fight-generated code in the outgoing strip
+            // on the way into the lobby: park it and let the band swap
+            // hand it back when the lobby leaves (`restore_generated_link_code`).
+            self.pending_generated_code = Some(code.clone());
+            crate::ui::copy_feedback::flash(lobby::LINK_CODE_FLASH_KEY);
+        } else {
+            self.link_code = code.clone();
+        }
+        Some(Effect::Connect {
+            ident: crate::netplay::LinkIdent::Matchmaking(code.clone()),
+            copy_code: generated.then_some(code),
+        })
     }
 
     fn update_inner(
@@ -454,24 +576,18 @@ impl State {
             // Routed to the shared Selection at App level before this
             // dispatch is reached.
             Message::Loadout(_) => None,
-            Message::LinkCodeInput(ev) => {
-                self.link_code_input(&ev, config);
-                None
-            }
+            Message::LinkCodeInput(ev) => self.link_code_input(&ev, config, scanners, loadout),
             Message::PollGamepad => {
                 // SDL's pad queue only surfaces by polling, and this is
                 // a main-thread-only call — so the tick arrives as a
                 // message and the drain happens here.
+                let mut effect = None;
                 while let Some(ev) = gamepad_facade::next_event() {
                     if let Some(ev) = crate::platform::input_capture::Input::Gamepad(&ev).to_event() {
-                        self.link_code_input(&ev, config);
+                        effect = self.link_code_input(&ev, config, scanners, loadout).or(effect);
                     }
                 }
-                None
-            }
-            Message::LinkCodeModalOpen => {
-                self.open_link_code_modal();
-                None
+                effect
             }
             Message::LinkCodeModalClose => {
                 self.link_code_modal = None;
@@ -489,12 +605,7 @@ impl State {
                 }
                 None
             }
-            Message::LinkCodeConfirm => {
-                if let Some(modal) = self.link_code_modal.take() {
-                    self.link_code = modal.code();
-                }
-                None
-            }
+            Message::LinkCodeConfirm => self.confirm_link_code(scanners, loadout),
             Message::CopyText(s) => {
                 // The lobby's copy-link-code button is the only
                 // sender — light its "Copied!" flash as the text
@@ -503,36 +614,10 @@ impl State {
                 Some(Effect::CopyText(s))
             }
             Message::FightPressed => {
-                // An empty bar means "just get me a lobby": generate a
-                // fresh random eight-digit code and connect with it
-                // directly. The code deliberately skips the input —
-                // the outgoing strip still renders through the first
-                // half of the band morph, so the lobby's connection
-                // line (which masks in streamer mode) should be the
-                // first place it shows. It rides the Connect effect
-                // onto the clipboard, and `pending_generated_code`
-                // refills the input once the lobby band leaves.
-                let generated = self
-                    .link_code
-                    .trim()
-                    .is_empty()
-                    .then(|| crate::netplay::randomcode::generate());
-                // The Fight CTA is gated at the view layer to require
-                // an empty or submittable link code, so reaching this
-                // handler with a malformed one is a stale message +
-                // safe to ignore.
-                let ident = crate::netplay::LinkIdent::parse(generated.as_deref().unwrap_or(self.link_code.trim()))?;
-                if let Some(code) = &generated {
-                    self.pending_generated_code = Some(code.clone());
-                    // Light the lobby copy button's "Copied!" flash as
-                    // the band rises — the cue that the code is already
-                    // in hand.
-                    crate::ui::copy_feedback::flash(lobby::LINK_CODE_FLASH_KEY);
-                }
-                Some(Effect::Connect {
-                    ident,
-                    copy_code: generated,
-                })
+                // The CTA opens the entry modal; the code (and the
+                // connection) come from its OK.
+                self.open_link_code_modal();
+                None
             }
             Message::Noop => None,
             Message::Disconnect => Some(Effect::Disconnect),
@@ -859,19 +944,19 @@ impl State {
             .map(Message::SaveEditor)
     }
 
-    /// The idle bottom band: link-code button + Fight CTA. The lobby
-    /// band replaces this strip for every in-flight netplay phase, so
-    /// this strip is pure "enter a link code and fight" —
-    /// singleplayer lives in the save view's Play button. The code is
-    /// entered in the modal ([`State::link_code_modal_view`]), which
-    /// the button and the pad's START both open; an empty code is fair
-    /// game for Fight, which generates one on the spot (see the
-    /// FightPressed handler) and never renders it here on the way in —
-    /// it debuts in the lobby's connection line and only lands in this
-    /// strip when the lobby band leaves. In streamer mode both the
-    /// strip and the modal render masked — typed, pad-entered, and
-    /// restored-generated codes are all scrapeable off a stream
-    /// otherwise.
+    /// The idle bottom band: the Fight CTA alone. The lobby band
+    /// replaces this strip for every in-flight netplay phase, so this
+    /// strip is pure "pick a code and fight" — singleplayer lives in the
+    /// save view's Play button. There is no text box: the CTA opens the
+    /// entry modal ([`State::link_code_modal_view`]), and the pad's
+    /// START does the same. A code left untouched in the modal (the
+    /// all-zero field) is fair game for "just get me a lobby": OK then
+    /// generates one on the spot and never renders it here on the way
+    /// in — it debuts in the lobby's connection line and only lands in
+    /// this strip when the lobby band leaves. The muted line at the left
+    /// reports what a retry would dial, masked in streamer mode (which
+    /// the modal masks too — typed, pad-entered, and restored-generated
+    /// codes are all scrapeable off a stream otherwise).
     ///
     /// `patch_ready` is false while the selected patch is still being
     /// downloaded: committing to a match then would negotiate a setup we
@@ -884,15 +969,13 @@ impl State {
         patch_ready: bool,
     ) -> Element<'a, Message> {
         const BOTTOM_SIZE: f32 = 15.0;
-        const BOTTOM_PAD: [f32; 2] = [10.0, 16.0];
         const BOTTOM_CTA_PAD: [f32; 2] = [10.0, 22.0];
         let trimmed = self.link_code.trim();
-        let can_submit = patch_ready && (trimmed.is_empty() || crate::netplay::LinkIdent::parse(trimmed).is_some());
         let fight_button: Element<'a, Message> = {
             // Same chrome as the lobby's Ready button — both are
             // "commit to a match" CTAs. ready_button_style for
             // ReadyPalette::Idle falls back to neutral when the
-            // button is disabled, so the empty-link-code case
+            // button is disabled, so the not-patch-ready case
             // renders as a plain greyed-out pill without a
             // separate branch here.
             let label = row![
@@ -905,48 +988,33 @@ impl State {
                 .padding(BOTTOM_CTA_PAD)
                 .height(Length::Fixed(crate::ui::style::BAR_CONTROL_HEIGHT))
                 .style(|theme: &iced::Theme, status| ready_button_style(theme, status, ReadyPalette::Idle));
-            if can_submit {
+            if patch_ready {
                 btn = btn.on_press(Message::FightPressed);
             }
             btn.into()
         };
-        // The code field: a button, not a text box — entering a code
-        // goes through the modal (see `link_code_modal_view`), which a
-        // pad-only player can drive with their bound d-pad / A / B and
-        // which START opens. It shows the code in full, or dots in
-        // streamer mode, and carries the START hint while it's empty.
-        let code_label = if trimmed.is_empty() {
-            t!(lang, "play-link-code-set")
+        // What OK will dial, for the next attempt: the code the last
+        // attempt used, or the hint that opens the modal while there
+        // isn't one yet.
+        let (status, status_style): (String, fn(&iced::Theme) -> iced::widget::text::Style) = if trimmed.is_empty() {
+            (t!(lang, "play-link-code-start"), widgets::muted_text_style)
         } else if streamer_mode {
-            "•".repeat(LINK_CODE_DIGITS)
+            (
+                t!(lang, "lobby-link-code", code = "•".repeat(LINK_CODE_DIGITS)),
+                widgets::muted_text_style,
+            )
         } else {
-            self.link_code.clone()
+            (
+                t!(lang, "lobby-link-code", code = self.link_code.clone()),
+                |theme: &iced::Theme| iced::widget::text::Style {
+                    color: Some(theme.palette().text),
+                },
+            )
         };
-        let code_button: Element<'a, Message> = {
-            let mut label = row![
-                Icon::Hash.widget().size(BOTTOM_SIZE),
-                text(code_label).size(BOTTOM_SIZE)
-            ]
-            .spacing(10)
-            .align_y(Alignment::Center);
-            if trimmed.is_empty() {
-                label = label.push(iced::widget::space::horizontal()).push(
-                    text(t!(lang, "play-link-code-start"))
-                        .size(TEXT_CAPTION)
-                        .style(widgets::muted_text_style),
-                );
-            }
-            button(container(label).padding(BOTTOM_PAD).width(Fill))
-                .padding(0)
-                .width(Fill)
-                .height(Length::Fixed(crate::ui::style::BAR_CONTROL_HEIGHT))
-                .style(widgets::neutral)
-                .on_press(Message::LinkCodeModalOpen)
-                .into()
-        };
+        let status: Element<'a, Message> = text(status).size(TEXT_CAPTION).style(status_style).into();
 
         container(
-            row![code_button, fight_button]
+            row![status, iced::widget::space::horizontal(), fight_button]
                 .spacing(10)
                 .align_y(Alignment::Center)
                 .padding([10, 8]),
@@ -1013,21 +1081,76 @@ impl State {
 
         let panel = container(
             column![
-                text(t!(lang, "play-link-code-title")).size(TEXT_TITLE),
+                row![
+                    text(t!(lang, "play-link-code-title")).size(TEXT_TITLE),
+                    iced::widget::space::horizontal(),
+                    widgets::icon_button_styled(
+                        Icon::X,
+                        t!(lang, "playback-close"),
+                        Some(Message::LinkCodeModalClose),
+                        [4.0, 8.0],
+                        widgets::window_close,
+                    ),
+                ]
+                .spacing(12)
+                .align_y(Alignment::Center)
+                .width(Fill),
                 row![cells, ok, randomize].spacing(12).align_y(Alignment::Center),
                 text(t!(lang, "play-link-code-hint"))
                     .size(TEXT_CAPTION)
                     .style(widgets::muted_text_style),
+                // The all-zero field doubles as "no code picked yet",
+                // which OK turns into a random one — say so, or that
+                // code looks like a deliberate choice. The line keeps
+                // its height either way so the panel doesn't resize
+                // the moment the field leaves the all-zero state.
+                container(
+                    text(if modal.is_blank() {
+                        t!(lang, "play-link-code-blank")
+                    } else {
+                        String::new()
+                    })
+                    .size(TEXT_CAPTION)
+                    .style(widgets::muted_text_style),
+                )
+                .height(Length::Fixed(TEXT_CAPTION * 1.5)),
             ]
             .spacing(18)
             .align_x(Alignment::Center),
         )
         .padding(24)
+        .width(Length::Fill)
         .max_width(700.0)
         .style(widgets::panel);
 
+        // A blocked code is swapped in place rather than dialled, so say
+        // so and leave the replacement on screen — the player has to
+        // share the code they'll actually host.
+        let panel: Element<'a, Message> = if modal.replaced {
+            let tip = container(
+                text(t!(lang, "play-link-code-replaced"))
+                    .size(TEXT_CAPTION)
+                    .style(widgets::primary_text_style),
+            )
+            .padding([8.0, 12.0])
+            .width(Length::Fill)
+            .style(|theme: &iced::Theme| iced::widget::container::Style {
+                background: Some(iced::Background::Color(theme.extended_palette().background.weak.color)),
+                border: iced::Border {
+                    radius: widgets::tech_radius(8.0),
+                    width: 1.0,
+                    color: theme.palette().primary,
+                },
+                ..Default::default()
+            });
+            let column = column![panel, tip].spacing(12).align_x(Alignment::Center);
+            container(column).padding(0).width(Length::Fill).max_width(700.0).into()
+        } else {
+            panel.into()
+        };
+
         Some(widgets::modal_layer(
-            panel.into(),
+            panel,
             0.55,
             Message::Noop,
             Some(Message::LinkCodeModalClose),
@@ -1063,6 +1186,36 @@ fn link_code_cell(theme: &iced::Theme, active: bool) -> iced::widget::container:
             ..Default::default()
         }
     }
+}
+
+/// The numeral a physical key types into the code field — the number
+/// row and the numpad both count, so a keyboard player can enter a code
+/// the way they would in any text box.
+fn typed_digit(key: &iced::keyboard::key::Physical) -> Option<u8> {
+    use iced::keyboard::key::{Code, Physical};
+    let Physical::Code(code) = key else {
+        return None;
+    };
+    Some(match code {
+        Code::Digit0 | Code::Numpad0 => 0,
+        Code::Digit1 | Code::Numpad1 => 1,
+        Code::Digit2 | Code::Numpad2 => 2,
+        Code::Digit3 | Code::Numpad3 => 3,
+        Code::Digit4 | Code::Numpad4 => 4,
+        Code::Digit5 | Code::Numpad5 => 5,
+        Code::Digit6 | Code::Numpad6 => 6,
+        Code::Digit7 | Code::Numpad7 => 7,
+        Code::Digit8 | Code::Numpad8 => 8,
+        Code::Digit9 | Code::Numpad9 => 9,
+        _ => return None,
+    })
+}
+
+fn is_backspace(key: &iced::keyboard::key::Physical) -> bool {
+    matches!(
+        key,
+        iced::keyboard::key::Physical::Code(iced::keyboard::key::Code::Backspace)
+    )
 }
 
 // ---------- Save-action form helpers ----------
