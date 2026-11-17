@@ -58,6 +58,14 @@ impl App {
         else {
             return iced::Task::none();
         };
+        self.apply_play_effect(effect)
+    }
+
+    /// Run one Play-tab side effect. Shared by the message path and by
+    /// controller focus navigation, which drives the tab's controls
+    /// directly (`State::link_code_input`) and so gets its connect
+    /// effects from here rather than through `update`.
+    pub(super) fn apply_play_effect(&mut self, effect: tabs::play::Effect) -> iced::Task<Message> {
         use tabs::play::Effect as E;
         match effect {
             E::SetFrameDelay(d) => {

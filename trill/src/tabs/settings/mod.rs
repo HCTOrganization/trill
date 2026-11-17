@@ -487,9 +487,11 @@ pub fn view<'a>(
 /// A bare chunky checkbox for the right slot of an [`option_row`] —
 /// the row carries the label, so the box doesn't.
 pub(super) fn toggle<'a>(checked: bool, msg: fn(bool) -> Message) -> Element<'a, Message> {
-    iced::widget::checkbox(checked)
-        .on_toggle(msg)
-        .size(style::TEXT_HEADING)
-        .style(widgets::chunky_checkbox)
-        .into()
+    crate::ui::focus::on_press(
+        msg(!checked),
+        iced::widget::checkbox(checked)
+            .on_toggle(msg)
+            .size(style::TEXT_HEADING)
+            .style(widgets::chunky_checkbox),
+    )
 }

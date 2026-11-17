@@ -449,18 +449,20 @@ impl ReplaysState {
                 }
             }));
         }
-        button(
-            column![
-                container(text_col).padding(style::ROW_PADDING).width(Fill),
-                progress_strip,
-            ]
-            .width(Fill),
+        crate::ui::focus::on_press(
+            Message::Selected(r.path.clone()),
+            button(
+                column![
+                    container(text_col).padding(style::ROW_PADDING).width(Fill),
+                    progress_strip,
+                ]
+                .width(Fill),
+            )
+            .padding(0)
+            .width(Fill)
+            .style(widgets::list_item(selected, idx))
+            .on_press(Message::Selected(r.path.clone())),
         )
-        .padding(0)
-        .width(Fill)
-        .style(widgets::list_item(selected, idx))
-        .on_press(Message::Selected(r.path.clone()))
-        .into()
     }
 }
 

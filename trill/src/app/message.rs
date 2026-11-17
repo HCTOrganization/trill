@@ -43,6 +43,15 @@ pub enum Message {
     /// animation can sample a fresh `Instant`.
     AnimTick,
     TabSelected(Tab),
+    /// One physical input event (keyboard or pad) captured on the menu
+    /// screens. Drives controller focus navigation, and — on the Play
+    /// tab — the link-code modal, which takes the d-pad for itself
+    /// while it is open.
+    MenuInput(crate::platform::input::Event),
+    /// Timer tick that drains SDL's gamepad queue. The pad only
+    /// surfaces by polling, and nothing on the menu redraws on its
+    /// own, so the App ticks this while the tabs are on screen.
+    PollGamepad,
     Play(tabs::play::Message),
     Patches(tabs::patches::Message),
     Replays(tabs::replays::Message),

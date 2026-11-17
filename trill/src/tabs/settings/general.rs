@@ -64,7 +64,7 @@ pub(super) fn settings_general<'a>(lang: &'a LanguageIdentifier, config: &'a con
                         .map(|id| crate::i18n::LanguageChoice::new(id.clone()))
                         .collect();
                     let selected = options.iter().find(|c| c.id == config.language).cloned();
-                    widgets::picker(options, selected, |c: crate::i18n::LanguageChoice| {
+                    widgets::focus_picker(options, selected, |c: crate::i18n::LanguageChoice| {
                         Message::LanguageSelected(c.id)
                     })
                 }),
@@ -74,7 +74,7 @@ pub(super) fn settings_general<'a>(lang: &'a LanguageIdentifier, config: &'a con
                         theme_choice(lang, config::ThemeMode::Light),
                     ];
                     let selected = options.iter().find(|c| c.value == config.theme).cloned();
-                    widgets::picker(options, selected, |c: Choice<config::ThemeMode>| {
+                    widgets::focus_picker(options, selected, |c: Choice<config::ThemeMode>| {
                         Message::ThemeChanged(c.value)
                     })
                 }),
@@ -88,7 +88,7 @@ pub(super) fn settings_general<'a>(lang: &'a LanguageIdentifier, config: &'a con
                         accent_choice(lang, config::AccentColor::BassPurple),
                     ];
                     let selected = options.iter().find(|c| c.value == config.accent).cloned();
-                    widgets::picker(options, selected, |c: Choice<config::AccentColor>| {
+                    widgets::focus_picker(options, selected, |c: Choice<config::AccentColor>| {
                         Message::AccentChanged(c.value)
                     })
                 }),
@@ -105,10 +105,13 @@ pub(super) fn settings_general<'a>(lang: &'a LanguageIdentifier, config: &'a con
                     text(config.data_path.to_string_lossy().into_owned())
                         .size(TEXT_CAPTION)
                         .style(widgets::muted_text_style),
-                    button(text(t!(lang, "settings-data-folder-change")))
-                        .on_press(Message::OpenDataFolderPicker)
-                        .padding(STANDARD_PADDING)
-                        .style(widgets::neutral),
+                    crate::ui::focus::on_press(
+                        Message::OpenDataFolderPicker,
+                        button(text(t!(lang, "settings-data-folder-change")))
+                            .on_press(Message::OpenDataFolderPicker)
+                            .padding(STANDARD_PADDING)
+                            .style(widgets::neutral),
+                    ),
                 ]
                 .spacing(8)
                 .align_y(Alignment::Center),

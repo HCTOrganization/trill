@@ -9,7 +9,7 @@ use crate::i18n::t;
 use crate::session;
 use crate::tabs;
 use crate::ui::theme::theme_for;
-use crate::ui::{anim, widgets};
+use crate::ui::{anim, focus, widgets};
 use iced::widget::container;
 use iced::widget::space::horizontal as horizontal_space;
 use iced::{Alignment, Element, Fill, Theme};
@@ -19,6 +19,11 @@ use unic_langid::LanguageIdentifier;
 impl App {
     pub fn view(&self) -> Element<'_, Message> {
         let lang = &self.config.language;
+
+        // Controls register themselves with the focus ring as the tree
+        // is built (see `ui::focus`), so the frame has to start here —
+        // before any early return — with the index the App is holding.
+        crate::ui::focus::begin_frame(self.focus);
 
         // Live entrance glide, `Some(progress)` while mid-flight.
         // Sampled once here; the branches below wrap whatever they
@@ -263,20 +268,7 @@ impl App {
                         },
                     )
                     .map(Message::Play);
-                let body: Element<'_, Message> = container(main).width(Fill).height(Fill).into();
-                // The link-code modal reads the user's console key
-                // bindings, so keyboard events have to reach the tab
-                // even though nothing here is a text field. Same
-                // synchronous wrapper the session uses: a message per
-                // unconsumed key event, published on the iteration it
-                // arrived in. (The pad comes in through the App's poll
-                // tick instead — see `App::subscription`.)
-                crate::platform::input_capture::InputCapture::new(body, |input| {
-                    input
-                        .to_event()
-                        .map(|ev| Message::Play(tabs::play::Message::LinkCodeInput(ev)))
-                })
-                .into()
+                container(main).width(Fill).height(Fill).into()
             }
             Tab::Replays => self
                 .replays
@@ -337,10 +329,21 @@ impl App {
         .width(Fill)
         .height(Fill)
         .into();
-        match (enter, self.screen_enter_scope) {
+        let root: Element<'_, Message> = match (enter, self.screen_enter_scope) {
             (Some(p), EnterScope::Root { dy }) => anim::slide_in(root, p, iced::Vector::new(0.0, dy)),
             _ => root,
-        }
+        };
+        Self::with_menu_input(root)
+    }
+
+    /// The tabs shell, wrapped in the synchronous input capture the
+    /// focus ring and the Play tab's code modal both read from. Same
+    /// wrapper the session uses: one message per unconsumed key event,
+    /// published on the iteration it arrived in, so the pad's prompts
+    /// and the modal stay in step with the user. (The pad itself
+    /// arrives through the App's poll tick — see `App::subscription`.)
+    fn with_menu_input(root: Element<'_, Message>) -> Element<'_, Message> {
+        crate::platform::input_capture::InputCapture::new(root, |input| input.to_event().map(Message::MenuInput)).into()
     }
 
     pub fn theme(&self) -> Theme {
@@ -374,8 +377,13 @@ fn top_bar(lang: &LanguageIdentifier, active: Tab, lobby_badge: bool, fullscreen
         Handle::from_bytes(raw)
     });
 
-    let tab =
-        |icon, label, target: Tab| widgets::nav_tab_button(icon, label, Message::TabSelected(target), target == active);
+    let tab = |icon, label, target: Tab| {
+        let msg = Message::TabSelected(target);
+        focus::on_press(msg.clone(), widgets::nav_tab_button(icon, label, msg, target == active))
+    };
+    let play_msg = Message::TabSelected(Tab::Play);
+    let patches_msg = Message::TabSelected(Tab::Patches);
+    let settings_msg = Message::TabSelected(Tab::Settings);
     let mut bar = row![
         iced::widget::container(
             Image::new(LOGO.clone())
@@ -384,12 +392,15 @@ fn top_bar(lang: &LanguageIdentifier, active: Tab, lobby_badge: bool, fullscreen
                 .content_fit(iced::ContentFit::Contain),
         )
         .padding([2, 8]),
-        widgets::nav_tab_button_badged(
-            Icon::Gamepad,
-            t!(lang, "tab-play"),
-            Message::TabSelected(Tab::Play),
-            Tab::Play == active,
-            lobby_badge,
+        focus::on_press(
+            play_msg.clone(),
+            widgets::nav_tab_button_badged(
+                Icon::Gamepad,
+                t!(lang, "tab-play"),
+                play_msg,
+                Tab::Play == active,
+                lobby_badge,
+            ),
         ),
         tab(Icon::Film, t!(lang, "tab-replays"), Tab::Replays),
         horizontal_space(),
@@ -402,17 +413,23 @@ fn top_bar(lang: &LanguageIdentifier, active: Tab, lobby_badge: bool, fullscreen
         // not a destination, so it doesn't get equal billing
         // with Play/Replays — icon-only on the right, with the
         // label exposed as a hover tooltip.
-        widgets::nav_icon_tab_button(
-            Icon::Puzzle,
-            t!(lang, "tab-patches"),
-            Message::TabSelected(Tab::Patches),
-            Tab::Patches == active,
+        focus::on_press(
+            patches_msg.clone(),
+            widgets::nav_icon_tab_button(
+                Icon::Puzzle,
+                t!(lang, "tab-patches"),
+                patches_msg,
+                Tab::Patches == active,
+            ),
         ),
-        widgets::nav_icon_tab_button(
-            Icon::Settings,
-            t!(lang, "tab-settings"),
-            Message::TabSelected(Tab::Settings),
-            Tab::Settings == active,
+        focus::on_press(
+            settings_msg.clone(),
+            widgets::nav_icon_tab_button(
+                Icon::Settings,
+                t!(lang, "tab-settings"),
+                settings_msg,
+                Tab::Settings == active,
+            ),
         ),
     ]
     .spacing(8)
@@ -421,12 +438,15 @@ fn top_bar(lang: &LanguageIdentifier, active: Tab, lobby_badge: bool, fullscreen
         // Fullscreen is borderless — no OS title bar, so no native
         // X. Stand in for it at the same screen corner, in the
         // titlebar-close mood (quiet at rest, red on hover).
-        bar = bar.push(widgets::icon_button_styled(
-            Icon::X,
-            t!(lang, "window-quit"),
-            Some(Message::Quit),
-            [8.0, 12.0],
-            widgets::window_close,
+        bar = bar.push(focus::on_press(
+            Message::Quit,
+            widgets::icon_button_styled(
+                Icon::X,
+                t!(lang, "window-quit"),
+                Some(Message::Quit),
+                [8.0, 12.0],
+                widgets::window_close,
+            ),
         ));
     }
     container(bar.padding([10, 8]))

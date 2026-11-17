@@ -463,11 +463,14 @@ fn patch_download<'a>(
                         iced::widget::space::horizontal(),
                         text(caption).size(TEXT_CAPTION).style(widgets::muted_text_style),
                         // Calling it off puts both pickers straight back.
-                        widgets::icon_button(
-                            lucide_icons::Icon::X,
-                            t!(lang, "patches-cancel"),
-                            Message::CancelPatchDownload(key),
-                            [1.0, 1.0],
+                        crate::ui::focus::on_press(
+                            Message::CancelPatchDownload(key.clone()),
+                            widgets::icon_button(
+                                lucide_icons::Icon::X,
+                                t!(lang, "patches-cancel"),
+                                Message::CancelPatchDownload(key),
+                                [1.0, 1.0],
+                            ),
                         ),
                     ]
                     .spacing(4)
@@ -488,11 +491,14 @@ fn patch_download<'a>(
             piece(
                 row![
                     iced::widget::space::horizontal(),
-                    widgets::icon_button(
-                        lucide_icons::Icon::RefreshCw,
-                        t!(lang, "patches-retry"),
-                        Message::RetryPatchDownload(key),
-                        [1.0, 1.0],
+                    crate::ui::focus::on_press(
+                        Message::RetryPatchDownload(key.clone()),
+                        widgets::icon_button(
+                            lucide_icons::Icon::RefreshCw,
+                            t!(lang, "patches-retry"),
+                            Message::RetryPatchDownload(key),
+                            [1.0, 1.0],
+                        ),
                     ),
                 ]
                 .align_y(Alignment::Center)

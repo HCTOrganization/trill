@@ -13,6 +13,7 @@
 pub use trill_ui::copy_feedback;
 
 pub mod anim;
+pub mod focus;
 pub mod style;
 pub mod theme;
 pub mod widgets;

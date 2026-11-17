@@ -38,7 +38,7 @@ pub(super) fn settings_netplay<'a>(lang: &'a LanguageIdentifier, config: &'a con
                 relay_mode_choice(lang, config::RelayMode::Never),
             ];
             let selected = options.iter().find(|c| c.value == config.relay_mode).cloned();
-            widgets::picker(options, selected, |c: Choice<config::RelayMode>| {
+            widgets::focus_picker(options, selected, |c: Choice<config::RelayMode>| {
                 Message::RelayModeChanged(c.value)
             })
         }),

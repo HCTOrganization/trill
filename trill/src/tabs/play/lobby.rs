@@ -20,7 +20,7 @@ use crate::library::Catalog;
 use crate::netplay::{self, Phase};
 use crate::session::pvp::suggest_frame_delay;
 use crate::ui::style::{self, STANDARD_PADDING, TEXT_BODY, TEXT_CAPTION, TEXT_HEADING, TEXT_TITLE};
-use crate::ui::widgets;
+use crate::ui::{focus, widgets};
 use iced::widget::{button, container, text};
 use iced::{Alignment, Element, Fill, Length};
 use lucide_icons::Icon;
@@ -408,12 +408,15 @@ impl<'a> Lobby<'a> {
     /// the finished build down instead of installing it.
     fn leave_button(&self) -> Element<'a, Message> {
         let msg = Some(Message::Disconnect);
-        widgets::icon_button_styled(
-            Icon::LogOut,
-            t!(self.lang, "play-cancel"),
-            msg,
-            [10.0, 12.0],
-            widgets::danger_button,
+        focus::on_press(
+            Message::Disconnect,
+            widgets::icon_button_styled(
+                Icon::LogOut,
+                t!(self.lang, "play-cancel"),
+                msg,
+                [10.0, 12.0],
+                widgets::danger_button,
+            ),
         )
     }
 
@@ -510,9 +513,23 @@ impl<'a> Lobby<'a> {
         let suggest = widgets::icon_button_maybe(
             Icon::Wand,
             t!(lang, "lobby-frame-delay-suggest"),
-            suggest_msg,
+            suggest_msg.clone(),
             STANDARD_PADDING,
         );
+        let suggest = match suggest_msg {
+            Some(m) => focus::on_press(m, suggest),
+            None => suggest,
+        };
+        // Left/right on the pad step the delay one frame at a time,
+        // clamped to the slider's own range.
+        let step = |delta: i32| {
+            let next = (self.frame_delay as i32 + delta).clamp(
+                crate::session::pvp::MIN_FRAME_DELAY as i32,
+                crate::session::pvp::MAX_FRAME_DELAY as i32,
+            ) as u32;
+            Message::SetFrameDelay(next)
+        };
+        let slider = focus::focusable(focus::Actions::adjust(step(-1), step(1)), slider);
         let delay_col = labeled(
             t!(lang, "settings-netplay-frame-delay"),
             row![
@@ -544,14 +561,18 @@ impl<'a> Lobby<'a> {
         } else {
             Some(Message::SetBlindSetup as fn(bool) -> Message)
         };
-        let blind_col = labeled(
-            t!(lang, "lobby-blind-mine"),
-            iced::widget::checkbox(self.state.blind_setup)
-                .on_toggle_maybe(toggle)
-                .size(TEXT_HEADING)
-                .style(widgets::chunky_checkbox)
-                .into(),
-        );
+        let checkbox = iced::widget::checkbox(self.state.blind_setup)
+            .on_toggle_maybe(toggle)
+            .size(TEXT_HEADING)
+            .style(widgets::chunky_checkbox)
+            .into();
+        // A on the pad flips it, exactly as clicking the box does —
+        // and like the box, it does nothing while the terms are locked.
+        let checkbox = match toggle {
+            Some(toggle) => focus::on_press(toggle(!self.state.blind_setup), checkbox),
+            None => checkbox,
+        };
+        let blind_col = labeled(t!(lang, "lobby-blind-mine"), checkbox);
 
         // Top-align so the captions sit on one line like a table
         // header row, whatever each control's height is.
@@ -598,7 +619,22 @@ impl<'a> Lobby<'a> {
             .find(|o| o.mode == self.state.match_type.0 && o.subtype == self.state.match_type.1)
             .cloned();
         let on_change = gated(self.inert(), Message::SetMatchType);
-        widgets::picker(options, selected, move |o| on_change((o.mode, o.subtype))).into()
+        // Left/right on the pad walk the options, wrapping — the same
+        // thing clicking the list does, without having to open it.
+        let current = selected
+            .as_ref()
+            .and_then(|s| options.iter().position(|o| o == s))
+            .unwrap_or(0) as isize;
+        let count = options.len() as isize;
+        let at = |delta: isize| {
+            let o = &options[(current + delta).rem_euclid(count) as usize];
+            on_change((o.mode, o.subtype))
+        };
+        // Built before the option list moves into the picker.
+        let (left, right) = (at(-1), at(1));
+        let picker: Element<'a, Message> =
+            widgets::picker(options, selected, move |o| on_change((o.mode, o.subtype))).into();
+        focus::focusable(focus::Actions::adjust(left, right), picker)
     }
 
     /// Big single toggle: Ready → Unready → Starting…, switching
@@ -686,7 +722,8 @@ impl<'a> Lobby<'a> {
             .padding(READY_PAD)
             .style(move |theme: &iced::Theme, status| ready_button_style(theme, status, palette));
         if let Some(m) = msg {
-            btn = btn.on_press(m);
+            btn = btn.on_press(m.clone());
+            return focus::on_press(m, btn);
         }
         btn.into()
     }

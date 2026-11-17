@@ -269,6 +269,42 @@ where
         .style(chunky_pick_list)
 }
 
+/// [`picker`] as one stop on the controller focus ring: left/right on
+/// the pad walk the options and dispatch the same change as clicking
+/// one would, so a pad-only player never has to open the list.
+pub fn focus_picker<'a, T, L, V, M>(
+    options: L,
+    selected: Option<V>,
+    on_selected: impl Fn(T) -> M + 'a,
+) -> Element<'a, M>
+where
+    T: ToString + PartialEq + Clone + 'a,
+    L: std::borrow::Borrow<[T]> + 'a,
+    V: std::borrow::Borrow<T> + 'a,
+    M: Clone + Into<crate::ui::focus::Command> + 'a,
+{
+    let all = options.borrow();
+    let current = selected
+        .as_ref()
+        .and_then(|selected| all.iter().position(|option| option == selected.borrow()))
+        .unwrap_or(0) as isize;
+    let count = all.len() as isize;
+    let neighbour = |delta: isize| {
+        if count == 0 {
+            return None;
+        }
+        all.get((current + delta).rem_euclid(count) as usize).cloned()
+    };
+    let (left, right) = (neighbour(-1).map(&on_selected), neighbour(1).map(&on_selected));
+    let picker = picker(options, selected, on_selected);
+    match (left, right) {
+        (Some(left), Some(right)) => {
+            crate::ui::focus::focusable(crate::ui::focus::Actions::adjust(left, right), picker)
+        }
+        _ => picker.into(),
+    }
+}
+
 /// One patch download, as the same row wherever it shows up: the
 /// patches tab, the play strip, the lobby band and the replay detail
 /// all fetch the same packages, and used to each say so differently.

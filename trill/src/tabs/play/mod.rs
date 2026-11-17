@@ -38,14 +38,6 @@ pub enum Message {
     Loadout(loadout_strip::Message),
     SaveEditor(std::sync::Arc<dyn trill_gamesupport::SaveEditorMessage>),
 
-    /// One physical input event (keyboard or pad), normalized. The
-    /// code-entry modal reads the user's key bindings off these — and
-    /// START on them opens the modal from the strip.
-    LinkCodeInput(crate::platform::input::Event),
-    /// Timer tick that drains SDL's gamepad queue. The pad only
-    /// surfaces by polling, and nothing on the menu redraws on its
-    /// own, so the App ticks this while the strip is on screen.
-    PollGamepad,
     /// Close it and drop the draft (B, the header's X, or a click on
     /// the backdrop).
     LinkCodeModalClose,
@@ -436,12 +428,20 @@ impl State {
         self.link_code_modal = Some(LinkCodeModal::from_code(&self.link_code));
     }
 
+    /// Whether the code-entry modal is up. While it is, it owns the
+    /// d-pad — the App's focus ring stays out of its way.
+    pub fn link_code_modal_open(&self) -> bool {
+        self.link_code_modal.is_some()
+    }
+
     /// Fold one physical input event into the strip's edge detection.
-    /// With the modal closed only START acts (it opens the modal —
-    /// the pad's way in); open, numerals/backspace type straight into
-    /// the field, the d-pad edits digit/cursor, A or START accepts,
-    /// and B dismisses. Returns the connect effect when an accept lands.
-    fn link_code_input(
+    /// Called by the App for every captured input event while the Play
+    /// tab is on screen. With the modal closed only START acts (it
+    /// opens the modal — the pad's way in); open, numerals/backspace
+    /// type straight into the field, the d-pad edits digit/cursor, A or
+    /// START accepts, and B dismisses. Returns the connect effect when
+    /// an accept lands.
+    pub fn link_code_input(
         &mut self,
         ev: &crate::platform::input::Event,
         config: &config::Config,
@@ -584,19 +584,6 @@ impl State {
             // Routed to the shared Selection at App level before this
             // dispatch is reached.
             Message::Loadout(_) => None,
-            Message::LinkCodeInput(ev) => self.link_code_input(&ev, config, scanners, loadout),
-            Message::PollGamepad => {
-                // SDL's pad queue only surfaces by polling, and this is
-                // a main-thread-only call — so the tick arrives as a
-                // message and the drain happens here.
-                let mut effect = None;
-                while let Some(ev) = gamepad_facade::next_event() {
-                    if let Some(ev) = crate::platform::input_capture::Input::Gamepad(&ev).to_event() {
-                        effect = self.link_code_input(&ev, config, scanners, loadout).or(effect);
-                    }
-                }
-                effect
-            }
             Message::LinkCodeModalClose => {
                 self.link_code_modal = None;
                 None
@@ -999,7 +986,7 @@ impl State {
             if patch_ready {
                 btn = btn.on_press(Message::FightPressed);
             }
-            btn.into()
+            crate::ui::focus::on_press(Message::FightPressed, btn)
         };
         // What OK will dial, for the next attempt: the code the last
         // attempt used, or the hint that opens the modal while there

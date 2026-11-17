@@ -393,7 +393,8 @@ impl PatchesState {
             } else {
                 format!("{name}  ·  ↓")
             };
-            list = list.push(
+            list = list.push(crate::ui::focus::on_press(
+                Message::Selected(name.to_owned()),
                 button(
                     column![
                         title_row,
@@ -407,7 +408,7 @@ impl PatchesState {
                 .width(Fill)
                 .style(widgets::list_item(selected, idx))
                 .on_press(Message::Selected(name.to_owned())),
-            );
+            ));
         }
         // Say so where the rows would be, the same way the replays list
         // does — and for the same reason, gated on the scan rather than
@@ -474,6 +475,7 @@ impl PatchesState {
                 .padding([4, 6])
                 .style(widgets::flat)
                 .on_press(Message::ToggleFavorite(name.to_string()));
+            let btn = crate::ui::focus::on_press(Message::ToggleFavorite(name.to_string()), btn);
             iced::widget::tooltip(
                 btn,
                 widgets::tooltip_bubble(label),
@@ -653,25 +655,34 @@ impl PatchesState {
                     .style(widgets::muted_text_style),
             );
             if let Some(path) = info.installed.map(|v| v.path.clone()) {
-                controls = controls.push(widgets::icon_button(
-                    Icon::FolderOpen,
-                    t!(lang, "patches-reveal-package"),
-                    Message::RevealPackage(path),
-                    STANDARD_PADDING,
+                controls = controls.push(crate::ui::focus::on_press(
+                    Message::RevealPackage(path.clone()),
+                    widgets::icon_button(
+                        Icon::FolderOpen,
+                        t!(lang, "patches-reveal-package"),
+                        Message::RevealPackage(path),
+                        STANDARD_PADDING,
+                    ),
                 ));
             }
-            controls = controls.push(widgets::icon_button(
-                Icon::Trash2,
-                t!(lang, "patches-uninstall"),
+            controls = controls.push(crate::ui::focus::on_press(
                 Message::Uninstall(key.clone()),
-                STANDARD_PADDING,
+                widgets::icon_button(
+                    Icon::Trash2,
+                    t!(lang, "patches-uninstall"),
+                    Message::Uninstall(key.clone()),
+                    STANDARD_PADDING,
+                ),
             ));
         } else if info.indexed.is_some() {
-            controls = controls.push(widgets::icon_button(
-                Icon::Download,
-                t!(lang, "patches-install"),
+            controls = controls.push(crate::ui::focus::on_press(
                 Message::Install(key.clone()),
-                STANDARD_PADDING,
+                widgets::icon_button(
+                    Icon::Download,
+                    t!(lang, "patches-install"),
+                    Message::Install(key.clone()),
+                    STANDARD_PADDING,
+                ),
             ));
         }
 

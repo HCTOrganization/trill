@@ -461,11 +461,14 @@ fn save_actions_menu<'a>(lang: &LanguageIdentifier, loadout: &Selection) -> Elem
 /// The "× Cancel" button that ends every save-action form (rename / duplicate
 /// / delete / new) — identical across all four.
 fn save_action_cancel_button<'a>(lang: &LanguageIdentifier) -> Element<'a, Message> {
-    widgets::icon_button(
-        Icon::X,
-        t!(lang, "save-action-cancel"),
+    crate::ui::focus::on_press(
         Message::SaveActionCancel,
-        STANDARD_PADDING,
+        widgets::icon_button(
+            Icon::X,
+            t!(lang, "save-action-cancel"),
+            Message::SaveActionCancel,
+            STANDARD_PADDING,
+        ),
     )
 }
 

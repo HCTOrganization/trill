@@ -13,11 +13,15 @@ pub(super) fn settings_audio<'a>(lang: &'a LanguageIdentifier, config: &'a confi
             text(format!("{:.0}%", config.volume * 100.0)).size(TEXT_CAPTION),
             // Bounded slider width — Fill would stretch all the way
             // across the pane, which looks silly for a volume bar.
-            container(
+            container(crate::ui::focus::focusable(
+                crate::ui::focus::Actions::adjust(
+                    Message::VolumeChanged((config.volume - 0.05).max(0.0)),
+                    Message::VolumeChanged((config.volume + 0.05).min(1.0)),
+                ),
                 iced::widget::slider(0.0..=1.0, config.volume, Message::VolumeChanged)
                     .step(0.01_f32)
-                    .style(widgets::chunky_slider)
-            )
+                    .style(widgets::chunky_slider),
+            ))
             .width(Length::Fixed(220.0)),
         ]
         .spacing(12)

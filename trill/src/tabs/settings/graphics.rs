@@ -70,7 +70,7 @@ pub(super) fn settings_graphics<'a>(lang: &'a LanguageIdentifier, config: &'a co
         let label = selected_resolution.map(|r| r.label).unwrap_or_else(|| "—".into());
         widgets::disabled_pick_list(label).into()
     } else {
-        widgets::picker(resolution_options, selected_resolution, |c: Choice<(f32, f32)>| {
+        widgets::focus_picker(resolution_options, selected_resolution, |c: Choice<(f32, f32)>| {
             Message::ResolutionChanged(c.value)
         })
         .into()
@@ -91,7 +91,7 @@ pub(super) fn settings_graphics<'a>(lang: &'a LanguageIdentifier, config: &'a co
                 ),
                 option_row::<Message>(
                     t!(lang, "settings-ui-scale"),
-                    widgets::picker(ui_scale_options, selected_ui_scale, |c: Choice<f32>| {
+                    widgets::focus_picker(ui_scale_options, selected_ui_scale, |c: Choice<f32>| {
                         Message::UiScaleChanged(c.value)
                     }),
                 ),
@@ -107,7 +107,7 @@ pub(super) fn settings_graphics<'a>(lang: &'a LanguageIdentifier, config: &'a co
                         .map(|effect| Choice::new(effect.id.into(), effect.name))
                         .collect();
                     let selected = options.iter().find(|c| c.value == config.video_filter).cloned();
-                    widgets::picker(options, selected, |c: Choice<String>| {
+                    widgets::focus_picker(options, selected, |c: Choice<String>| {
                         Message::VideoFilterChanged(c.value)
                     })
                 }),
@@ -131,7 +131,7 @@ pub(super) fn settings_graphics<'a>(lang: &'a LanguageIdentifier, config: &'a co
                         ds_screen_stacking_choice(lang, config::DsScreenStacking::PrimaryOnly),
                     ];
                     let selected = options.iter().find(|c| c.value == config.ds_screen_stacking).cloned();
-                    widgets::picker(options, selected, |c: Choice<config::DsScreenStacking>| {
+                    widgets::focus_picker(options, selected, |c: Choice<config::DsScreenStacking>| {
                         Message::DsScreenStackingChanged(c.value)
                     })
                 }),
@@ -141,7 +141,7 @@ pub(super) fn settings_graphics<'a>(lang: &'a LanguageIdentifier, config: &'a co
                         ds_primary_screen_choice(lang, config::DsPrimaryScreen::Touch),
                     ];
                     let selected = options.iter().find(|c| c.value == config.ds_primary_screen).cloned();
-                    widgets::picker(options, selected, |c: Choice<config::DsPrimaryScreen>| {
+                    widgets::focus_picker(options, selected, |c: Choice<config::DsPrimaryScreen>| {
                         Message::DsPrimaryScreenChanged(c.value)
                     })
                 }),

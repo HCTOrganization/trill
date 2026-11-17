@@ -19,6 +19,7 @@ mod downloads;
 mod library;
 mod lobby;
 mod message;
+mod nav;
 mod patches;
 mod play;
 mod replay;
@@ -125,6 +126,15 @@ pub struct App {
     /// Set while an application quit waits for PvP's bounded `Goodbye` send.
     /// Repeated close requests during that short window are ignored.
     exit_pending: bool,
+    /// Which stop on the menu screens' focus ring carries the ring, or
+    /// `None` before the pad has moved it. The stops themselves are
+    /// registered per frame by the views — see [`crate::ui::focus`].
+    focus: Option<usize>,
+    /// Held inputs on the menu screens, for the focus ring's press-edge
+    /// detection.
+    menu_held: crate::platform::input::HeldState,
+    /// Which navigation actions were active at the last input event.
+    nav_actions: nav::NavActions,
 }
 
 /// See [`App::screen_enter_scope`].
@@ -258,6 +268,9 @@ impl App {
             lobby_swap: anim::Transition::swap(false),
             lobby_exit_snapshot: None,
             exit_pending: false,
+            focus: None,
+            menu_held: Default::default(),
+            nav_actions: nav::NavActions::default(),
         };
         app.refresh_loaded();
         let scan = app.boot_scan();
@@ -349,17 +362,9 @@ impl App {
         // mapping (START opens the entry modal) and the pad only
         // surfaces by polling SDL's queue — from the main thread, which
         // means from `update`. Nothing on the menu redraws on its own,
-        // so tick the drain while that strip is the one on screen.
-        let play_strip_on_screen = self.config.nickname.is_some()
-            && !self.session.is_active()
-            && self.session.results.is_none()
-            && self.tab == Tab::Play
-            && !self.lobby_on_screen();
-        if play_strip_on_screen {
-            subs.push(
-                iced::time::every(std::time::Duration::from_millis(50))
-                    .map(|_| Message::Play(tabs::play::Message::PollGamepad)),
-            );
+        // so tick the drain while the tabs are the thing on screen.
+        if self.menu_on_screen() {
+            subs.push(iced::time::every(std::time::Duration::from_millis(50)).map(|_| Message::PollGamepad));
         }
         iced::Subscription::batch(subs)
     }
