@@ -60,6 +60,12 @@ play-version-placeholder = —
 
 # Play bottom strip
 play-link-code = リンクコード（8桁の数字・空欄でランダム生成）
+play-link-code-set = ペアリングコードを入力
+play-link-code-start = START で開く
+play-link-code-title = ペアリングコードを入力
+play-link-code-ok = OK
+play-link-code-randomize = ランダム
+play-link-code-hint = [上/下] 数字を変更　[左/右] 位置を移動
 play-link-code-random = ランダムリンクコード
 play-training = トレーニング
 training-pip = 相手の画面

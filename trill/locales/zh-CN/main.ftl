@@ -60,6 +60,12 @@ play-version-placeholder = —
 
 # Play bottom strip
 play-link-code = 链接代码（8 位数字，留空则随机生成）
+play-link-code-set = 输入配对代码
+play-link-code-start = 按 START 打开
+play-link-code-title = 请输入配对代码
+play-link-code-ok = OK
+play-link-code-randomize = 随机
+play-link-code-hint = [上/下] 切换数字　[左/右] 切换位置
 play-link-code-random = 随机链接代码
 play-training = 训练
 training-pip = 对手画面

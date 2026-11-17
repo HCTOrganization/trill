@@ -18,6 +18,7 @@ pub use save_manage::SaveAction;
 use crate::i18n::t;
 use crate::library::Catalog;
 use crate::library::{game, rom};
+use crate::netplay::randomcode::LINK_CODE_DIGITS;
 use crate::ui::style::{self, STANDARD_PADDING, TEXT_BODY, TEXT_CAPTION, TEXT_TITLE};
 use crate::ui::widgets;
 use crate::{config, selection};
@@ -37,7 +38,24 @@ pub enum Message {
     Loadout(loadout_strip::Message),
     SaveEditor(std::sync::Arc<dyn trill_gamesupport::SaveEditorMessage>),
 
-    LinkCodeChanged(String),
+    /// One physical input event (keyboard or pad), normalized. The
+    /// code-entry modal reads the user's key bindings off these — and
+    /// START on them opens the modal from the strip.
+    LinkCodeInput(crate::platform::input::Event),
+    /// Timer tick that drains SDL's gamepad queue. The pad only
+    /// surfaces by polling, and nothing on the menu redraws on its
+    /// own, so the App ticks this while the strip is on screen.
+    PollGamepad,
+    /// Open the code-entry modal (the strip's code button, or START).
+    LinkCodeModalOpen,
+    /// Close it and drop the draft (B, or a click on the backdrop).
+    LinkCodeModalClose,
+    /// Put the cursor on this digit (clicking one).
+    LinkCodeCursorSet(usize),
+    /// Refill the field from a fresh random code.
+    LinkCodeRandomize,
+    /// Accept the draft as the strip's code.
+    LinkCodeConfirm,
     /// Copy plain text to the clipboard — the lobby's copy-link-code
     /// button. Carries the real code even when streamer mode masks it
     /// on screen.
@@ -97,6 +115,18 @@ pub enum Message {
 
 pub struct State {
     link_code: String,
+    /// Draft for the code-entry modal — `Some` while it's open. The
+    /// strip itself takes no typing; the modal is how a pad-only
+    /// player enters a code, and how anyone else does it without a
+    /// keyboard.
+    link_code_modal: Option<LinkCodeModal>,
+    /// Physical inputs held right now on the Play tab. The modal acts
+    /// on press *edges* off this, so one press of a bound key steps
+    /// once instead of spinning while held.
+    link_held: crate::platform::input::HeldState,
+    /// Which link-code actions were active at the last input event —
+    /// the previous side of [`State::link_held`]'s edge detection.
+    link_actions: LinkActions,
     /// A link code Fight auto-generated for an empty input, parked here
     /// instead of `link_code` while the lobby is up: the outgoing strip
     /// renders for the first half of the band morph, so writing the input
@@ -130,11 +160,95 @@ impl Default for State {
     fn default() -> Self {
         Self {
             link_code: String::new(),
+            link_code_modal: None,
+            link_held: crate::platform::input::HeldState::default(),
+            link_actions: LinkActions::default(),
             pending_generated_code: None,
             save_action: SaveAction::None,
             save_body_enter: crate::ui::anim::Enter::default(),
             save_form: crate::ui::anim::Transition::swap(false),
             save_action_exit: SaveAction::None,
+        }
+    }
+}
+
+/// The link-code entry modal's draft: the eight digits plus which one
+/// the cursor is on. Digits are stored numerically so stepping is one
+/// wrap-around add, and rendering is a `char` conversion.
+struct LinkCodeModal {
+    digits: [u8; LINK_CODE_DIGITS],
+    cursor: usize,
+}
+
+impl LinkCodeModal {
+    /// Seed the draft from the strip's current code (all zeros when it
+    /// has none, or holds a `/`-command the field can't represent).
+    fn from_code(code: &str) -> Self {
+        let mut digits = [0u8; LINK_CODE_DIGITS];
+        if let Some(code) = crate::netplay::randomcode::canonical(code.trim()) {
+            for (slot, byte) in digits.iter_mut().zip(code.bytes()) {
+                *slot = byte - b'0';
+            }
+        }
+        Self { digits, cursor: 0 }
+    }
+
+    fn code(&self) -> String {
+        self.digits.iter().map(|d| char::from(b'0' + d)).collect()
+    }
+
+    /// Step the digit under the cursor, wrapping 9 ↔ 0 so a fat finger
+    /// never dead-ends at the field's edge.
+    fn step(&mut self, by: i8) {
+        let digit = i16::from(self.digits[self.cursor]) + i16::from(by);
+        self.digits[self.cursor] = digit.rem_euclid(10) as u8;
+    }
+
+    fn move_cursor(&mut self, by: i8) {
+        let cursor = self.cursor as i16 + i16::from(by);
+        self.cursor = cursor.clamp(0, (LINK_CODE_DIGITS - 1) as i16) as usize;
+    }
+
+    /// Fill the field from a fresh random code, cursor back at the
+    /// start so the next press adjusts the first digit.
+    fn randomize(&mut self) {
+        for (slot, byte) in self
+            .digits
+            .iter_mut()
+            .zip(crate::netplay::randomcode::generate().bytes())
+        {
+            *slot = byte - b'0';
+        }
+        self.cursor = 0;
+    }
+}
+
+/// Which link-code actions a held-state currently satisfies. Read from
+/// the user's key bindings, so the modal follows whatever the player
+/// mapped their d-pad / A / B / START to.
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+struct LinkActions {
+    up: bool,
+    down: bool,
+    left: bool,
+    right: bool,
+    a: bool,
+    b: bool,
+    start: bool,
+}
+
+impl LinkActions {
+    fn read(mapping: &crate::platform::input::Mapping, held: &crate::platform::input::HeldState) -> Self {
+        use crate::platform::input::MappedKey as K;
+        let on = |key: K| mapping.slot(key).iter().any(|p| held.is_active(p));
+        Self {
+            up: on(K::Up),
+            down: on(K::Down),
+            left: on(K::Left),
+            right: on(K::Right),
+            a: on(K::A),
+            b: on(K::B),
+            start: on(K::Start),
         }
     }
 }
@@ -270,6 +384,64 @@ impl State {
         self.save_body_enter.start(now);
     }
 
+    /// Drop the tracked held inputs. The Play tab's input wrapper is
+    /// their only source, so when it leaves the tree (tab switch,
+    /// session start) a release it would have seen never arrives and
+    /// the key would read as stuck — clearing stops that from
+    /// swallowing the next press after coming back.
+    pub fn forget_held(&mut self) {
+        self.link_held = crate::platform::input::HeldState::default();
+        self.link_actions = LinkActions::default();
+    }
+
+    /// Open the code-entry modal, seeded from the strip's current code.
+    fn open_link_code_modal(&mut self) {
+        self.link_code_modal = Some(LinkCodeModal::from_code(&self.link_code));
+    }
+
+    /// Fold one physical input event into the strip's edge detection.
+    /// With the modal closed only START acts (it opens the modal —
+    /// the pad's way in); open, the d-pad edits digit/cursor, A or
+    /// START accepts, and B dismisses.
+    fn link_code_input(&mut self, ev: &crate::platform::input::Event, config: &config::Config) {
+        self.link_held.apply(ev);
+        let now = LinkActions::read(&config.input_mapping, &self.link_held);
+        let before = std::mem::replace(&mut self.link_actions, now);
+        // Press edge only: a held key must not spin the code.
+        let pressed = |action: bool, was: bool| action && !was;
+
+        if self.link_code_modal.is_none() {
+            if pressed(now.start, before.start) {
+                self.open_link_code_modal();
+            }
+            return;
+        }
+        if pressed(now.a, before.a) || pressed(now.start, before.start) {
+            if let Some(modal) = self.link_code_modal.take() {
+                self.link_code = modal.code();
+            }
+            return;
+        }
+        if pressed(now.b, before.b) {
+            self.link_code_modal = None;
+            return;
+        }
+        if let Some(modal) = self.link_code_modal.as_mut() {
+            if pressed(now.up, before.up) {
+                modal.step(1);
+            }
+            if pressed(now.down, before.down) {
+                modal.step(-1);
+            }
+            if pressed(now.left, before.left) {
+                modal.move_cursor(-1);
+            }
+            if pressed(now.right, before.right) {
+                modal.move_cursor(1);
+            }
+        }
+    }
+
     fn update_inner(
         &mut self,
         msg: Message,
@@ -282,20 +454,45 @@ impl State {
             // Routed to the shared Selection at App level before this
             // dispatch is reached.
             Message::Loadout(_) => None,
-            Message::LinkCodeChanged(s) => {
-                // Direct-TCP commands (/host, /connect) need slashes,
-                // spaces, dots, colons, brackets — pass them through.
-                // Matchmaking codes are up to 8 digits and are
-                // left-padded with `0` when dialed, so anything else
-                // typed into that field is dropped.
-                self.link_code = if s.starts_with('/') {
-                    s.chars().take(100).collect()
-                } else {
-                    s.chars()
-                        .filter(char::is_ascii_digit)
-                        .take(crate::netplay::randomcode::LINK_CODE_DIGITS)
-                        .collect()
-                };
+            Message::LinkCodeInput(ev) => {
+                self.link_code_input(&ev, config);
+                None
+            }
+            Message::PollGamepad => {
+                // SDL's pad queue only surfaces by polling, and this is
+                // a main-thread-only call — so the tick arrives as a
+                // message and the drain happens here.
+                while let Some(ev) = gamepad_facade::next_event() {
+                    if let Some(ev) = crate::platform::input_capture::Input::Gamepad(&ev).to_event() {
+                        self.link_code_input(&ev, config);
+                    }
+                }
+                None
+            }
+            Message::LinkCodeModalOpen => {
+                self.open_link_code_modal();
+                None
+            }
+            Message::LinkCodeModalClose => {
+                self.link_code_modal = None;
+                None
+            }
+            Message::LinkCodeCursorSet(index) => {
+                if let Some(modal) = self.link_code_modal.as_mut() {
+                    modal.cursor = index.min(LINK_CODE_DIGITS - 1);
+                }
+                None
+            }
+            Message::LinkCodeRandomize => {
+                if let Some(modal) = self.link_code_modal.as_mut() {
+                    modal.randomize();
+                }
+                None
+            }
+            Message::LinkCodeConfirm => {
+                if let Some(modal) = self.link_code_modal.take() {
+                    self.link_code = modal.code();
+                }
                 None
             }
             Message::CopyText(s) => {
@@ -531,7 +728,14 @@ impl State {
                 });
         }
         col = col.push(group);
-        col.into()
+        // The code-entry modal floats over the whole tab, but only
+        // while the strip (not the lobby) is the bottom band — the
+        // lobby has already taken the code.
+        let body: Element<'a, Message> = col.into();
+        match self.link_code_modal_view(lang, streamer_mode).filter(|_| !render_lobby) {
+            Some(modal) => iced::widget::stack![body, modal].into(),
+            None => body,
+        }
     }
 
     /// Picks between the save view, an empty-state hint, or a "pick a
@@ -655,15 +859,17 @@ impl State {
             .map(Message::SaveEditor)
     }
 
-    /// The idle bottom band: link-code input + Fight CTA. The lobby
+    /// The idle bottom band: link-code button + Fight CTA. The lobby
     /// band replaces this strip for every in-flight netplay phase, so
     /// this strip is pure "enter a link code and fight" —
-    /// singleplayer lives in the save view's Play button. An empty
-    /// input is fair game: Fight generates a random code on the spot
-    /// (see the FightPressed handler) which never renders here on the
-    /// way in — it debuts in the lobby's connection line and only
-    /// lands in this input when the lobby band leaves. In streamer
-    /// mode the input renders secure (masked) — typed, pasted, and
+    /// singleplayer lives in the save view's Play button. The code is
+    /// entered in the modal ([`State::link_code_modal_view`]), which
+    /// the button and the pad's START both open; an empty code is fair
+    /// game for Fight, which generates one on the spot (see the
+    /// FightPressed handler) and never renders it here on the way in —
+    /// it debuts in the lobby's connection line and only lands in this
+    /// strip when the lobby band leaves. In streamer mode both the
+    /// strip and the modal render masked — typed, pad-entered, and
     /// restored-generated codes are all scrapeable off a stream
     /// otherwise.
     ///
@@ -704,26 +910,43 @@ impl State {
             }
             btn.into()
         };
-        // Link-code input fills all the slack to the left of the
-        // Fight CTA. text_input doesn't expose a `.height()` method,
-        // so we wrap it in a fixed-height container to match the
-        // surrounding controls.
-        let link_input: Element<'a, Message> = container(
-            text_input(&t!(lang, "play-link-code"), &self.link_code)
-                .secure(streamer_mode)
-                .on_input(Message::LinkCodeChanged)
-                .on_submit(Message::FightPressed)
-                .size(BOTTOM_SIZE)
-                .padding(BOTTOM_PAD)
-                .width(Length::Fill)
-                .style(widgets::chunky_text_input),
-        )
-        .height(Length::Fixed(crate::ui::style::BAR_CONTROL_HEIGHT))
-        .width(Length::Fill)
-        .into();
+        // The code field: a button, not a text box — entering a code
+        // goes through the modal (see `link_code_modal_view`), which a
+        // pad-only player can drive with their bound d-pad / A / B and
+        // which START opens. It shows the code in full, or dots in
+        // streamer mode, and carries the START hint while it's empty.
+        let code_label = if trimmed.is_empty() {
+            t!(lang, "play-link-code-set")
+        } else if streamer_mode {
+            "•".repeat(LINK_CODE_DIGITS)
+        } else {
+            self.link_code.clone()
+        };
+        let code_button: Element<'a, Message> = {
+            let mut label = row![
+                Icon::Hash.widget().size(BOTTOM_SIZE),
+                text(code_label).size(BOTTOM_SIZE)
+            ]
+            .spacing(10)
+            .align_y(Alignment::Center);
+            if trimmed.is_empty() {
+                label = label.push(iced::widget::space::horizontal()).push(
+                    text(t!(lang, "play-link-code-start"))
+                        .size(TEXT_CAPTION)
+                        .style(widgets::muted_text_style),
+                );
+            }
+            button(container(label).padding(BOTTOM_PAD).width(Fill))
+                .padding(0)
+                .width(Fill)
+                .height(Length::Fixed(crate::ui::style::BAR_CONTROL_HEIGHT))
+                .style(widgets::neutral)
+                .on_press(Message::LinkCodeModalOpen)
+                .into()
+        };
 
         container(
-            row![link_input, fight_button]
+            row![code_button, fight_button]
                 .spacing(10)
                 .align_y(Alignment::Center)
                 .padding([10, 8]),
@@ -731,6 +954,114 @@ impl State {
         .width(Fill)
         .style(widgets::hud_bar)
         .into()
+    }
+
+    /// The code-entry modal: an 8-digit field the pad (or keyboard)
+    /// edits in place, with OK and Random, over the shared dim wash.
+    /// Purely presentational — every action arrives as a message, and
+    /// the physical side is [`State::link_code_input`].
+    ///
+    /// Streamer mode masks every cell: the point of that mode is that a
+    /// code never reaches the stream, and typing one in a visible field
+    /// would leak it just as surely as showing the strip did.
+    fn link_code_modal_view<'a>(
+        &'a self,
+        lang: &'a LanguageIdentifier,
+        streamer_mode: bool,
+    ) -> Option<Element<'a, Message>> {
+        const DIGIT_SIZE: f32 = 26.0;
+        const CELL_W: f32 = 40.0;
+        let modal = self.link_code_modal.as_ref()?;
+
+        let mut cells = row![].spacing(6).align_y(Alignment::Center);
+        for (index, digit) in modal.digits.iter().enumerate() {
+            let active = index == modal.cursor;
+            let shown = if streamer_mode {
+                "•".to_string()
+            } else {
+                digit.to_string()
+            };
+            let cell = container(text(shown).size(DIGIT_SIZE))
+                .width(Length::Fixed(CELL_W))
+                .height(Length::Fixed(CELL_W * 1.3))
+                .align_x(iced::alignment::Horizontal::Center)
+                .align_y(iced::alignment::Vertical::Center)
+                .style(move |theme: &iced::Theme| link_code_cell(theme, active));
+            cells = cells.push(
+                button(cell)
+                    .padding(0)
+                    .style(widgets::flat)
+                    .on_press(Message::LinkCodeCursorSet(index)),
+            );
+        }
+
+        let ok = button(text(t!(lang, "play-link-code-ok")).size(TEXT_BODY))
+            .padding([10.0, 18.0])
+            .style(widgets::primary_button)
+            .on_press(Message::LinkCodeConfirm);
+        let randomize = button(
+            row![
+                Icon::Dices.widget().size(TEXT_BODY),
+                text(t!(lang, "play-link-code-randomize")).size(TEXT_BODY),
+            ]
+            .spacing(6)
+            .align_y(Alignment::Center),
+        )
+        .padding([10.0, 14.0])
+        .style(widgets::neutral)
+        .on_press(Message::LinkCodeRandomize);
+
+        let panel = container(
+            column![
+                text(t!(lang, "play-link-code-title")).size(TEXT_TITLE),
+                row![cells, ok, randomize].spacing(12).align_y(Alignment::Center),
+                text(t!(lang, "play-link-code-hint"))
+                    .size(TEXT_CAPTION)
+                    .style(widgets::muted_text_style),
+            ]
+            .spacing(18)
+            .align_x(Alignment::Center),
+        )
+        .padding(24)
+        .max_width(700.0)
+        .style(widgets::panel);
+
+        Some(widgets::modal_layer(
+            panel.into(),
+            0.55,
+            Message::Noop,
+            Some(Message::LinkCodeModalClose),
+        ))
+    }
+}
+
+/// One cell of the code modal: the active digit sits on the accent,
+/// the rest on the quiet plate so the cursor reads at a glance.
+fn link_code_cell(theme: &iced::Theme, active: bool) -> iced::widget::container::Style {
+    let p = theme.extended_palette();
+    let primary = theme.palette().primary;
+    if active {
+        iced::widget::container::Style {
+            background: Some(iced::Background::Color(primary)),
+            text_color: Some(widgets::on_accent(primary)),
+            border: iced::Border {
+                radius: widgets::tech_radius(8.0),
+                width: 2.0,
+                color: widgets::mix(primary, iced::Color::WHITE, 0.45),
+            },
+            ..Default::default()
+        }
+    } else {
+        iced::widget::container::Style {
+            background: Some(iced::Background::Color(p.background.weak.color)),
+            text_color: Some(theme.palette().text),
+            border: iced::Border {
+                radius: widgets::tech_radius(8.0),
+                width: 1.0,
+                color: p.background.strong.color,
+            },
+            ..Default::default()
+        }
     }
 }
 

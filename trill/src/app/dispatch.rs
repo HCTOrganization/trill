@@ -22,6 +22,10 @@ impl App {
         let screen_after = self.screen_key();
         if screen_before != screen_after {
             self.screen_enter.start(now);
+            // The Play tab's input wrapper just left or entered the
+            // tree — a key released while it was gone never reports,
+            // so drop what it was tracking.
+            self.play.forget_held();
             self.screen_enter_scope = match (screen_before, screen_after) {
                 (ScreenKey::Tabs(t1), ScreenKey::Tabs(t2)) => {
                     // The nav strip lays the tabs out in declaration

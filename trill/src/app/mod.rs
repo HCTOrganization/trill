@@ -345,6 +345,22 @@ impl App {
         if anim::any_active() || waiting_pulse_on_screen || input_pane_on_screen {
             subs.push(iced::window::frames().map(|_| Message::AnimTick));
         }
+        // The Play tab's link-code strip listens to the console input
+        // mapping (START opens the entry modal) and the pad only
+        // surfaces by polling SDL's queue — from the main thread, which
+        // means from `update`. Nothing on the menu redraws on its own,
+        // so tick the drain while that strip is the one on screen.
+        let play_strip_on_screen = self.config.nickname.is_some()
+            && !self.session.is_active()
+            && self.session.results.is_none()
+            && self.tab == Tab::Play
+            && !self.lobby_on_screen();
+        if play_strip_on_screen {
+            subs.push(
+                iced::time::every(std::time::Duration::from_millis(50))
+                    .map(|_| Message::Play(tabs::play::Message::PollGamepad)),
+            );
+        }
         iced::Subscription::batch(subs)
     }
 }

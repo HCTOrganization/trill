@@ -263,7 +263,20 @@ impl App {
                         },
                     )
                     .map(Message::Play);
-                container(main).width(Fill).height(Fill).into()
+                let body: Element<'_, Message> = container(main).width(Fill).height(Fill).into();
+                // The link-code modal reads the user's console key
+                // bindings, so keyboard events have to reach the tab
+                // even though nothing here is a text field. Same
+                // synchronous wrapper the session uses: a message per
+                // unconsumed key event, published on the iteration it
+                // arrived in. (The pad comes in through the App's poll
+                // tick instead — see `App::subscription`.)
+                crate::platform::input_capture::InputCapture::new(body, |input| {
+                    input
+                        .to_event()
+                        .map(|ev| Message::Play(tabs::play::Message::LinkCodeInput(ev)))
+                })
+                .into()
             }
             Tab::Replays => self
                 .replays
