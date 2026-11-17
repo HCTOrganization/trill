@@ -259,7 +259,7 @@ impl LinkCodeModal {
 
 /// Which link-code actions a held-state currently satisfies. Read from
 /// the user's key bindings, so the modal follows whatever the player
-/// mapped their d-pad / A / B / START to.
+/// mapped their d-pad / A / B / X / START to.
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 struct LinkActions {
     up: bool,
@@ -268,6 +268,7 @@ struct LinkActions {
     right: bool,
     a: bool,
     b: bool,
+    x: bool,
     start: bool,
 }
 
@@ -282,6 +283,7 @@ impl LinkActions {
             right: on(K::Right),
             a: on(K::A),
             b: on(K::B),
+            x: on(K::X),
             start: on(K::Start),
         }
     }
@@ -492,6 +494,12 @@ impl State {
         }
         if pressed(now.b, before.b) {
             self.link_code_modal = None;
+            return None;
+        }
+        if pressed(now.x, before.x) {
+            if let Some(modal) = self.link_code_modal.as_mut() {
+                modal.randomize();
+            }
             return None;
         }
         if let Some(modal) = self.link_code_modal.as_mut() {
@@ -1114,6 +1122,16 @@ impl State {
                     .style(widgets::muted_text_style),
                 )
                 .height(Length::Fixed(TEXT_CAPTION * 1.5)),
+                // What each pad button does, in the pad's own glyphs —
+                // letters on filled discs, so they read as controller
+                // buttons rather than keyboard keys.
+                row![
+                    pad_legend("A", t!(lang, "play-link-code-confirm")),
+                    pad_legend("B", t!(lang, "play-link-code-cancel")),
+                    pad_legend("X", t!(lang, "play-link-code-randomize")),
+                ]
+                .spacing(16)
+                .align_y(Alignment::Center),
             ]
             .spacing(18)
             .align_x(Alignment::Center),
@@ -1216,6 +1234,42 @@ fn is_backspace(key: &iced::keyboard::key::Physical) -> bool {
         key,
         iced::keyboard::key::Physical::Code(iced::keyboard::key::Code::Backspace)
     )
+}
+
+/// One pad-button legend entry: the button's letter on a filled disc,
+/// then what it does. The disc is what makes it read as a controller
+/// button — a bare `A` would look like a keyboard key.
+fn pad_legend<'a>(button: &'static str, label: String) -> Element<'a, Message> {
+    const DISC: f32 = 20.0;
+    row![
+        container(text(button).size(TEXT_CAPTION))
+            .width(Length::Fixed(DISC))
+            .height(Length::Fixed(DISC))
+            .align_x(iced::alignment::Horizontal::Center)
+            .align_y(iced::alignment::Vertical::Center)
+            .style(pad_disc),
+        text(label).size(TEXT_CAPTION).style(widgets::muted_text_style),
+    ]
+    .spacing(6)
+    .align_y(Alignment::Center)
+    .into()
+}
+
+/// The disc behind a [`pad_legend`] letter: lifted plate fill with
+/// whichever ink stays readable on it, and a full radius so it reads as
+/// a circle rather than a chip.
+fn pad_disc(theme: &iced::Theme) -> iced::widget::container::Style {
+    let fill = widgets::plate_lift(theme);
+    iced::widget::container::Style {
+        background: Some(iced::Background::Color(fill)),
+        text_color: Some(widgets::on_accent(fill)),
+        border: iced::Border {
+            radius: iced::border::Radius::from(10.0),
+            width: 1.0,
+            color: theme.extended_palette().background.strong.color,
+        },
+        ..Default::default()
+    }
 }
 
 // ---------- Save-action form helpers ----------
