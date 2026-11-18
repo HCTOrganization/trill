@@ -135,6 +135,12 @@ pub struct App {
     menu_held: crate::platform::input::HeldState,
     /// Which navigation actions were active at the last input event.
     nav_actions: nav::NavActions,
+    /// A B-button hold on the lobby band, counting down to a
+    /// disconnect. See [`nav::CANCEL_HOLD`].
+    cancel_hold: Option<nav::CancelHold>,
+    /// Bumped whenever a hold starts or is dropped, so the timer a
+    /// previous hold scheduled can recognise itself as stale.
+    cancel_hold_token: u64,
 }
 
 /// See [`App::screen_enter_scope`].
@@ -271,6 +277,8 @@ impl App {
             focus: None,
             menu_held: Default::default(),
             nav_actions: nav::NavActions::default(),
+            cancel_hold: None,
+            cancel_hold_token: 0,
         };
         app.refresh_loaded();
         let scan = app.boot_scan();
@@ -355,7 +363,7 @@ impl App {
         let input_pane_on_screen = !self.session.is_active()
             && self.tab == Tab::Settings
             && self.settings.active_tab == tabs::settings::SettingsTab::Input;
-        if anim::any_active() || waiting_pulse_on_screen || input_pane_on_screen {
+        if anim::any_active() || waiting_pulse_on_screen || input_pane_on_screen || self.cancel_hold.is_some() {
             subs.push(iced::window::frames().map(|_| Message::AnimTick));
         }
         // The Play tab's link-code strip listens to the console input

@@ -265,6 +265,7 @@ impl App {
                             handoff_pending: self.netplay.handoff_pending(),
                             swap: &self.lobby_swap,
                             exit_snapshot: self.lobby_exit_snapshot.as_ref(),
+                            cancel_hold: self.cancel_hold_progress(),
                         },
                     )
                     .map(Message::Play);
@@ -337,11 +338,12 @@ impl App {
     }
 
     /// The tabs shell, wrapped in the synchronous input capture the
-    /// focus ring and the Play tab's code modal both read from. Same
-    /// wrapper the session uses: one message per unconsumed key event,
-    /// published on the iteration it arrived in, so the pad's prompts
-    /// and the modal stay in step with the user. (The pad itself
-    /// arrives through the App's poll tick — see `App::subscription`.)
+    /// focus ring (pads only) and the Play tab's code modal (pads and
+    /// keyboard alike) both read from. Same wrapper the session uses:
+    /// one message per unconsumed event, published on the iteration it
+    /// arrived in, so the pad's prompts and the modal stay in step with
+    /// the user. (The pad itself arrives through the App's poll tick —
+    /// see `App::subscription`.)
     fn with_menu_input(root: Element<'_, Message>) -> Element<'_, Message> {
         crate::platform::input_capture::InputCapture::new(root, |input| input.to_event().map(Message::MenuInput)).into()
     }

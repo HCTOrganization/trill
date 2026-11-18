@@ -167,9 +167,13 @@ impl Default for State {
     }
 }
 
-/// The link-code entry modal's draft: the eight digits plus which one
-/// the cursor is on. Digits are stored numerically so stepping is one
-/// wrap-around add, and rendering is a `char` conversion.
+/// The link-code entry modal's draft: the eight digits plus which cell
+/// the cursor is on. `cursor == LINK_CODE_DIGITS` is the "past the last
+/// digit" stop — the field is full and OK is the highlighted target, so
+/// typing all eight digits with the keyboard leaves the player one press
+/// from confirming (and Left/Backspace walk back into the field).
+/// Digits are stored numerically so stepping is one wrap-around add, and
+/// rendering is a `char` conversion.
 struct LinkCodeModal {
     digits: [u8; LINK_CODE_DIGITS],
     cursor: usize,
@@ -179,6 +183,9 @@ struct LinkCodeModal {
     /// Any edit clears it.
     replaced: bool,
 }
+
+/// The cursor stop that means "OK is the target" — one past the digits.
+const OK_STOP: usize = LINK_CODE_DIGITS;
 
 impl LinkCodeModal {
     /// Seed the draft from the strip's current code (all zeros when it
@@ -212,9 +219,19 @@ impl LinkCodeModal {
         self.digits.iter().all(|d| *d == 0)
     }
 
+    /// Whether OK is the highlighted target (the field has been filled
+    /// and the cursor walked off its end).
+    fn ok_focused(&self) -> bool {
+        self.cursor >= OK_STOP
+    }
+
     /// Step the digit under the cursor, wrapping 9 ↔ 0 so a fat finger
-    /// never dead-ends at the field's edge.
+    /// never dead-ends at the field's edge. Nothing to step once the
+    /// cursor sits on OK.
     fn step(&mut self, by: i8) {
+        if self.cursor >= OK_STOP {
+            return;
+        }
         let digit = i16::from(self.digits[self.cursor]) + i16::from(by);
         self.digits[self.cursor] = digit.rem_euclid(10) as u8;
         self.replaced = false;
@@ -222,20 +239,26 @@ impl LinkCodeModal {
 
     fn move_cursor(&mut self, by: i8) {
         let cursor = self.cursor as i16 + i16::from(by);
-        self.cursor = cursor.clamp(0, (LINK_CODE_DIGITS - 1) as i16) as usize;
+        self.cursor = cursor.clamp(0, OK_STOP as i16) as usize;
     }
 
     /// Type a numeral straight into the field, the way a text box would:
-    /// it lands on the cursor cell and the cursor steps to the next one.
+    /// it lands on the cursor cell and the cursor steps to the next one,
+    /// ending on the OK stop after the last digit.
     fn type_digit(&mut self, digit: u8) {
+        if self.cursor >= OK_STOP {
+            return;
+        }
         self.digits[self.cursor] = digit.min(9);
-        self.cursor = (self.cursor + 1).min(LINK_CODE_DIGITS - 1);
+        self.cursor = (self.cursor + 1).min(OK_STOP);
         self.replaced = false;
     }
 
-    /// Backspace: clear the previous cell and step back onto it.
+    /// Backspace: clear the previous cell and step back onto it. From
+    /// the OK stop that is the last digit, so the first Backspace after
+    /// a full code reopens the field instead of confirming anything.
     fn erase(&mut self) {
-        self.cursor = self.cursor.saturating_sub(1);
+        self.cursor = self.cursor.saturating_sub(1).min(LINK_CODE_DIGITS - 1);
         self.digits[self.cursor] = 0;
         self.replaced = false;
     }
@@ -688,6 +711,9 @@ pub struct LobbyBandCtx<'a> {
         crate::netplay::LobbyState,
         crate::netplay::ReadyView,
     )>,
+    /// 0.0–1.0 of a B-hold that will leave the lobby, so the Leave
+    /// button can show it filling up. `None` when B isn't held.
+    pub cancel_hold: Option<f32>,
 }
 
 impl State {
@@ -794,6 +820,7 @@ impl State {
                 handoff_pending: band.handoff_pending,
                 frame_delay: config.frame_delay,
                 downloads,
+                cancel_hold: band.cancel_hold,
             }
             .view()
         } else {
@@ -1058,9 +1085,14 @@ impl State {
             );
         }
 
+        // OK takes the highlight when the cursor has walked off the end
+        // of the field: the same accent treatment a focused digit cell
+        // gets, plus a ring, so "press A / Enter to confirm" is visible
+        // without a legend lookup.
+        let ok_focused = modal.ok_focused();
         let ok = button(text(t!(lang, "play-link-code-ok")).size(TEXT_BODY))
             .padding([10.0, 18.0])
-            .style(widgets::primary_button)
+            .style(move |theme: &iced::Theme, status| link_code_ok(theme, status, ok_focused))
             .on_press(Message::LinkCodeConfirm);
         let randomize = button(
             row![
@@ -1161,6 +1193,32 @@ impl State {
             Some(Message::LinkCodeModalClose),
         ))
     }
+}
+
+/// The modal's OK button. At rest it is the plain primary CTA; once the
+/// cursor reaches it (the field has been filled), it takes the accent
+/// treatment the focused digit cell gets, plus a ring and glow — the
+/// signal that A / Enter confirms.
+fn link_code_ok(
+    theme: &iced::Theme,
+    status: iced::widget::button::Status,
+    focused: bool,
+) -> iced::widget::button::Style {
+    let mut style = widgets::primary_button(theme, status);
+    if focused {
+        let primary = theme.palette().primary;
+        style.border = iced::Border {
+            radius: widgets::tech_radius(10.0),
+            width: 2.0,
+            color: widgets::mix(primary, iced::Color::WHITE, 0.65),
+        };
+        style.shadow = iced::Shadow {
+            color: iced::Color { a: 0.8, ..primary },
+            offset: iced::Vector::new(0.0, 4.0),
+            blur_radius: 18.0,
+        };
+    }
+    style
 }
 
 /// One cell of the code modal: the active digit sits on the accent,
@@ -1402,5 +1460,71 @@ fn ready_button_style(theme: &iced::Theme, status: button::Status, palette: Read
                 snap: false,
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn typed(digits: &str) -> LinkCodeModal {
+        let mut modal = LinkCodeModal::from_code("");
+        for byte in digits.bytes() {
+            modal.type_digit(byte - b'0');
+        }
+        modal
+    }
+
+    #[test]
+    fn typing_a_full_code_lands_on_ok() {
+        let modal = typed("12345678");
+        assert_eq!(modal.code(), "12345678");
+        assert_eq!(modal.cursor, OK_STOP);
+        assert!(modal.ok_focused());
+    }
+
+    #[test]
+    fn a_partial_code_keeps_the_cursor_in_the_field() {
+        let modal = typed("1234");
+        assert_eq!(modal.cursor, 4);
+        assert!(!modal.ok_focused());
+    }
+
+    #[test]
+    fn the_ok_stop_ignores_further_typing_and_stepping() {
+        let mut modal = typed("12345678");
+        modal.type_digit(9);
+        assert_eq!(modal.code(), "12345678");
+        modal.step(1);
+        assert_eq!(modal.code(), "12345678");
+        assert!(modal.ok_focused());
+    }
+
+    #[test]
+    fn left_or_backspace_walks_back_into_a_full_field() {
+        let mut walked = typed("12345678");
+        walked.move_cursor(-1);
+        assert_eq!(walked.cursor, LINK_CODE_DIGITS - 1);
+        assert_eq!(walked.code(), "12345678", "walking back keeps the digits");
+
+        let mut erased = typed("12345678");
+        erased.erase();
+        assert_eq!(erased.cursor, LINK_CODE_DIGITS - 1);
+        assert_eq!(erased.code(), "12345670", "backspace clears the last cell");
+        assert!(!erased.ok_focused());
+
+        // Re-typing that digit fills the field and returns to OK.
+        erased.type_digit(8);
+        assert_eq!(erased.code(), "12345678");
+        assert!(erased.ok_focused());
+    }
+
+    #[test]
+    fn the_cursor_cannot_walk_past_ok() {
+        let mut modal = typed("12345678");
+        modal.move_cursor(1);
+        assert_eq!(modal.cursor, OK_STOP);
+        modal.move_cursor(-9);
+        assert_eq!(modal.cursor, 0);
     }
 }

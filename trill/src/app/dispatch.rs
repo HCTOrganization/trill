@@ -55,6 +55,9 @@ impl App {
         let lobby_after = self.lobby_on_screen();
         if let (Some(snap), false) = (lobby_live, lobby_after) {
             self.lobby_exit_snapshot = Some(snap);
+            // A leave hold belongs to the lobby band; once it's gone so
+            // is the hold (and any timer still counting down for it).
+            self.cancel_hold = None;
             // A Fight-generated code never touched the input on the way in
             // (it debuted in the lobby band) — drop it in now that the
             // strip is coming back, so a retry re-hosts the same code.
@@ -78,6 +81,7 @@ impl App {
             Message::AnimTick => iced::Task::none(),
             Message::MenuInput(event) => self.menu_input(event),
             Message::PollGamepad => self.poll_gamepad(),
+            Message::CancelHoldElapsed(token) => self.cancel_hold_elapsed(token),
             Message::Quit => self.quit(),
             Message::Exit => iced::exit(),
             Message::TabSelected(t) => {

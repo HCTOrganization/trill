@@ -70,6 +70,9 @@ pub(super) struct Lobby<'a> {
     /// In-flight patch downloads, so a `MissingPatch` verdict can say
     /// how the fetch it triggered is actually going.
     pub(super) downloads: &'a crate::library::patch::Downloads,
+    /// 0.0–1.0 of a B-hold that will leave the lobby — the Leave
+    /// button brightens as it fills, so the hold reads as deliberate.
+    pub(super) cancel_hold: Option<f32>,
 }
 
 impl<'a> Lobby<'a> {
@@ -408,15 +411,40 @@ impl<'a> Lobby<'a> {
     /// the finished build down instead of installing it.
     fn leave_button(&self) -> Element<'a, Message> {
         let msg = Some(Message::Disconnect);
+        // A pad player's way out is holding B (see the App's navigation
+        // module); this button is the pointer's, and it doubles as the
+        // hold's feedback — it brightens and glows as the hold fills, so
+        // letting go early reads as "cancelled" rather than "nothing
+        // happened".
+        let hold = self.cancel_hold.unwrap_or(0.0);
+        let style = move |theme: &iced::Theme, status: iced::widget::button::Status| {
+            let mut style = widgets::danger_button(theme, status);
+            if hold > 0.0 {
+                let danger = theme.palette().danger;
+                style.background = Some(iced::Background::Color(widgets::mix(
+                    danger,
+                    iced::Color::WHITE,
+                    0.35 * hold,
+                )));
+                style.border = iced::Border {
+                    radius: widgets::tech_radius(8.0),
+                    width: 1.0 + hold * 2.0,
+                    color: widgets::mix(danger, iced::Color::WHITE, 0.7),
+                };
+                style.shadow = iced::Shadow {
+                    color: iced::Color {
+                        a: 0.85 * hold,
+                        ..danger
+                    },
+                    offset: iced::Vector::new(0.0, 3.0 * hold),
+                    blur_radius: 16.0 * hold,
+                };
+            }
+            style
+        };
         focus::on_press(
             Message::Disconnect,
-            widgets::icon_button_styled(
-                Icon::LogOut,
-                t!(self.lang, "play-cancel"),
-                msg,
-                [10.0, 12.0],
-                widgets::danger_button,
-            ),
+            widgets::icon_button_styled(Icon::LogOut, t!(self.lang, "play-cancel"), msg, [10.0, 12.0], style),
         )
     }
 

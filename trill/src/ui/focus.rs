@@ -4,9 +4,11 @@
 //! inputs hold keyboard focus. So this module keeps its own: the views
 //! call [`focusable`] around every control that should take part, in
 //! the order they appear, and the App moves a single index through that
-//! list with the pad's d-pad (or the keys it is bound to). A is "press
-//! the focused thing"; left/right adjust it first if it offers an
-//! adjustment (a picker or slider), otherwise they move the ring too.
+//! list with the pad's d-pad. A is "press the focused thing"; left/right
+//! adjust it first if it offers an adjustment (a picker or slider),
+//! otherwise they move the ring too. Navigation is pad-only — the shell
+//! drops keyboard events before they reach the ring, so a key bound for
+//! the pad can't take over the menu.
 //!
 //! Why a thread-local registry rather than plumbing a handle through
 //! every view: the ring has to be registered from a dozen view

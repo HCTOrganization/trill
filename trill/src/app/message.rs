@@ -44,9 +44,10 @@ pub enum Message {
     AnimTick,
     TabSelected(Tab),
     /// One physical input event (keyboard or pad) captured on the menu
-    /// screens. Drives controller focus navigation, and — on the Play
-    /// tab — the link-code modal, which takes the d-pad for itself
-    /// while it is open.
+    /// screens. Pads drive controller focus navigation; on the Play tab
+    /// both kinds feed the link-code modal, which takes the d-pad for
+    /// itself while it is open. Keyboard events never move the focus
+    /// ring — see [`App::menu_input`](crate::app::App).
     MenuInput(crate::platform::input::Event),
     /// Timer tick that drains SDL's gamepad queue. The pad only
     /// surfaces by polling, and nothing on the menu redraws on its
@@ -70,6 +71,10 @@ pub enum Message {
     /// Raw window event (open, resize, move, etc.). Filtered in the
     /// handler — only Opened / Resized / Moved trigger anything.
     Window(iced::window::Id, iced::window::Event),
+    /// A B-button hold on the lobby band ran its full countdown. The
+    /// token rejects a timer whose hold was released (or restarted)
+    /// before it elapsed.
+    CancelHoldElapsed(u64),
     /// Result of an `iced::window::get_maximized` task spawned
     /// after a Resized event. Carries the resize-time size so the
     /// handler can decide whether to persist it (only if the
