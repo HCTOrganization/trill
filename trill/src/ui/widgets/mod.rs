@@ -16,6 +16,9 @@ use sweeten::widget::{column, row};
 mod chrome;
 pub use chrome::*;
 
+mod color_picker;
+pub use color_picker::color_picker;
+
 mod match_graph;
 pub use match_graph::*;
 

@@ -125,6 +125,40 @@ pub enum AccentColor {
     /// moved to GutsMan); the alias keeps existing configs loading.
     #[serde(alias = "BassGold")]
     BassPurple,
+    /// A user-picked color, stored as `#rrggbb` in
+    /// [`Config::custom_accent`].
+    Custom,
+}
+
+/// The custom accent a fresh config starts with — dinosaur orange, so
+/// selecting "Custom" before touching the picker doesn't change the
+/// theme out from under the user.
+pub const DEFAULT_CUSTOM_ACCENT: &str = "#ff5a00";
+
+/// Parse a hex color as `#rgb`, `#rrggbb`, or either without the `#`.
+/// Leading/trailing whitespace is ignored. Returns `None` for anything
+/// else.
+pub fn parse_hex_color(text: &str) -> Option<[u8; 3]> {
+    let text = text.trim();
+    let digits = text.strip_prefix('#').unwrap_or(text);
+    if !digits.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return None;
+    }
+    let byte = |s: &str| u8::from_str_radix(s, 16).ok();
+    match digits.len() {
+        3 => {
+            let [r, g, b] = [byte(&digits[0..1])?, byte(&digits[1..2])?, byte(&digits[2..3])?];
+            Some([r * 17, g * 17, b * 17])
+        }
+        6 => Some([byte(&digits[0..2])?, byte(&digits[2..4])?, byte(&digits[4..6])?]),
+        _ => None,
+    }
+}
+
+/// Format an RGB triple as the lowercase `#rrggbb` string stored in
+/// [`Config::custom_accent`].
+pub fn hex_color([r, g, b]: [u8; 3]) -> String {
+    format!("#{r:02x}{g:02x}{b:02x}")
 }
 
 /// How a two-screen console's screens are arranged in the emulator
@@ -201,6 +235,9 @@ pub struct Config {
     pub streamer_mode: bool,
     pub theme: ThemeMode,
     pub accent: AccentColor,
+    /// The user-picked accent, stored as `#rrggbb`. Only sampled when
+    /// [`Self::accent`] is [`AccentColor::Custom`].
+    pub custom_accent: String,
     /// When `true`, the patch autoupdater (`patch::Autoupdater`)
     /// runs in the background and refreshes the local patch
     /// directory every 15 minutes. Defaults to true; off
@@ -366,6 +403,7 @@ impl Default for Config {
             streamer_mode: false,
             theme: ThemeMode::default(),
             accent: AccentColor::default(),
+            custom_accent: DEFAULT_CUSTOM_ACCENT.to_string(),
             enable_patch_autoupdate: true,
             video_filter: String::new(),
             fractional_scaling: false,
@@ -409,6 +447,12 @@ impl std::ops::DerefMut for Config {
 }
 
 impl Config {
+    /// The custom accent as RGB, falling back to the default when the
+    /// persisted string isn't a valid hex color.
+    pub fn custom_accent_rgb(&self) -> [u8; 3] {
+        parse_hex_color(&self.custom_accent).unwrap_or([0xff, 0x5a, 0x00])
+    }
+
     /// Where the crash supervisor rotates its session logs.
     pub fn logs_path(&self) -> std::path::PathBuf {
         self.data_path.join("logs")
@@ -509,7 +553,7 @@ pub fn config_dir() -> Option<std::path::PathBuf> {
     directories_next::ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).map(|d| d.config_dir().to_path_buf())
 }
 
-/// The platform cache directory (e.g. `~/Library/Caches/com.hikaricalyx.trill`
+/// The platform cache directory (e.g. `~/Library/Caches/com.hikaricalyx.trill5`
 /// on macOS, `~/.cache/trill` on Linux) for derived data the app can
 /// always recompute.
 fn cache_dir() -> Option<std::path::PathBuf> {
@@ -544,6 +588,7 @@ mod tests {
             "streamer_mode": true,
             "theme": "Light",
             "accent": "RollPink",
+            "custom_accent": "#00cc88",
             "data_path": "/home/someone/Trill",
             "matchmaking_endpoint": "wss://example.invalid/mm",
             "patch_repo": "https://example.invalid/patches",
@@ -664,6 +709,18 @@ mod tests {
         let json = serde_json::to_value(config).unwrap();
         assert_eq!(json.get("opponent_view"), Some(&serde_json::json!("PictureInPicture")));
         assert!(json.get("show_opponent_pip").is_none());
+    }
+
+    #[test]
+    fn hex_colors_parse_both_lengths_with_or_without_hash() {
+        assert_eq!(parse_hex_color("#ff5a00"), Some([0xff, 0x5a, 0x00]));
+        assert_eq!(parse_hex_color("FF5A00"), Some([0xff, 0x5a, 0x00]));
+        assert_eq!(parse_hex_color("  #f50  "), Some([0xff, 0x55, 0x00]));
+        assert_eq!(parse_hex_color("#abc"), Some([0xaa, 0xbb, 0xcc]));
+        assert_eq!(parse_hex_color("#12345"), None);
+        assert_eq!(parse_hex_color("#gggggg"), None);
+        assert_eq!(parse_hex_color("#颜色"), None);
+        assert_eq!(hex_color([0x00, 0xcc, 0x88]), "#00cc88");
     }
 
     #[test]

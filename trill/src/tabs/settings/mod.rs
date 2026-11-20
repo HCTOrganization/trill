@@ -130,6 +130,16 @@ pub struct State {
     /// the pane leaves the screen (its wrapper unmounts mid-hold and
     /// the releases would never arrive).
     pub held: input::HeldState,
+    /// Draft text for the custom accent hex field. `None` mirrors
+    /// `config.custom_accent`, so the field tracks picker drags and
+    /// preset changes; `Some` is the user's in-progress typing,
+    /// which can be invalid until it parses.
+    pub custom_accent_hex: Option<String>,
+    /// The last HSV selection made with the picker. Kept so hue and
+    /// saturation survive a trip through black or grey, where the
+    /// RGB color alone no longer carries them. Ignored when it no
+    /// longer converts to the live `config.custom_accent`.
+    pub custom_accent_hsv: Option<(f32, f32, f32)>,
 }
 
 #[derive(Debug, Clone)]
@@ -177,6 +187,12 @@ pub enum Message {
     UpdateNow,
     ThemeChanged(config::ThemeMode),
     AccentChanged(config::AccentColor),
+    /// Text typed into the custom accent's hex field. Committed when
+    /// it parses; invalid drafts stay in [`State::custom_accent_hex`]
+    /// so the field doesn't fight the user's keystrokes.
+    CustomAccentHexChanged(String),
+    /// The custom accent's HSV picker moved.
+    CustomAccentHsvChanged((f32, f32, f32)),
     /// User clicked key `k` on the drawn console — the screen
     /// switches to showing its bindings.
     BindingSlotSelected(input::MappedKey),
@@ -234,6 +250,9 @@ pub enum ConfigChange {
     Volume(f32),
     Theme(config::ThemeMode),
     Accent(config::AccentColor),
+    /// A pulled-from-the-picker custom accent. Implies
+    /// [`ConfigChange::Accent`] with [`config::AccentColor::Custom`].
+    CustomAccent([u8; 3]),
     AddInputBinding(input::MappedKey, input::PhysicalInput),
     RemoveInputBinding(input::MappedKey, usize),
     ResetInputBindings,
@@ -315,7 +334,29 @@ impl State {
             Message::ToggleAllowPrereleaseUpgrades(b) => Some(ConfigChange::AllowPrereleaseUpgrades(b)),
             Message::VolumeChanged(v) => Some(ConfigChange::Volume(v)),
             Message::ThemeChanged(t) => Some(ConfigChange::Theme(t)),
-            Message::AccentChanged(a) => Some(ConfigChange::Accent(a)),
+            Message::AccentChanged(a) => {
+                // A preset replaces whatever draft was in the hex
+                // field; the field should show the chosen identity
+                // (or the custom color carried over).
+                self.custom_accent_hex = None;
+                self.custom_accent_hsv = None;
+                Some(ConfigChange::Accent(a))
+            }
+            Message::CustomAccentHexChanged(text) => {
+                let rgb = config::parse_hex_color(&text);
+                self.custom_accent_hex = Some(text);
+                self.custom_accent_hsv = None;
+                rgb.map(ConfigChange::CustomAccent)
+            }
+            Message::CustomAccentHsvChanged(hsv) => {
+                // The picker is the source of truth while it's being
+                // dragged, so drop any stale partial hex draft.
+                self.custom_accent_hex = None;
+                self.custom_accent_hsv = Some(hsv);
+                Some(ConfigChange::CustomAccent(crate::ui::theme::hsv_to_rgb(
+                    hsv.0, hsv.1, hsv.2,
+                )))
+            }
             Message::BindingSlotSelected(k) => {
                 // Clicking a console key retargets the screen; any
                 // in-flight capture is dropped rather than silently
@@ -396,7 +437,7 @@ pub fn view<'a>(
     .style(widgets::pane);
 
     let body: Element<'a, Message> = match active {
-        SettingsTab::General => settings_general(lang, config),
+        SettingsTab::General => settings_general(lang, config, state),
         SettingsTab::Graphics => settings_graphics(lang, config),
         SettingsTab::Audio => settings_audio(lang, config),
         SettingsTab::Input => settings_input(lang, config, state, session_held.unwrap_or(&state.held)),

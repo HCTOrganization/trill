@@ -2,6 +2,7 @@
 
 use super::desktop::open_url;
 use super::{App, Message, RescanFollowup};
+use crate::config;
 use crate::platform::input;
 use crate::tabs;
 
@@ -134,7 +135,21 @@ impl App {
             // (Message::PvpSessionBuilt); nothing live to poke.
             C::ShowOpponentSetup(b) => self.config.show_opponent_setup = b,
             C::Theme(t) => self.config.theme = t,
-            C::Accent(a) => self.config.accent = a,
+            C::Accent(a) => {
+                // Selecting Custom for the first time seeds the picker
+                // from the preset the chrome was wearing, so the theme
+                // doesn't jump to the stored default.
+                if a == config::AccentColor::Custom && self.config.accent != config::AccentColor::Custom {
+                    let dark = matches!(self.config.theme, config::ThemeMode::Dark);
+                    let rgb = crate::ui::theme::accent_rgb(self.config.accent, self.config.custom_accent_rgb(), dark);
+                    self.config.custom_accent = config::hex_color(rgb);
+                }
+                self.config.accent = a;
+            }
+            C::CustomAccent(rgb) => {
+                self.config.accent = config::AccentColor::Custom;
+                self.config.custom_accent = config::hex_color(rgb);
+            }
             C::AddInputBinding(slot, binding) => {
                 let bindings = self.config.input_mapping.slot_mut(slot);
                 // Avoid dupes — a single binding could be added

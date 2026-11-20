@@ -28,12 +28,36 @@ fn accent_choice(lang: &LanguageIdentifier, accent: config::AccentColor) -> Choi
             config::AccentColor::RollPink => t!(lang, "settings-accent-roll-pink"),
             config::AccentColor::GutsManYellow => t!(lang, "settings-accent-gutsman-yellow"),
             config::AccentColor::BassPurple => t!(lang, "settings-accent-forte-purple"),
+            config::AccentColor::Custom => t!(lang, "settings-accent-custom"),
         },
     )
 }
 
-pub(super) fn settings_general<'a>(lang: &'a LanguageIdentifier, config: &'a config::Config) -> Element<'a, Message> {
-    column![
+/// The custom accent's live preview chip, sitting next to its hex
+/// field.
+fn accent_swatch<'a>(rgb: [u8; 3]) -> Element<'a, Message> {
+    container(Space::new().width(Length::Fixed(26.0)).height(Length::Fixed(26.0)))
+        .style(move |theme: &iced::Theme| iced::widget::container::Style {
+            background: Some(iced::Background::Color(crate::ui::theme::to_color(rgb))),
+            border: iced::Border {
+                color: iced::Color {
+                    a: 0.5,
+                    ..theme.palette().text
+                },
+                width: 1.0,
+                radius: 6.0.into(),
+            },
+            ..Default::default()
+        })
+        .into()
+}
+
+pub(super) fn settings_general<'a>(
+    lang: &'a LanguageIdentifier,
+    config: &'a config::Config,
+    state: &'a State,
+) -> Element<'a, Message> {
+    let mut groups: Vec<Element<'a, Message>> = vec![
         settings_group(
             t!(lang, "settings-group-profile"),
             vec![
@@ -86,6 +110,7 @@ pub(super) fn settings_general<'a>(lang: &'a LanguageIdentifier, config: &'a con
                         accent_choice(lang, config::AccentColor::RollPink),
                         accent_choice(lang, config::AccentColor::GutsManYellow),
                         accent_choice(lang, config::AccentColor::BassPurple),
+                        accent_choice(lang, config::AccentColor::Custom),
                     ];
                     let selected = options.iter().find(|c| c.value == config.accent).cloned();
                     widgets::focus_picker(options, selected, |c: Choice<config::AccentColor>| {
@@ -94,6 +119,56 @@ pub(super) fn settings_general<'a>(lang: &'a LanguageIdentifier, config: &'a con
                 }),
             ],
         ),
+    ];
+
+    // The picker only appears once the accent picker runs in Custom:
+    // presets already say exactly which color the chrome wears, and
+    // the extra controls would just be noise above them.
+    if config.accent == config::AccentColor::Custom {
+        let rgb = config.custom_accent_rgb();
+        let hex = state
+            .custom_accent_hex
+            .clone()
+            .unwrap_or_else(|| config.custom_accent.clone());
+        // Prefer the picker's own HSV so hue/saturation survive a
+        // trip through black or grey; fall back to deriving them
+        // from RGB after a hex edit or config load.
+        let hsv = state
+            .custom_accent_hsv
+            .filter(|&(h, s, v)| crate::ui::theme::hsv_to_rgb(h, s, v) == rgb)
+            .unwrap_or_else(|| crate::ui::theme::rgb_to_hsv(rgb));
+        groups.push(settings_group(
+            t!(lang, "settings-group-custom-accent"),
+            vec![
+                option_row::<Message>(
+                    t!(lang, "settings-custom-accent-hex"),
+                    row![
+                        accent_swatch(rgb),
+                        text_input("#RRGGBB", &hex)
+                            .on_input(Message::CustomAccentHexChanged)
+                            .padding(STANDARD_PADDING)
+                            .width(Length::Fixed(120.0))
+                            .style(widgets::chunky_text_input),
+                    ]
+                    .spacing(8)
+                    .align_y(Alignment::Center),
+                ),
+                container(
+                    column![
+                        text(t!(lang, "settings-custom-accent-picker-hint"))
+                            .size(TEXT_CAPTION)
+                            .style(widgets::muted_text_style),
+                        widgets::color_picker(hsv, Message::CustomAccentHsvChanged),
+                    ]
+                    .spacing(6),
+                )
+                .padding([4, 10])
+                .into(),
+            ],
+        ));
+    }
+
+    groups.extend([
         settings_group(
             t!(lang, "settings-group-storage"),
             vec![option_row::<Message>(
@@ -147,8 +222,7 @@ pub(super) fn settings_general<'a>(lang: &'a LanguageIdentifier, config: &'a con
                 ),
             ],
         ),
-    ]
-    .spacing(24)
-    .padding(style::PANE_PADDING)
-    .into()
+    ]);
+
+    column(groups).spacing(24).padding(style::PANE_PADDING).into()
 }
