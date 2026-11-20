@@ -5,7 +5,7 @@ edition = "2021"
 license = "MPL-2.0"
 publish = false
 
-# The bundler. Patch authors use it to build and index `.trillpatch`
+# The bundler. Patch authors use it to build and index `.t5patch`
 # packages; the app only needs the library, so the binary (and its
 # clap/anyhow deps) is behind a feature.
 [[bin]]

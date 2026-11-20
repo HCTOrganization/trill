@@ -1,4 +1,4 @@
-//! `manifest.toml` — the one metadata file inside a `.trillpatch`.
+//! `manifest.toml` — the one metadata file inside a `.t5patch`.
 //!
 //! A package is exactly *one version* of one patch, so the manifest is
 //! flat: there is no `[versions.'x.y.z']` nesting and nothing in it is
@@ -135,7 +135,7 @@ impl Manifest {
         format!("{}-{}", self.name, self.version)
     }
 
-    /// `<name>-<version>.trillpatch`.
+    /// `<name>-<version>.t5patch`.
     pub fn file_name(&self) -> String {
         format!("{}.{}", self.stem(), crate::EXTENSION)
     }
@@ -242,7 +242,7 @@ title = "BN6 All-Stars"
         assert_eq!(m.netplay, Compatibility::Isolated);
         assert!(m.authors.is_empty());
         assert_eq!(m.stem(), "bn6_allstars-1.1.0");
-        assert_eq!(m.file_name(), "bn6_allstars-1.1.0.trillpatch");
+        assert_eq!(m.file_name(), "bn6_allstars-1.1.0.t5patch");
     }
 
     #[test]

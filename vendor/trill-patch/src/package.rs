@@ -1,4 +1,4 @@
-//! Reading a `.trillpatch` (feature `package`).
+//! Reading a `.t5patch` (feature `package`).
 //!
 //! What a package *contains* is never restated in its manifest: the
 //! supported ROMs and save templates are read off the archive itself (see
@@ -13,7 +13,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io::{Read, Seek};
 
 // Ceilings on how much any single archive entry may decompress to. A
-// `.trillpatch` is untrusted input — a scanned file could have been
+// `.t5patch` is untrusted input — a scanned file could have been
 // hand-crafted, and a package fetched from a repo is only hash-checked
 // against what that same repo published — so a "zip bomb" (a few KB that
 // inflates to gigabytes, or a header that merely *claims* to) must not be

@@ -37,7 +37,7 @@ fn builds_from_a_tree_of_packages() {
     assert_eq!(entry.license.as_deref(), Some("MIT"));
     assert_eq!(entry.games, vec![target("BR6E_00")]);
     assert_eq!(entry.netplay, Compatibility::Group("allstars".into()));
-    assert_eq!(entry.path, "bn6_allstars/bn6_allstars-1.1.0.trillpatch");
+    assert_eq!(entry.path, "bn6_allstars/bn6_allstars-1.1.0.t5patch");
     assert_eq!(entry.sha256.len(), 64);
     assert!(entry.size > 0);
 }
@@ -121,7 +121,7 @@ fn a_misnamed_package_is_rejected() {
     let built = package("bn6_allstars", "1.0.0", "isolated")
         .write_file(dir.path())
         .unwrap();
-    std::fs::rename(&built.path, dir.path().join("wrong.trillpatch")).unwrap();
+    std::fs::rename(&built.path, dir.path().join("wrong.t5patch")).unwrap();
     let err = Index::build(dir.path(), false).unwrap_err().to_string();
     assert!(err.contains("should be named"), "{err}");
 }

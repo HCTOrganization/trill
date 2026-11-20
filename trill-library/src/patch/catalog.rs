@@ -14,7 +14,7 @@ use trill_patch::{Compatibility, Package, Tag};
 /// (see [`super::apply_patch`]); a scan only touches metadata, the
 /// README, and any save templates.
 pub struct Version {
-    /// The `.trillpatch` this came from.
+    /// The `.t5patch` this came from.
     pub path: PathBuf,
     pub netplay: Compatibility,
     pub rom_overrides: BTreeMap<trill_patch::RomTarget, trill_patch::Overrides>,

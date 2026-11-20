@@ -1,9 +1,9 @@
-//! The Trill patch package format: `.trillpatch` files, their manifests,
+//! The Trill patch package format: `.t5patch` files, their manifests,
 //! and the repo index that lets a client find and fetch them on demand.
 //!
 //! # The unit is one patch version
 //!
-//! A `.trillpatch` is a zip holding exactly one version of one patch —
+//! A `.t5patch` is a zip holding exactly one version of one patch —
 //! its metadata, its BPS patches, its save templates, and its README —
 //! and it is the same artifact everywhere: what an author builds, what
 //! the repo stores and serves, and what the app keeps on disk. There is
@@ -32,7 +32,7 @@
 //!
 //! | feature | module | for |
 //! |---|---|---|
-//! | `package` | [`package`] | reading a `.trillpatch` |
+//! | `package` | [`package`] | reading a `.t5patch` |
 //! | `bundle` | [`bundle`] | writing one |
 //! | `index` | [`index`] | the repo index (building it also needs the other two) |
 //! | `cli` | — | the `trill-patch` bundler binary; enables all three |
@@ -58,7 +58,7 @@ pub use package::Package;
 pub use tag::Tag;
 
 /// The package file extension, without the dot.
-pub const EXTENSION: &str = "trillpatch";
+pub const EXTENSION: &str = "t5patch";
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

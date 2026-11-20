@@ -137,7 +137,7 @@ fn a_package_is_named_after_its_contents() {
     let built = full().write_file(dir.path()).unwrap();
     assert_eq!(
         built.path.file_name().unwrap().to_string_lossy(),
-        "test_patch-1.2.3.trillpatch"
+        "test_patch-1.2.3.t5patch"
     );
     assert_eq!(built.sha256.len(), 64);
     assert_eq!(built.size, std::fs::metadata(&built.path).unwrap().len());
@@ -171,7 +171,7 @@ fn garbage_is_not_a_package() {
     assert!(Package::read(std::io::Cursor::new(truncated[..truncated.len() / 2].to_vec())).is_err());
 }
 
-// A `.trillpatch` is untrusted, so an entry that inflates far past its
+// A `.t5patch` is untrusted, so an entry that inflates far past its
 // real bound (a "zip bomb") must be refused, not buffered whole. These
 // entries compress to almost nothing but decompress past the caller-side
 // caps — the reads should error rather than allocate gigabytes.

@@ -1,4 +1,4 @@
-//! What lives where inside a `.trillpatch`, and the [`RomTarget`] type
+//! What lives where inside a `.t5patch`, and the [`RomTarget`] type
 //! that names it.
 //!
 //! ```text

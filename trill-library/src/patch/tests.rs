@@ -76,7 +76,7 @@ fn index_with(root: &Path, entries: &[(&str, &str, &str)]) {
                 source: None,
                 netplay: netplay.parse().unwrap(),
                 games: vec!["BR6E_00".parse().unwrap()],
-                path: format!("{name}/{name}-{version}.trillpatch"),
+                path: format!("{name}/{name}-{version}.t5patch"),
                 size: 1234,
                 sha256: "0".repeat(64),
                 readme: None,

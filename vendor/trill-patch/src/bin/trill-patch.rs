@@ -1,4 +1,4 @@
-//! The patch bundler: build `.trillpatch` packages and the repo index.
+//! The patch bundler: build `.t5patch` packages and the repo index.
 //!
 //! Patch authors run `pack` on a source directory and commit the
 //! resulting package; the repo's CI runs `index` over the committed
@@ -12,14 +12,14 @@ use trill_patch::{bundle, Index, Package};
 #[derive(Parser)]
 #[command(name = "trill-patch", about = "Build and index Trill patch packages")]
 enum Command {
-    /// Build a .trillpatch from a source directory.
+    /// Build a .t5patch from a source directory.
     Pack {
         /// Directories laid out like a package: manifest.toml, optional
         /// README.md, roms/CODE_RR.bps, optional saves/CODE_RR[.name].sav
         #[arg(required = true)]
         src: Vec<PathBuf>,
         /// Where to write. A package always names itself
-        /// `<name>-<version>.trillpatch`.
+        /// `<name>-<version>.t5patch`.
         #[arg(short, long, default_value = ".")]
         out: PathBuf,
     },

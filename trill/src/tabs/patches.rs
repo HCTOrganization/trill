@@ -761,7 +761,7 @@ mod tests {
                 source: None,
                 netplay: trill_patch::Compatibility::Isolated,
                 games: vec!["BR6E_00".parse().unwrap()],
-                path: "bn6_test/bn6_test-1.0.0.trillpatch".into(),
+                path: "bn6_test/bn6_test-1.0.0.t5patch".into(),
                 size: 1,
                 sha256: "0".repeat(64),
                 readme: Some("bn6_test/bn6_test-1.0.0.README.md".into()),

@@ -1,4 +1,4 @@
-//! Writing a `.trillpatch` (feature `bundle`).
+//! Writing a `.t5patch` (feature `bundle`).
 //!
 //! [`Builder`] assembles a package in memory; [`read_dir`] fills one from
 //! a source tree laid out exactly like the finished package, which is
@@ -147,7 +147,7 @@ impl Builder {
         Ok(buf.into_inner())
     }
 
-    /// Write `<dir>/<name>-<version>.trillpatch`, creating `dir` if
+    /// Write `<dir>/<name>-<version>.t5patch`, creating `dir` if
     /// needed. The file name is fixed by the manifest so a package's URL
     /// is derivable from its identity.
     pub fn write_file(&self, dir: &Path) -> Result<Built, Error> {

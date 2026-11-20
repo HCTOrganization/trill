@@ -1,6 +1,6 @@
 //! Patch catalogue, installation, and ROM patching.
 //!
-//! Installed `.trillpatch` packages and the cached `index.json` are
+//! Installed `.t5patch` packages and the cached `index.json` are
 //! merged by [`Catalog`]. Fetching the index does not download packages;
 //! callers install individual versions through [`download`]. All I/O
 //! uses the frontend's [`Storage`] and [`crate::http::Http`] implementations.

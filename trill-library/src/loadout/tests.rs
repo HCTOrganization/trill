@@ -86,7 +86,7 @@ fn catalog(saves: &[(rom::GameRef, &str)], patch_games: &[rom::GameRef]) -> Cata
         .rescan(|| Some([(&GAME, b"rom".to_vec()), (&OTHER_VARIANT, b"rom".to_vec())].into()));
     rescan_saves(&catalog, saves);
     let version = patch::Version {
-        path: "/patches/p.trillpatch".into(),
+        path: "/patches/p.t5patch".into(),
         netplay: trill_patch::Compatibility::Isolated,
         rom_overrides: Default::default(),
         supported_games: patch_games.iter().copied().collect(),

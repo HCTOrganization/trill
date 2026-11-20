@@ -61,7 +61,7 @@ pub struct Entry {
     /// The ROM builds this version patches.
     pub games: Vec<RomTarget>,
     /// Package location, relative to the index. Always
-    /// `<name>/<name>-<version>.trillpatch`.
+    /// `<name>/<name>-<version>.t5patch`.
     pub path: String,
     pub size: u64,
     /// Hex SHA-256 of the package. Clients verify downloads against this,
@@ -143,7 +143,7 @@ mod build {
     use std::path::Path;
 
     impl Index {
-        /// Build an index by scanning `root` for `.trillpatch` files.
+        /// Build an index by scanning `root` for `.t5patch` files.
         ///
         /// With `emit_readmes`, each package's README is also extracted
         /// beside it as `<stem>.README.md` and linked from the entry.
