@@ -4,7 +4,7 @@
 //! pointer strays outside the widget.
 
 use crate::ui::theme::hsv_to_rgb;
-use iced::gradient::Linear;
+use iced::widget::canvas::gradient::Linear;
 use iced::widget::canvas::{self, Canvas, Frame, Path, Stroke, Style};
 use iced::{mouse, Color, Element, Length, Point, Rectangle, Renderer, Size, Theme};
 
@@ -135,22 +135,23 @@ impl<M: Clone> canvas::Program<M> for Picker<'_, M> {
         frame.fill_rectangle(
             square.position(),
             square.size(),
-            Linear::new(std::f32::consts::FRAC_PI_2)
+            Linear::new(square.position(), Point::new(square.x + square.width, square.y))
                 .add_stop(0.0, Color::WHITE)
                 .add_stop(1.0, Color { a: 0.0, ..Color::WHITE }),
         );
         frame.fill_rectangle(
             square.position(),
             square.size(),
-            Linear::new(std::f32::consts::PI)
+            Linear::new(square.position(), Point::new(square.x, square.y + square.height))
                 .add_stop(0.0, Color { a: 0.0, ..Color::BLACK })
                 .add_stop(1.0, Color::BLACK),
         );
 
         // Hue strip: red → yellow → green → cyan → blue → magenta → red.
-        let hue_gradient = (0..=6).fold(Linear::new(std::f32::consts::FRAC_PI_2), |gradient, step| {
-            gradient.add_stop(step as f32 / 6.0, hue_color(step as f32 / 6.0))
-        });
+        let hue_gradient = (0..=6).fold(
+            Linear::new(hue.position(), Point::new(hue.x + hue.width, hue.y)),
+            |gradient, step| gradient.add_stop(step as f32 / 6.0, hue_color(step as f32 / 6.0)),
+        );
         frame.fill_rectangle(hue.position(), hue.size(), hue_gradient);
 
         let border = Color {
